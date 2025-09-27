@@ -1,9 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { RouterProvider } from "react-router";
+import routes from "./routes/AppRoutes";
 
-export default function App() {
-  return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
-      <Button>Click me</Button>
-    </div>
-  );
-}
+const App: React.FC = () => <RouterProvider router={routes} />;
+
+export default App;
