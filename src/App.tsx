@@ -1,6 +1,10 @@
-import { RouterProvider } from "react-router";
-import routes from "./routes/AppRoutes";
+import { BrowserRouter } from 'react-router-dom'
+import AppRoutes from "./routes/AppRoutes";
 
-const App: React.FC = () => <RouterProvider router={routes} />;
-
-export default App;
+export default function App() {
+    return (
+        <BrowserRouter>
+            <AppRoutes />
+        </BrowserRouter>
+    )
+}

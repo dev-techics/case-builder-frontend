@@ -9,9 +9,13 @@ import {
 import { useTree } from "@headless-tree/react";
 import { FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { useState } from "react";
-
 import { Input } from "@/features/file-explorer/components/ui/input";
-import { Tree, TreeItem, TreeItemLabel } from "@/features/file-explorer/components/ui/tree";
+import {
+    Tree,
+    TreeItem,
+    TreeItemLabel,
+} from "@/features/file-explorer/components/ui/tree";
+import Header from "./components/ui/header";
 
 type Item = {
     name: string;
@@ -86,8 +90,10 @@ export default function Component() {
     });
 
     return (
+        // File Tree
         <div className="flex h-full flex-col gap-2 *:first:grow">
             <Tree indent={indent} tree={tree}>
+                <Header />
                 {tree.getItems().map((item) => (
                     <TreeItem item={item} key={item.getId()}>
                         <TreeItemLabel>
@@ -116,6 +122,7 @@ export default function Component() {
                 ))}
             </Tree>
 
+            {/* bottom text */}
             <p
                 aria-live="polite"
                 className="mt-2 text-muted-foreground text-xs"

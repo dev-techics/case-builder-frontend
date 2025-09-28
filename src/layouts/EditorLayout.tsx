@@ -1,24 +1,12 @@
 import { Outlet } from "react-router-dom";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/features/sidebar/components/ui/sidebar";
+import EditorSidebar from "../features/sidebar/EditorSidebar";
 
-export default function EditorLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function EditorLayout() {
     return (
-        <div className="flex h-screen">
+        <SidebarProvider>
             {/* Sidebar */}
-            <aside className="w-64 p-4">
-                <SidebarProvider>
-                    <AppSidebar />
-                    <main>
-                        <SidebarTrigger />
-                        {children}
-                    </main>
-                </SidebarProvider>
-            </aside>
+            <EditorSidebar />
 
             {/* Main Area */}
             <div className="flex flex-1 flex-col">
@@ -42,6 +30,6 @@ export default function EditorLayout({
                     <Outlet />
                 </main>
             </div>
-        </div>
+        </SidebarProvider>
     );
 }
