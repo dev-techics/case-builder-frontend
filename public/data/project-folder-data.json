@@ -1,0 +1,10 @@
+{
+  "id": "proj-1",
+  "name": "Project Alpha",
+  "type": "folder",
+  "children": [
+    { "id": "file-1", "name": "Design.pdf", "type": "file" },
+    { "id": "file-2", "name": "Specs.pdf", "type": "file" },
+    { "id": "file-3", "name": "Report.pdf", "type": "file" }
+  ]
+}
