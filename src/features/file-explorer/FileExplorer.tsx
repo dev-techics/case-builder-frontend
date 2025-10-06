@@ -1,6 +1,6 @@
 import { useAppSelector } from "../../app/hooks";
 import { FolderItem } from "./components/FolderItem";
-import { FileUploadHandler } from "./services/fileUploadHandler";
+import { FileUploadHandler } from "./components/fileUploadHandler";
 
 const FileTree: React.FC = () => {
     const tree = useAppSelector((state) => state.fileTree.tree);

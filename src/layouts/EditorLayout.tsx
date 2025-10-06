@@ -11,7 +11,7 @@ export default function EditorLayout() {
             {/* Main Area */}
             <div className="flex flex-1 flex-col">
                 {/* Topbar */}
-                <header className="flex h-14 items-center justify-between border-b bg-white px-4">
+                <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-white px-4">
                     <h1 className="font-semibold">Editor</h1>
                     <div className="flex items-center gap-4">
                         <button

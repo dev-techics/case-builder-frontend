@@ -1,0 +1,25 @@
+{
+  "id": "proj-1",
+  "name": "Project Alpha",
+  "type": "folder",
+  "children": [
+    {
+      "id": "file-1",
+      "name": "Design.pdf",
+      "type": "file",
+      "url": "/file-sample_150kB.pdf"
+    },
+    {
+      "id": "file-2",
+      "name": "Specs.pdf",
+      "type": "file",
+      "url": "/dummy-pdf_2.pdf"
+    },
+    {
+      "id": "file-3",
+      "name": "Report.pdf",
+      "type": "file",
+      "url": "/pdf_3.pdf"
+    }
+  ]
+}

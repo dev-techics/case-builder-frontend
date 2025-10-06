@@ -4,6 +4,7 @@ import { File, GripVertical } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import type { FileNode } from "../types";
+import Menu from "./comp-366";
 
 type SortableFileItemProps = {
     file: FileNode;
@@ -57,9 +58,9 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
         e.stopPropagation();
     };
     return (
-        <button
+        <div
             aria-pressed={isSelected}
-            className={`flex w-full cursor-pointer items-center px-2 py-1 text-left hover:bg-gray-700 ${isSelected ? "bg-blue-600" : ""
+            className={`flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left hover:bg-gray-700 ${isSelected ? "bg-blue-600" : ""
                 }`}
             onClick={onSelect}
             onKeyDown={handleKeyDown}
@@ -69,22 +70,27 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
                     (fileRef as any).current = node;
                 }
             }}
+            role="button"
             style={style}
-            type="button"
+            tabIndex={0}
         >
-            <button
-                {...attributes}
-                {...listeners}
-                aria-label={`Drag ${file.name}`}
-                className="mr-1 w-4 flex-shrink-0 cursor-grab border-0 bg-transparent p-0 active:cursor-grabbing"
-                onClick={handleDragClick}
-                onKeyDown={handleDragKeyDown}
-                type="button"
-            >
-                <GripVertical className="h-4 w-4 text-gray-500" />
-            </button>
-            <File className="mr-2 h-4 w-4 flex-shrink-0 text-gray-400" />
-            <span className="truncate text-gray-200 text-sm">{file.name}</span>
-        </button>
+            <div className="flex items-center truncate">
+                <button
+                    {...attributes}
+                    {...listeners}
+                    aria-label={`Drag ${file.name}`}
+                    className="mr-1 w-4 flex-shrink-0 cursor-grab border-0 bg-transparent p-0 active:cursor-grabbing"
+                    onClick={handleDragClick}
+                    onKeyDown={handleDragKeyDown}
+                    type="button"
+                >
+                    <GripVertical className="h-4 w-4 text-gray-500" />
+                </button>
+                <File className="mr-2 h-4 w-4 flex-shrink-0 text-gray-400" />
+                <span className="truncate text-gray-200 text-sm">{file.name}</span>
+            </div>
+            {/* Rename and delete menu */}
+            <Menu />
+        </div>
     );
 };

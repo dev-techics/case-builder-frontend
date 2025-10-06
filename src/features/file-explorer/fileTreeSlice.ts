@@ -1,24 +1,15 @@
 import { arrayMove } from "@dnd-kit/sortable";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { FileNode, FileTreeState, FolderNode } from "./types";
-
-// Dummy data
-const dummyData: FolderNode = {
-  id: "proj-1",
-  name: "Project Alpha",
-  type: "folder",
-  children: [
-    { id: "file-1", name: "Design.pdf", type: "file" },
-    { id: "file-2", name: "Specs.pdf", type: "file" },
-    { id: "file-3", name: "Report.pdf", type: "file" },
-  ],
+import fileTreeData from "../../data/project-folder-data.json" with {
+  type: "json",
 };
+import type { FileNode, FileTreeState, FolderNode } from "./types";
 
 // Redux slice
 const fileTreeSlice = createSlice({
   name: "fileTree",
   initialState: {
-    tree: dummyData,
+    tree: fileTreeData,
     expandedFolders: ["proj-1"],
     selectedFile: null,
     scrollToFileId: null,

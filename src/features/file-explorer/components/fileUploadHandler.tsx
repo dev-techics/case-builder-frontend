@@ -1,7 +1,7 @@
 import { Upload } from "lucide-react";
 import type React from "react";
 import { useAppDispatch } from "../../../app/hooks";
-import { addFiles } from "../fileTreeSlice";
+import { addFiles } from "../../file-explorer/fileTreeSlice";
 import type { FileNode } from "../types";
 
 export const FileUploadHandler: React.FC = () => {
@@ -16,22 +16,33 @@ export const FileUploadHandler: React.FC = () => {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
 
+            // Validate it's a PDF
+            if (file.type !== "application/pdf") {
+                console.warn(`Skipping non-PDF file: ${file.name}`);
+                continue;
+            }
+
             // Create blob URL for PDF preview
             const url = URL.createObjectURL(file);
+            console.log("✅ Created blob URL for:", file.name, url);
 
+            // Don't store File object - it's non-serializable!
             const fileNode: FileNode = {
                 id: `file-${Date.now()}-${i}`,
                 name: file.name,
                 type: "file",
                 url,
-                file,
+                // Removed: file property (non-serializable)
             };
 
             fileNodes.push(fileNode);
         }
 
-        // Add files to Redux store
-        dispatch(addFiles(fileNodes));
+        if (fileNodes.length > 0) {
+            // Add files to Redux store
+            dispatch(addFiles(fileNodes));
+            console.log(`📁 Added ${fileNodes.length} file(s) to store`);
+        }
 
         // Reset input
         e.target.value = "";

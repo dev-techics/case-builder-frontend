@@ -12,7 +12,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ChevronDown, ChevronRight, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, FilePlus2, Folder } from "lucide-react";
 import type React from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { reorderFiles, selectFile, toggleFolder } from "../fileTreeSlice";
@@ -80,6 +80,7 @@ export const FolderItem: React.FC<FolderItemProps> = ({ folder, level }) => {
                 )}
                 <Folder className="mr-2 h-4 w-4 flex-shrink-0 text-blue-400" />
                 <span className="truncate text-gray-200 text-sm">{folder.name}</span>
+                {/* <FilePlus2 className="mr-2 h-4 w-4 flex-shrink-0 text-blue-400" /> */}
             </div>
 
             {isExpanded && (
