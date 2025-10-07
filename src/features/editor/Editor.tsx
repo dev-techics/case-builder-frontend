@@ -11,17 +11,10 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import DocumentComponent from "./components/Document";
 import UploadFile from "./components/UploadFile";
-import ZoomControls from "./components/ZoomControls";
 import type { PdfDocumentInfo } from "./types";
-
-// Set up the worker for react-pdf - Try these options:
-// Option 1: CDN
-// pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 // Option 2: If Option 1 doesn't work, try this:
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
-
 
 const PDFViewer: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -30,18 +23,18 @@ const PDFViewer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const isScrollingFromEditor = useRef(false);
-
-
     const [documentInfo, setDocumentInfo] = useState<{
         [key: string]: PdfDocumentInfo;
     }>({});
 
     /*--------------------------------
-              Scroll Synchronization Logic
-          --------------------------------*/
+          Scroll Synchronization Logic
+      --------------------------------*/
 
     const handleScroll = () => {
-        if (!containerRef.current || isScrollingFromEditor.current) { return; }
+        if (!containerRef.current || isScrollingFromEditor.current) {
+            return;
+        }
 
         const container = containerRef.current;
         const scrollTop = container.scrollTop;
@@ -93,17 +86,14 @@ const PDFViewer: React.FC = () => {
     }, [selectedFile]);
 
     /*-------------------------------------------------------------
-              Empty State
-    ---------------------------------------------------------------*/
+                    Empty State
+      ---------------------------------------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
 
     return (
         <div className="flex h-full flex-col">
-            {/* Zoom Controls */}
-            <ZoomControls />
-
             {/* PDF Documents Container */}
             <div
                 className="flex-1 overflow-y-auto bg-gray-100 p-8"

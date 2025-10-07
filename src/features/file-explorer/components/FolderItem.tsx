@@ -69,7 +69,7 @@ export const FolderItem: React.FC<FolderItemProps> = ({ folder, level }) => {
     return (
         <div>
             <div
-                className="flex cursor-pointer items-center px-2 py-1 hover:bg-gray-700"
+                className="flex cursor-pointer items-center px-2 py-1 hover:bg-gray-200"
                 onClick={handleFolderClick}
                 style={{ paddingLeft: `${level * 12 + 8}px` }}
             >
@@ -79,8 +79,7 @@ export const FolderItem: React.FC<FolderItemProps> = ({ folder, level }) => {
                     <ChevronRight className="mr-1 h-4 w-4 flex-shrink-0" />
                 )}
                 <Folder className="mr-2 h-4 w-4 flex-shrink-0 text-blue-400" />
-                <span className="truncate text-gray-200 text-sm">{folder.name}</span>
-                {/* <FilePlus2 className="mr-2 h-4 w-4 flex-shrink-0 text-blue-400" /> */}
+                <span className="truncate text-gray-800 text-sm">{folder.name}</span>
             </div>
 
             {isExpanded && (

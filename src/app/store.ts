@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import editorSlice from "@/features/editor/editorSlice";
+import propertiesPanelSlice from "@/features/properties-panel/propertiesPanelSlice";
 import fileTreeSlice from "../features/file-explorer/fileTreeSlice";
 
 const store = configureStore({
   reducer: {
     fileTree: fileTreeSlice,
     editor: editorSlice,
+    propertiesPanel: propertiesPanelSlice,
   },
 });
 

@@ -6,7 +6,7 @@ function ZoomControls() {
     const disPatch = useDispatch();
     const scale = useSelector((state: any) => state.editor.scale);
     return (
-        <div className="flex items-center justify-center gap-4 border-b bg-white p-4">
+        <div className="fixed bottom-8 left-76 z-99 flex w-48 items-center justify-center gap-4 border-b bg-white p-4">
             <button
                 aria-label="Zoom out"
                 className="rounded p-2 hover:bg-gray-100"

@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
-import { SidebarProvider } from "@/features/sidebar/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import PropertiesSidebar from "@/features/properties-panel/sidebar";
 import EditorSidebar from "../features/sidebar/EditorSidebar";
 
 export default function EditorLayout() {
@@ -25,11 +26,13 @@ export default function EditorLayout() {
                 </header>
 
                 {/* Canvas / Workspace */}
-                <main className="flex-1 overflow-auto bg-gray-50 p-4">
+                <main className="relative flex-1 overflow-auto bg-gray-50 p-4">
                     {/* Outlet is where your page content goes */}
                     <Outlet />
                 </main>
             </div>
+
+            <PropertiesSidebar />
         </SidebarProvider>
     );
 }

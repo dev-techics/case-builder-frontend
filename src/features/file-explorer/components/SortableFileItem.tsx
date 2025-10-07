@@ -60,7 +60,7 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
     return (
         <div
             aria-pressed={isSelected}
-            className={`flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left hover:bg-gray-700 ${isSelected ? "bg-blue-600" : ""
+            className={`flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left hover:bg-gray-200 ${isSelected ? "bg-gray-300" : ""
                 }`}
             onClick={onSelect}
             onKeyDown={handleKeyDown}
@@ -86,8 +86,8 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
                 >
                     <GripVertical className="h-4 w-4 text-gray-500" />
                 </button>
-                <File className="mr-2 h-4 w-4 flex-shrink-0 text-gray-400" />
-                <span className="truncate text-gray-200 text-sm">{file.name}</span>
+                <File className="mr-2 h-4 w-4 flex-shrink-0 text-gray-800" />
+                <span className="truncate text-gray-800 text-sm">{file.name}</span>
             </div>
             {/* Rename and delete menu */}
             <Menu />

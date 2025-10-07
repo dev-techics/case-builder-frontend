@@ -6,9 +6,9 @@ const FileTree: React.FC = () => {
     const tree = useAppSelector((state) => state.fileTree.tree);
 
     return (
-        <div className="h-screen w-64 overflow-auto bg-gray-800 text-white">
+        <div className="h-screen w-64 overflow-auto bg-white text-gray-800">
             <div className="border-gray-700 border-b p-2">
-                <h2 className="font-semibold text-gray-400 text-xs uppercase tracking-wider">
+                <h2 className="font-semibold text-gray-800 text-xs uppercase tracking-wider">
                     Explorer
                 </h2>
             </div>
