@@ -19,9 +19,10 @@ function Annotations() {
                         </div>
                         <input
                             className="rounded-md border p-2 text-sm"
-                            onChange={(e) => disPatch(changeHeaderLeft(e.target.value))}
+                            onBlur={(e) => disPatch(changeHeaderLeft(e.target.value))}
                             type="text"
                             value={headerLeft}
+
                         />
                     </div>
                     <div className="flex flex-col gap-2 p-2">
@@ -30,7 +31,7 @@ function Annotations() {
                         </div>
                         <input
                             className="rounded-md border p-2 text-sm"
-                            onChange={(e) => disPatch(changeHeaderRight(e.target.value))}
+                            onBlur={(e) => disPatch(changeHeaderRight(e.target.value))}
                             type="text"
                             value={headerRight}
                         />

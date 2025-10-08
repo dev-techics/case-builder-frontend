@@ -1,5 +1,4 @@
-// import { PDFDocument, rgb } from "pdf-lib";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useAppSelector } from "@/app/hooks";
 import type {
@@ -11,7 +10,7 @@ import ErrorComp from "./ui/ErrorComp";
 
 function DocumentComponent({ file }: DocumentComponentProps) {
     const scale = useAppSelector((state) => state.editor.scale);
-    // const [previewUrl, setPreviewUrl] = useState(null);
+
     const [documentInfo, setDocumentInfo] = useState<{
         [key: string]: PdfDocumentInfo;
     }>({});
@@ -37,7 +36,6 @@ function DocumentComponent({ file }: DocumentComponentProps) {
             ...prev,
             [fileId]: { fileId, numPages },
         }));
-        // Clear any previous errors for this file
         setPdfErrors((prev) => {
             const newErrors = { ...prev };
             delete newErrors[fileId];
@@ -55,43 +53,6 @@ function DocumentComponent({ file }: DocumentComponentProps) {
             },
         }));
     };
-
-
-    // file preview with header & footer
-    // useEffect(() => {
-    //     const generatePreview = async () => {
-    //         if (!file?.url?.endsWith(".pdf")) return;
-
-    //         const existingPdfBytes = await fetch(file.url).then((res) =>
-    //             res.arrayBuffer()
-    //         );
-    //         const pdfDoc = await PDFDocument.load(existingPdfBytes);
-
-    //         const pages = pdfDoc.getPages();
-    //         pages.forEach((page, index) => {
-    //             const { width } = page.getSize();
-    //             page.drawText("© 2025 Anik Dey | ad-verse.com", {
-    //                 x: 50,
-    //                 y: 25,
-    //                 size: 10,
-    //                 color: rgb(0.4, 0.4, 0.4),
-    //             });
-    //             page.drawText(`Page ${index + 1} of ${pages.length}`, {
-    //                 x: width - 120,
-    //                 y: 25,
-    //                 size: 10,
-    //                 color: rgb(0.4, 0.4, 0.4),
-    //             });
-    //         });
-
-    //         const pdfBytes = await pdfDoc.save();
-    //         const blob = new Blob([pdfBytes], { type: "application/pdf" });
-    //         const url = URL.createObjectURL(blob);
-    //         setPreviewUrl(url);
-    //     };
-
-    //     generatePreview();
-    // }, [file]);
 
     return (
         <Document

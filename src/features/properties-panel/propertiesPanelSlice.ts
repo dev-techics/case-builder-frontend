@@ -4,9 +4,21 @@ const propertiesPanelSlice = createSlice({
   name: "fileProperties",
   initialState: {
     headersFooter: {
-      headerLeft: "Header Left",
-      headerRight: "Header Right",
-      footer: "ICS Legal",
+      headerLeft: {
+        text: "Header Left",
+        color: "#000",
+        size: 10,
+      },
+      headerRight: {
+        text: "Header Right",
+        color: "#000",
+        size: 10,
+      },
+      footer: {
+        text: "ICS Legal",
+        color: "#000",
+        size: 10,
+      },
     },
     documentInfo: [],
   },

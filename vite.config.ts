@@ -6,6 +6,9 @@ import { defineConfig } from "vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    include: ["pdfjs-dist"],
+  },
   server: {
     port: 3000,
     host: true,
@@ -13,6 +16,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    rollupOptions: {
+      external: [],
     },
   },
 });

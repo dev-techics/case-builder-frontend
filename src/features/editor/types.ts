@@ -13,3 +13,15 @@ export type PdfError = {
 export type DocumentComponentProps = {
   file: FileNode;
 };
+
+export type UseModifiedPDFsResult = {
+  modifiedFiles: Array<{
+    id: string;
+    name: string;
+    type: "file";
+    url: string;
+    originalUrl: string;
+  }>;
+  isLoading: boolean;
+  error: string | null;
+};

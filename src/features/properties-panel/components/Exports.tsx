@@ -41,7 +41,7 @@ function Exports() {
                 const pageNumber = index + 1;
 
                 // Header left
-                page.drawText(headerLeft, {
+                page.drawText(headerLeft.text, {
                     x: 50,
                     y: height - 25,
                     size: 10,
@@ -49,7 +49,7 @@ function Exports() {
                 });
 
                 // Header right
-                page.drawText(headerRight, {
+                page.drawText(headerRight.text, {
                     x: width - 120,
                     y: height - 25,
                     size: 10,
@@ -57,7 +57,7 @@ function Exports() {
                 });
 
                 // Footer text
-                page.drawText(footer, {
+                page.drawText(footer.text, {
                     x: 50,
                     y: 25,
                     size: 10,
