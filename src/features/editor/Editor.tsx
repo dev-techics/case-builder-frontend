@@ -1,6 +1,7 @@
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import { FileText, Trash2 } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
     selectFile,
@@ -8,26 +9,30 @@ import {
 } from "../../features/file-explorer/fileTreeSlice";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import DocumentComponent from "./components/Document";
+import { TextHighlightableDocument } from "./components/TestTextHighlightableDoc";
+// import DocumentComponent from "./components/Document";
 import UploadFile from "./components/UploadFile";
-import ZoomControls from "./components/ZoomControls";
 import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter"; // Import the hook
 
 const PDFViewer: React.FC = () => {
     const dispatch = useAppDispatch();
     const tree = useAppSelector((state) => state.fileTree.tree);
     const selectedFile = useAppSelector((state) => state.fileTree.selectedFile);
-
     const containerRef = useRef<HTMLDivElement>(null);
     const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const isScrollingFromEditor = useRef(false);
+    const [highlights, setHighlights] = useState([]);
 
     // Use the hook to get modified PDFs
-    const { modifiedFiles, isLoading, error } = useModifiedPDFs();
+    const { modifiedFiles, isLoading, error } = useModifiedPDFs(highlights);
+    const handleHighlightCreate = (highlight) => {
+        console.log("✅ New highlight:", highlight);
+        setHighlights((prev) => [...prev, highlight]);
+    };
 
     /*--------------------------------
           Scroll Synchronization Logic
-      --------------------------------*/
+              --------------------------------*/
 
     const handleScroll = () => {
         if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -83,7 +88,7 @@ const PDFViewer: React.FC = () => {
 
     /*-------------------------------------------------------------
           Empty State
-      ---------------------------------------------------------------*/
+                  ---------------------------------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
@@ -111,9 +116,6 @@ const PDFViewer: React.FC = () => {
 
     return (
         <div className="flex h-full flex-col">
-            {/* Zoom Controls */}
-            <ZoomControls />
-
             {/* PDF Documents Container */}
             <div
                 className="flex-1 overflow-y-auto bg-gray-100 p-8"
@@ -137,6 +139,7 @@ const PDFViewer: React.FC = () => {
                                     <span className="font-medium text-gray-700">{file.name}</span>
                                     <span className="text-gray-400 text-sm">#{index + 1}</span>
                                 </div>
+
                                 <button
                                     aria-label={`Delete ${file.name}`}
                                     className="rounded p-1 hover:bg-gray-200"
@@ -150,7 +153,11 @@ const PDFViewer: React.FC = () => {
                             {/* PDF Content Area */}
                             <div className="flex flex-col items-center p-4">
                                 {file.url ? (
-                                    <DocumentComponent file={file} />
+                                    // <DocumentComponent file={file} />
+                                    <TextHighlightableDocument
+                                        file={file}
+                                        onHighlightCreate={handleHighlightCreate}
+                                    />
                                 ) : (
                                     <div className="flex h-96 w-full items-center justify-center rounded border-2 border-gray-300 border-dashed bg-gray-50">
                                         <div className="text-center">
