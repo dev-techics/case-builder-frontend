@@ -1,41 +1,38 @@
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { useEffect, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
+import { useAppDispatch } from "@/app/hooks";
 import {
     getPdfPageInfo,
     getTextSelectionCoordinates,
 } from "@/lib/pdfCoordinateUtils";
+import { setColorPickerPosition, setPendingHighlight } from "../editorSlice";
+import { ScreenToPdfCoordinates } from "../helpers";
+import type { TextHighlightableDocumentProps } from "../types";
+import { HighlightColorPicker } from "./ColorPicker";
 
-type Highlight = {
-    pageNumber: number;
-    coordinates: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-    text: string;
-    id: string;
-};
-
-type TextHighlightableDocumentProps = {
-    file: {
-        url: string;
-        name: string;
-        id: string;
-    };
-    scale?: number;
-    onHighlightCreate?: (highlight: Highlight) => void;
-};
+/**
+ * This component handles:
+ * 1. Rendering the PDF document
+ * 2. Detecting text selection (onMouseUp)
+ * 3. Converting screen coordinates to PDF coordinates
+ * 4. Storing pending highlight data in Redux
+ * 5. Showing the color picker
+ *
+ * The ColorPicker component handles:
+ * 1. Displaying color options
+ * 2. Creating the final highlight with the selected color
+ */
 
 export function TextHighlightableDocument({
     file,
     scale = 1,
-    onHighlightCreate,
 }: TextHighlightableDocumentProps) {
     const [numPages, setNumPages] = useState<number>(0);
-    const [highlights, setHighlights] = useState<Highlight[]>([]);
     const [pageInfo, setPageInfo] = useState<Map<number, any>>(new Map());
     const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const dispatch = useAppDispatch();
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
@@ -62,10 +59,9 @@ export function TextHighlightableDocument({
         loadPageInfo();
     }, [file.url, numPages]);
 
-    // Handle text selection
+    // Handle text selection - This is where we capture the selection data
     const handleMouseUp = () => {
         const selection = window.getSelection();
-
         if (!selection || selection.toString().trim() === "") {
             return;
         }
@@ -86,23 +82,23 @@ export function TextHighlightableDocument({
         });
 
         if (!(selectedPageNumber && pageElement)) {
+            console.warn("⚠️ Could not determine which page was selected");
             return;
         }
 
         const pageData = pageInfo.get(selectedPageNumber);
         if (!pageData) {
+            console.warn("⚠️ Page info not loaded yet");
             return;
         }
 
         // Get selection coordinates
         const selectionCoords = getTextSelectionCoordinates(pageElement);
-
         if (!selectionCoords) {
             return;
         }
 
         // Get page position for offset calculation
-        const pageRect = pageElement.getBoundingClientRect();
         const pageInfoWithOffset = {
             ...pageData,
             left: 0, // Relative to page element
@@ -116,54 +112,45 @@ export function TextHighlightableDocument({
             scale
         );
 
-        const highlight: Highlight = {
+        console.log("📍 Selection info:", {
+            fileId: file.id,
+            fileName: file.name,
             pageNumber: selectedPageNumber,
-            coordinates: {
-                x: pdfCoords.x,
-                y: pdfCoords.y,
-                width: pdfCoords.width,
-                height: pdfCoords.height,
-            },
             text: selectionCoords.selectedText,
-            id: `highlight-${Date.now()}-${Math.random()}`,
-        };
+            coordinates: pdfCoords,
+        });
 
-        setHighlights((prev) => [...prev, highlight]);
+        // Calculate position for color picker (center top of selection)
+        const pageRect = pageElement.getBoundingClientRect();
+        const pickerX =
+            pageRect.left + selectionCoords.left + selectionCoords.width / 2;
+        const pickerY = pageRect.top + selectionCoords.top + window.scrollY;
 
-        if (onHighlightCreate) {
-            onHighlightCreate(highlight);
-        }
+        // Store pending highlight data in Redux
+        // This data will be used by the ColorPicker to create the final highlight
+        dispatch(
+            setPendingHighlight({
+                fileId: file.id, // Important: Track which file this highlight belongs to
+                pageNumber: selectedPageNumber,
+                coordinates: {
+                    x: pdfCoords.x,
+                    y: pdfCoords.y,
+                    width: pdfCoords.width,
+                    height: pdfCoords.height,
+                },
+                text: selectionCoords.selectedText,
+            })
+        );
 
-        console.log("📝 Highlight created:", highlight);
-
-        // Clear selection
-        selection.removeAllRanges();
-    };
-
-    // Helper function for coordinate conversion
-    const ScreenToPdfCoordinates = (
-        screenCoords: any,
-        pageData: any,
-        scale: number
-    ) => {
-        const pdfLeft = (screenCoords.left - (pageData.left || 0)) / scale;
-        const pdfTop = (screenCoords.top - (pageData.top || 0)) / scale;
-        const pdfRight = (screenCoords.right - (pageData.left || 0)) / scale;
-        const pdfBottom = (screenCoords.bottom - (pageData.top || 0)) / scale;
-
-        const pdfY = pageData.height - pdfBottom;
-        const pdfHeight = pdfBottom - pdfTop;
-
-        return {
-            x: pdfLeft,
-            y: pdfY,
-            width: pdfRight - pdfLeft,
-            height: pdfHeight,
-        };
+        // Show color picker at the selection position
+        dispatch(setColorPickerPosition({ x: pickerX, y: pickerY }));
     };
 
     return (
         <div className="relative" onMouseUp={handleMouseUp}>
+            {/* Color Picker - Global, appears above selections */}
+            <HighlightColorPicker />
+
             <Document
                 file={file.url}
                 loading={
@@ -195,26 +182,15 @@ export function TextHighlightableDocument({
                                 renderTextLayer={true}
                                 scale={scale}
                             />
+
+                            {/* Optional: Show page number overlay */}
+                            <div className="absolute top-2 right-2 rounded bg-black/50 px-2 py-1 text-white text-xs">
+                                Page {pageNumber}
+                            </div>
                         </div>
                     );
                 })}
             </Document>
-
-            {/* Display highlights info */}
-            {highlights.length > 0 && (
-                <div className="fixed right-4 bottom-4 max-h-64 max-w-md overflow-y-auto rounded-lg border bg-white p-4 shadow-lg">
-                    <h3 className="mb-2 font-bold">Highlights ({highlights.length})</h3>
-                    {highlights.map((h) => (
-                        <div className="mb-2 border-b pb-2 text-sm" key={h.id}>
-                            <div className="font-medium">Page {h.pageNumber}</div>
-                            <div className="truncate text-gray-600">{h.text}</div>
-                            <div className="mt-1 text-gray-400 text-xs">
-                                x: {h.coordinates.x.toFixed(2)}, y: {h.coordinates.y.toFixed(2)}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

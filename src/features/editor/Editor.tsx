@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import { FileText, Trash2 } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
     selectFile,
@@ -21,18 +21,13 @@ const PDFViewer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const isScrollingFromEditor = useRef(false);
-    const [highlights, setHighlights] = useState([]);
 
     // Use the hook to get modified PDFs
-    const { modifiedFiles, isLoading, error } = useModifiedPDFs(highlights);
-    const handleHighlightCreate = (highlight) => {
-        console.log("✅ New highlight:", highlight);
-        setHighlights((prev) => [...prev, highlight]);
-    };
+    const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
     /*--------------------------------
           Scroll Synchronization Logic
-              --------------------------------*/
+      --------------------------------*/
 
     const handleScroll = () => {
         if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -87,8 +82,8 @@ const PDFViewer: React.FC = () => {
     }, [selectedFile]);
 
     /*-------------------------------------------------------------
-          Empty State
-                  ---------------------------------------------------------*/
+            Empty State
+                    -------------------------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
@@ -156,7 +151,6 @@ const PDFViewer: React.FC = () => {
                                     // <DocumentComponent file={file} />
                                     <TextHighlightableDocument
                                         file={file}
-                                        onHighlightCreate={handleHighlightCreate}
                                     />
                                 ) : (
                                     <div className="flex h-96 w-full items-center justify-center rounded border-2 border-gray-300 border-dashed bg-gray-50">

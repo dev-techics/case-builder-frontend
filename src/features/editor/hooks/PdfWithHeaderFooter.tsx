@@ -3,24 +3,13 @@ import { PDFDocument, rgb } from "pdf-lib";
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/app/hooks";
 
-// Updated type to include highlights
-type Highlight = {
-    pageNumber: number;
-    coordinates: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-    text: string;
-    id: string;
-};
-
-export function useModifiedPDFs(highlights: Highlight[] = []) {
+export function useModifiedPDFs() {
     const tree = useAppSelector((state) => state.fileTree.tree);
     const { headerLeft, headerRight, footer } = useAppSelector(
         (state) => state.propertiesPanel.headersFooter
     );
+    // Get highlights from Redux store
+    const highlights = useAppSelector((state) => state.editor.highlights);
 
     const [modifiedFiles, setModifiedFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -67,30 +56,33 @@ export function useModifiedPDFs(highlights: Highlight[] = []) {
                                 const pageNumber = index + 1;
                                 const totalPages = pages.length;
 
-                                // Draw highlights for this page
+                                // CRITICAL FIX: Filter by BOTH fileId AND pageNumber
                                 const pageHighlights = highlights.filter(
-                                    (h) => h.pageNumber === pageNumber
+                                    (h) => h.fileId === file.id && h.pageNumber === pageNumber
                                 );
 
                                 console.log(
-                                    `Drawing ${pageHighlights.length} highlights on page ${pageNumber}`
+                                    `📄 File: ${file.id}, Page ${pageNumber}: Drawing ${pageHighlights.length} highlights`
                                 );
 
+                                // Draw each highlight with its color
                                 pageHighlights.forEach((highlight) => {
                                     const { x, y, width: w, height: h } = highlight.coordinates;
+                                    const { r, g, b } = highlight.color.rgb;
+                                    const opacity = highlight.color.opacity;
 
                                     console.log(
-                                        `Drawing highlight at: x=${x}, y=${y}, w=${w}, h=${h}`
+                                        `  🎨 ${highlight.color.name} highlight at: x=${x.toFixed(1)}, y=${y.toFixed(1)}, w=${w.toFixed(1)}, h=${h.toFixed(1)}`
                                     );
 
-                                    // Draw highlight rectangle
+                                    // Draw highlight rectangle with the selected color
                                     page.drawRectangle({
                                         x,
                                         y,
                                         width: w,
                                         height: h,
-                                        color: rgb(1, 1, 0), // Yellow highlight
-                                        opacity: 0.3,
+                                        color: rgb(r, g, b),
+                                        opacity,
                                         borderWidth: 0,
                                     });
                                 });
@@ -160,6 +152,8 @@ export function useModifiedPDFs(highlights: Highlight[] = []) {
 
                             generatedUrls.push(url);
 
+                            console.log(`✅ Generated modified PDF for ${file.name}`);
+
                             return {
                                 id: file.id,
                                 name: file.name,
@@ -168,18 +162,20 @@ export function useModifiedPDFs(highlights: Highlight[] = []) {
                                 originalUrl: file.url,
                             };
                         } catch (err) {
-                            console.error(`Error modifying ${file.name}:`, err);
+                            console.error(`❌ Error modifying ${file.name}:`, err);
                             return null;
                         }
                     })
                 );
 
                 if (isMounted) {
-                    setModifiedFiles(modified.filter((f) => f !== null));
+                    const validFiles = modified.filter((f) => f !== null);
+                    setModifiedFiles(validFiles);
                     setIsLoading(false);
+                    console.log(`✅ Generated ${validFiles.length} modified PDFs`);
                 }
             } catch (err) {
-                console.error("Error generating modified PDFs:", err);
+                console.error("❌ Error generating modified PDFs:", err);
                 if (isMounted) {
                     setError(err instanceof Error ? err.message : "Unknown error");
                     setIsLoading(false);
