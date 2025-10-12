@@ -8,9 +8,6 @@ export function useModifiedPDFs() {
     const { headerLeft, headerRight, footer } = useAppSelector(
         (state) => state.propertiesPanel.headersFooter
     );
-    // Get highlights from Redux store
-    const highlights = useAppSelector((state) => state.editor.highlights);
-
     const [modifiedFiles, setModifiedFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -23,7 +20,6 @@ export function useModifiedPDFs() {
             try {
                 setIsLoading(true);
                 setError(null);
-
                 const pdfFiles = tree.children.filter((file) => file.url);
 
                 if (pdfFiles.length === 0) {
@@ -55,37 +51,6 @@ export function useModifiedPDFs() {
                                 const { width, height } = page.getSize();
                                 const pageNumber = index + 1;
                                 const totalPages = pages.length;
-
-                                // CRITICAL FIX: Filter by BOTH fileId AND pageNumber
-                                const pageHighlights = highlights.filter(
-                                    (h) => h.fileId === file.id && h.pageNumber === pageNumber
-                                );
-
-                                console.log(
-                                    `📄 File: ${file.id}, Page ${pageNumber}: Drawing ${pageHighlights.length} highlights`
-                                );
-
-                                // Draw each highlight with its color
-                                pageHighlights.forEach((highlight) => {
-                                    const { x, y, width: w, height: h } = highlight.coordinates;
-                                    const { r, g, b } = highlight.color.rgb;
-                                    const opacity = highlight.color.opacity;
-
-                                    console.log(
-                                        `  🎨 ${highlight.color.name} highlight at: x=${x.toFixed(1)}, y=${y.toFixed(1)}, w=${w.toFixed(1)}, h=${h.toFixed(1)}`
-                                    );
-
-                                    // Draw highlight rectangle with the selected color
-                                    page.drawRectangle({
-                                        x,
-                                        y,
-                                        width: w,
-                                        height: h,
-                                        color: rgb(r, g, b),
-                                        opacity,
-                                        borderWidth: 0,
-                                    });
-                                });
 
                                 // Header left
                                 if (headerLeft) {
@@ -191,7 +156,7 @@ export function useModifiedPDFs() {
             // Revoke all generated blob URLs to free memory
             generatedUrls.forEach((url) => URL.revokeObjectURL(url));
         };
-    }, [tree.children, headerLeft, headerRight, footer, highlights]);
+    }, [tree.children, headerLeft, headerRight, footer]);
 
     return { modifiedFiles, isLoading, error };
 }

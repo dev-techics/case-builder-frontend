@@ -9,7 +9,7 @@ import {
 } from "../../features/file-explorer/fileTreeSlice";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { TextHighlightableDocument } from "./components/TestTextHighlightableDoc";
+import { TextHighlightableDocument } from "./components/Document";
 // import DocumentComponent from "./components/Document";
 import UploadFile from "./components/UploadFile";
 import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter"; // Import the hook

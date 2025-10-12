@@ -1,99 +1,215 @@
-import { useMemo, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-import { useAppSelector } from "@/app/hooks";
-import type {
-    DocumentComponentProps,
-    PdfDocumentInfo,
-    PdfError,
-} from "../types";
-import ErrorComp from "./ui/ErrorComp";
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+import { useEffect, useRef, useState } from "react";
+import { Document, Page } from "react-pdf";
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import {
+    getPdfPageInfo,
+    getTextSelectionCoordinates,
+} from "@/lib/pdfCoordinateUtils";
+import { setColorPickerPosition, setPendingHighlight } from "../editorSlice";
+import { ScreenToPdfCoordinates } from "../helpers";
+import type { TextHighlightableDocumentProps } from "../types";
+import { HighlightColorPicker } from "./ColorPicker";
+import { InteractiveHighlightOverlay } from "./HighlightOverlay";
 
-function DocumentComponent({ file }: DocumentComponentProps) {
-    const scale = useAppSelector((state) => state.editor.scale);
+/**
+ * This component handles:
+ * 1. Rendering the PDF document
+ * 2. Detecting text selection (onMouseUp)
+ * 3. Converting screen coordinates to PDF coordinates
+ * 4. Storing pending highlight data in Redux
+ * 5. Showing the color picker that scrolls with the content
+ * 6. Rendering highlight overlays on top of PDF pages
+ */
 
-    const [documentInfo, setDocumentInfo] = useState<{
-        [key: string]: PdfDocumentInfo;
-    }>({});
+export function TextHighlightableDocument({
+    file,
+}: TextHighlightableDocumentProps) {
+    const [numPages, setNumPages] = useState<number>(0);
+    const [pageInfo, setPageInfo] = useState<Map<number, any>>(new Map());
+    const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const containerRef = useRef<HTMLDivElement>(null);
+    const dispatch = useAppDispatch();
+    const scale = useAppSelector((states) => states.editor.scale);
 
-    const [pdfErrors, setPdfErrors] = useState<{
-        [key: string]: PdfError;
-    }>({});
-
-    const options = useMemo(
-        () => ({
-            cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
-            cMapPacked: true,
-        }),
-        []
-    );
-
-    const handleDocumentLoadSuccess = (
-        fileId: string,
-        { numPages }: { numPages: number }
-    ) => {
-        console.log(`✅ PDF loaded successfully: ${fileId}, Pages: ${numPages}`);
-        setDocumentInfo((prev) => ({
-            ...prev,
-            [fileId]: { fileId, numPages },
-        }));
-        setPdfErrors((prev) => {
-            const newErrors = { ...prev };
-            delete newErrors[fileId];
-            return newErrors;
-        });
+    const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+        setNumPages(numPages);
+        console.log(`✅ PDF loaded: ${numPages} pages`);
     };
 
-    const handleDocumentLoadError = (fileId: string, error: Error) => {
-        console.error(`❌ PDF load error for ${fileId}:`, error);
-        setPdfErrors((prev) => ({
-            ...prev,
-            [fileId]: {
-                fileId,
-                message: error.message || "Unknown error",
-            },
-        }));
+    // Load page information for all pages
+    useEffect(() => {
+        async function loadPageInfo() {
+            if (!file.url || numPages === 0) {
+                return;
+            }
+
+            const infoMap = new Map();
+            for (let i = 1; i <= numPages; i++) {
+                try {
+                    const info = await getPdfPageInfo(file.url, i);
+                    infoMap.set(i, info);
+                } catch (error) {
+                    console.error(`Error loading page ${i} info:`, error);
+                }
+            }
+            setPageInfo(infoMap);
+        }
+
+        loadPageInfo();
+    }, [file.url, numPages]);
+
+    // Handle text selection - This is where we capture the selection data
+    const handleMouseUp = () => {
+        const selection = window.getSelection();
+        if (!selection || selection.toString().trim() === "") {
+            return;
+        }
+
+        // Find which page the selection is on
+        let selectedPageNumber: number | null = null;
+        let pageElement: HTMLElement | null = null;
+
+        pageRefs.current.forEach((element, pageNumber) => {
+            if (
+                element &&
+                selection.containsNode &&
+                selection.containsNode(element, true)
+            ) {
+                selectedPageNumber = pageNumber;
+                pageElement = element;
+            }
+        });
+
+        if (!(selectedPageNumber && pageElement)) {
+            console.warn("⚠️ Could not determine which page was selected");
+            return;
+        }
+
+        const pageData = pageInfo.get(selectedPageNumber);
+        if (!pageData) {
+            console.warn("⚠️ Page info not loaded yet");
+            return;
+        }
+
+        // Get selection coordinates
+        const selectionCoords = getTextSelectionCoordinates(pageElement);
+        if (!selectionCoords) {
+            return;
+        }
+
+        // Get page position for offset calculation
+        const pageInfoWithOffset = {
+            ...pageData,
+            left: 0, // Relative to page element
+            top: 0,
+        };
+
+        // Convert to PDF coordinates (for storage)
+        const pdfCoords = ScreenToPdfCoordinates(
+            selectionCoords,
+            pageInfoWithOffset,
+            scale
+        );
+
+        console.log("📍 Selection info:", {
+            fileId: file.id,
+            fileName: file.name,
+            pageNumber: selectedPageNumber,
+            text: selectionCoords.selectedText,
+            pdfCoordinates: pdfCoords,
+        });
+
+        // Calculate position for color picker RELATIVE to container
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        const pageRect = pageElement.getBoundingClientRect();
+
+        if (!containerRect) {
+            console.warn("⚠️ Container ref not available");
+            return;
+        }
+
+        // Calculate position relative to the scrollable container
+        const pickerX =
+            pageRect.left -
+            containerRect.left +
+            selectionCoords.left +
+            selectionCoords.width / 2;
+        const pickerY = pageRect.top - containerRect.top + selectionCoords.top;
+
+        // Store pending highlight data in Redux (using PDF coordinates)
+        dispatch(
+            setPendingHighlight({
+                fileId: file.id,
+                pageNumber: selectedPageNumber,
+                coordinates: {
+                    x: pdfCoords.x,
+                    y: pdfCoords.y,
+                    width: pdfCoords.width,
+                    height: pdfCoords.height,
+                },
+                text: selectionCoords.selectedText,
+            })
+        );
+
+        // Show color picker at the selection position
+        dispatch(setColorPickerPosition({ x: pickerX, y: pickerY }));
     };
 
     return (
-        <Document
-            error={<ErrorComp error={pdfErrors[file.id]} file={file} />}
-            file={file.url}
-            loading={
-                <div className="flex h-96 items-center justify-center">
-                    <div className="text-center">
-                        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-blue-600 border-b-2" />
-                        <p className="text-gray-500">Loading PDF...</p>
-                        <p className="mt-1 text-gray-400 text-sm">{file.name}</p>
+        <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
+            {/* Color Picker - Scrolls with content */}
+            <HighlightColorPicker />
+
+            <Document
+                file={file.url}
+                loading={
+                    <div className="flex h-96 items-center justify-center">
+                        <div className="text-center">
+                            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-blue-600 border-b-2" />
+                            <p className="text-gray-500">Loading PDF...</p>
+                        </div>
                     </div>
-                </div>
-            }
-            onLoadError={(error) => handleDocumentLoadError(file.id, error)}
-            onLoadSuccess={(pdf) => handleDocumentLoadSuccess(file.id, pdf)}
-            options={options}
-        >
-            {documentInfo[file.id] &&
-                Array.from(
-                    new Array(documentInfo[file.id].numPages),
-                    (el, pageIndex) => (
-                        <Page
-                            className="mb-4 shadow-md"
-                            key={`page_${pageIndex + 1}`}
-                            loading={
-                                <div className="flex h-96 items-center justify-center bg-gray-50">
-                                    <p className="text-gray-400 text-sm">
-                                        Loading page {pageIndex + 1}...
-                                    </p>
-                                </div>
-                            }
-                            pageNumber={pageIndex + 1}
-                            renderAnnotationLayer={true}
-                            renderTextLayer={true}
-                            scale={scale}
-                        />
-                    )
-                )}
-        </Document>
+                }
+                onLoadSuccess={onDocumentLoadSuccess}
+            >
+                {Array.from(new Array(numPages), (_, index) => {
+                    const pageNumber = index + 1;
+                    const pageData = pageInfo.get(pageNumber);
+
+                    return (
+                        <div
+                            className="relative mb-4"
+                            key={`page_${pageNumber}`}
+                            ref={(el) => {
+                                if (el) {
+                                    pageRefs.current.set(pageNumber, el);
+                                }
+                            }}
+                        >
+                            {/* PDF Page */}
+                            <Page
+                                className="shadow-md"
+                                pageNumber={pageNumber}
+                                renderAnnotationLayer={true}
+                                renderTextLayer={true}
+                                scale={scale}
+                            />
+
+                            {/* Highlight Overlays - Rendered on top of the page */}
+                            {pageData && (
+                                <InteractiveHighlightOverlay
+                                    fileId={file.id}
+                                    pageHeight={pageData.height}
+                                    pageNumber={pageNumber}
+                                    scale={scale}
+                                />
+                            )}
+                        </div>
+                    );
+                })}
+            </Document>
+        </div>
     );
 }
-
-export default DocumentComponent;

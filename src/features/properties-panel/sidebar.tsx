@@ -1,8 +1,7 @@
 import { AppSidebar } from "@/components/AppSidebar";
-
+import { ExportPdfButtonWithToggle } from "../../components/ExportButton";
 import Annotations from "./components/Annotations";
 import DocumentSettings from "./components/DocumentSettings";
-import Exports from "./components/Exports";
 
 function PropertiesSidebar() {
     return (
@@ -15,7 +14,8 @@ function PropertiesSidebar() {
             <Annotations />
 
             <hr />
-            <Exports />
+            <ExportPdfButtonWithToggle />
+            {/* <Exports /> */}
         </AppSidebar>
     );
 }

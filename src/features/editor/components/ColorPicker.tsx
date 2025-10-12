@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { addHighlight, cancelHighlight } from "../editorSlice";
@@ -24,6 +25,7 @@ export const HIGHLIGHT_COLORS: HighlightColor[] = [
  * 2. Shows color options
  * 3. Creates the final highlight when a color is selected
  * 4. Clears the text selection after highlight creation
+ * 5. Scrolls with the page content
  */
 
 export function HighlightColorPicker() {
@@ -122,10 +124,10 @@ export function HighlightColorPicker() {
 
     return (
         <div
-            className="highlight-color-picker fade-in slide-in-from-bottom-2 fixed z-50 animate-in duration-200"
+            className="highlight-color-picker fade-in slide-in-from-bottom-2 absolute z-50 animate-in duration-200"
             style={{
                 left: `${position.x}px`,
-                top: `${position.y - 50}px`,
+                top: `${position.y - 65}px`, // 50px above the selection
                 transform: "translateX(-50%)",
             }}
         >
@@ -177,13 +179,6 @@ export function HighlightColorPicker() {
                 className="-translate-x-1/2 -bottom-2 absolute left-1/2 h-0 w-0 border-transparent border-t-8 border-t-white border-r-8 border-l-8"
                 style={{ filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.1))" }}
             />
-
-            {/* Debug info (optional, remove in production) */}
-            {process.env.NODE_ENV === "development" && (
-                <div className="-translate-x-1/2 absolute top-full left-1/2 mt-2 whitespace-nowrap rounded bg-gray-900 p-2 text-white text-xs shadow-lg">
-                    File: {pendingHighlight.fileId} | Page: {pendingHighlight.pageNumber}
-                </div>
-            )}
         </div>
     );
 }

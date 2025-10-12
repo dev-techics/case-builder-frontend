@@ -77,3 +77,10 @@ export type colorPickerPositonType = {
 export type ColorPickerProps = {
   onColorSelect: (color: HighlightColor) => void;
 };
+
+export type HighlightOverlayProps = {
+  fileId: string;
+  pageNumber: number;
+  pageHeight: number; // PDF page height in PDF units
+  scale: number;
+};
