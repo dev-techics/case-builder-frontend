@@ -1,6 +1,11 @@
-import { useAppSelector } from "@/app/hooks";
-import type { Highlight, HighlightOverlayProps } from "../types";
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <explanation> */
 
+import { CircleX } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { removeHighlight } from "../editorSlice";
+import type { Highlight, HighlightOverlayProps } from "../types";
 
 /**
  * Converts PDF coordinates to screen coordinates for HTML overlay rendering
@@ -20,7 +25,7 @@ function pdfToScreenCoordinates(
 }
 
 /**
- * Single highlight overlay element
+ * Single highlight overlay element (non-interactive)
  */
 function HighlightElement({
     highlight,
@@ -47,7 +52,7 @@ function HighlightElement({
                 height: `${screenCoords.height}px`,
                 backgroundColor: highlight.color.hex,
                 opacity: highlight.color.opacity,
-                mixBlendMode: "multiply", // Makes it look like real highlighting
+                mixBlendMode: "multiply",
             }}
             title={`${highlight.color.name} highlight: "${highlight.text}"`}
         />
@@ -55,8 +60,7 @@ function HighlightElement({
 }
 
 /**
- * Overlay container for all highlights on a specific page
- * This component renders HTML divs positioned over the PDF canvas
+ * Basic overlay container (non-interactive)
  */
 export function HighlightOverlay({
     fileId,
@@ -64,15 +68,12 @@ export function HighlightOverlay({
     pageHeight,
     scale,
 }: HighlightOverlayProps) {
-    // Get all highlights from Redux
     const allHighlights = useAppSelector((state) => state.editor.highlights);
 
-    // Filter highlights for this specific file and page
     const pageHighlights = allHighlights.filter(
         (h) => h.fileId === fileId && h.pageNumber === pageNumber
     );
 
-    // Don't render anything if no highlights
     if (pageHighlights.length === 0) {
         return null;
     }
@@ -81,7 +82,6 @@ export function HighlightOverlay({
         <div
             className="pointer-events-none absolute inset-0"
             style={{
-                // Ensure overlay covers the entire page
                 width: "100%",
                 height: "100%",
             }}
@@ -99,7 +99,7 @@ export function HighlightOverlay({
 }
 
 /**
- * Alternative: Interactive version with hover effects and click handlers
+ * Interactive version with delete button on hover
  */
 export function InteractiveHighlightOverlay({
     fileId,
@@ -110,11 +110,17 @@ export function InteractiveHighlightOverlay({
 }: HighlightOverlayProps & {
     onHighlightClick?: (highlight: Highlight) => void;
 }) {
+    const dispatch = useAppDispatch();
     const allHighlights = useAppSelector((state) => state.editor.highlights);
 
     const pageHighlights = allHighlights.filter(
         (h) => h.fileId === fileId && h.pageNumber === pageNumber
     );
+
+    const handleDelete = (e: React.MouseEvent, highlightId: string) => {
+        e.stopPropagation(); // Prevent triggering onClick
+        dispatch(removeHighlight(highlightId));
+    };
 
     if (pageHighlights.length === 0) {
         return null;
@@ -126,6 +132,7 @@ export function InteractiveHighlightOverlay({
             style={{
                 width: "100%",
                 height: "100%",
+                pointerEvents: "none", // Allow text selection to work
             }}
         >
             {pageHighlights.map((highlight) => {
@@ -137,23 +144,45 @@ export function InteractiveHighlightOverlay({
 
                 return (
                     <div
-                        className="group absolute cursor-pointer transition-all duration-150 hover:opacity-80"
+                        className="group absolute"
                         key={highlight.id}
-                        onClick={() => onHighlightClick?.(highlight)}
                         style={{
                             left: `${screenCoords.x}px`,
                             top: `${screenCoords.y}px`,
                             width: `${screenCoords.width}px`,
                             height: `${screenCoords.height}px`,
-                            backgroundColor: highlight.color.hex,
-                            opacity: highlight.color.opacity,
-                            mixBlendMode: "multiply",
+                            pointerEvents: "auto", // Re-enable for this element
                         }}
-                        title={`Click to edit: "${highlight.text}"`}
                     >
-                        {/* Optional: Show highlight info on hover */}
-                        <div className="-top-8 pointer-events-none absolute left-0 z-10 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-white text-xs opacity-0 transition-opacity group-hover:opacity-100">
-                            {highlight.color.name} - "{highlight.text.substring(0, 30)}..."
+                        {/* The highlight background */}
+                        <div
+                            className="absolute inset-0 cursor-pointer transition-opacity hover:opacity-90"
+                            onClick={() => onHighlightClick?.(highlight)}
+                            style={{
+                                backgroundColor: highlight.color.hex,
+                                opacity: highlight.color.opacity,
+                                mixBlendMode: "multiply",
+                            }}
+                            title={highlight.text}
+                        />
+
+                        {/* Delete button - appears on hover */}
+                        <button
+                            className="-right-2 -top-2 absolute z-10 flex h-6 w-6 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition-all duration-200 hover:scale-110 group-hover:opacity-100"
+                            onClick={(e) => handleDelete(e, highlight.id)}
+                            title="Delete highlight"
+                            type="button"
+                        >
+                            <CircleX className="h-5 w-5 cursor-pointer rounded-full bg-gray-800" />
+                        </button>
+
+                        {/* Tooltip - appears on hover (below the highlight) */}
+                        <div className="pointer-events-none absolute top-full left-0 z-20 mt-1 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-white text-xs opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                            <div className="font-medium">{highlight.color.name}</div>
+                            <div className="max-w-xs truncate text-gray-300">
+                                "{highlight.text.substring(0, 50)}
+                                {highlight.text.length > 50 ? "..." : ""}"
+                            </div>
                         </div>
                     </div>
                 );

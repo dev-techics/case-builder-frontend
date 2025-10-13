@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import PropertiesSidebar from "@/features/properties-panel/sidebar";
 import EditorSidebar from "../features/sidebar/EditorSidebar";
 
@@ -7,7 +7,9 @@ export default function EditorLayout() {
     return (
         <SidebarProvider>
             {/* Sidebar */}
+
             <EditorSidebar />
+            <SidebarTrigger className="text-xl" />
 
             {/* Main Area */}
             <div className="flex flex-1 flex-col">

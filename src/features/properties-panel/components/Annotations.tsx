@@ -45,7 +45,7 @@ function Annotations() {
                 </div>
                 <input
                     className="rounded-md border p-2 text-sm"
-                    onChange={(e) => disPatch(changeFooter(e.target.value))}
+                    onBlur={(e) => disPatch(changeFooter(e.target.value))}
                     type="text"
                     value={footer}
                 />
