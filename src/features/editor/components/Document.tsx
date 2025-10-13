@@ -3,14 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { Toolbar } from "@/features/toolbar/Toolbar";
+import {
+    setPendingHighlight,
+    setToolbarPosition,
+} from "@/features/toolbar/toolbarSlice";
 import {
     getPdfPageInfo,
     getTextSelectionCoordinates,
 } from "@/lib/pdfCoordinateUtils";
-import { setColorPickerPosition, setPendingHighlight } from "../editorSlice";
 import { ScreenToPdfCoordinates } from "../helpers";
 import type { TextHighlightableDocumentProps } from "../types";
-import { HighlightColorPicker } from "./ColorPicker";
 import { InteractiveHighlightOverlay } from "./HighlightOverlay";
 
 /**
@@ -154,13 +157,13 @@ export function TextHighlightableDocument({
         );
 
         // Show color picker at the selection position
-        dispatch(setColorPickerPosition({ x: pickerX, y: pickerY }));
+        dispatch(setToolbarPosition({ x: pickerX, y: pickerY }));
     };
 
     return (
         <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
             {/* Color Picker - Scrolls with content */}
-            <HighlightColorPicker />
+            <Toolbar />
 
             <Document
                 file={file.url}

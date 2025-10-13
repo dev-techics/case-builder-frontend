@@ -4,7 +4,7 @@
 
 import { CircleX } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
-import { removeHighlight } from "../editorSlice";
+import { removeHighlight } from "@/features/toolbar/toolbarSlice";
 import type { Highlight, HighlightOverlayProps } from "../types";
 
 /**
@@ -68,7 +68,7 @@ export function HighlightOverlay({
     pageHeight,
     scale,
 }: HighlightOverlayProps) {
-    const allHighlights = useAppSelector((state) => state.editor.highlights);
+    const allHighlights = useAppSelector((state) => state.toolbar.highlights);
 
     const pageHighlights = allHighlights.filter(
         (h) => h.fileId === fileId && h.pageNumber === pageNumber
@@ -111,7 +111,7 @@ export function InteractiveHighlightOverlay({
     onHighlightClick?: (highlight: Highlight) => void;
 }) {
     const dispatch = useAppDispatch();
-    const allHighlights = useAppSelector((state) => state.editor.highlights);
+    const allHighlights = useAppSelector((state) => state.toolbar.highlights);
 
     const pageHighlights = allHighlights.filter(
         (h) => h.fileId === fileId && h.pageNumber === pageNumber

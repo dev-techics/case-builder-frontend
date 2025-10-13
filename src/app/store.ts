@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import editorSlice from "@/features/editor/editorSlice";
 import propertiesPanelSlice from "@/features/properties-panel/propertiesPanelSlice";
+import toolbar from "@/features/toolbar/toolbarSlice";
 import fileTreeSlice from "../features/file-explorer/fileTreeSlice";
 
 const store = configureStore({
@@ -8,6 +9,7 @@ const store = configureStore({
     fileTree: fileTreeSlice,
     editor: editorSlice,
     propertiesPanel: propertiesPanelSlice,
+    toolbar,
   },
 });
 
