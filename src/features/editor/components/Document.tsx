@@ -12,9 +12,9 @@ import {
     getPdfPageInfo,
     getTextSelectionCoordinates,
 } from "@/lib/pdfCoordinateUtils";
+import { InteractiveHighlightOverlay } from "../../toolbar/components/HighlightOverlay";
 import { ScreenToPdfCoordinates } from "../helpers";
 import type { TextHighlightableDocumentProps } from "../types";
-import { InteractiveHighlightOverlay } from "./HighlightOverlay";
 
 /**
  * This component handles:
@@ -65,6 +65,7 @@ export function TextHighlightableDocument({
 
     // Handle text selection - This is where we capture the selection data
     const handleMouseUp = () => {
+        // get user selection
         const selection = window.getSelection();
         if (!selection || selection.toString().trim() === "") {
             return;
@@ -124,7 +125,7 @@ export function TextHighlightableDocument({
             pdfCoordinates: pdfCoords,
         });
 
-        // Calculate position for color picker RELATIVE to container
+        // Calculate position for Toolbar RELATIVE to container
         const containerRect = containerRef.current?.getBoundingClientRect();
         const pageRect = pageElement.getBoundingClientRect();
 
@@ -164,7 +165,6 @@ export function TextHighlightableDocument({
         <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
             {/* Color Picker - Scrolls with content */}
             <Toolbar />
-
             <Document
                 file={file.url}
                 loading={

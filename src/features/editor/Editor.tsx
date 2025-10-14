@@ -9,6 +9,8 @@ import {
 } from "../../features/file-explorer/fileTreeSlice";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { CommentsSidebar } from "../toolbar/components/CommentsSidebar";
+import InputComment from "../toolbar/components/InputComment";
 import { TextHighlightableDocument } from "./components/Document";
 // import DocumentComponent from "./components/Document";
 import UploadFile from "./components/UploadFile";
@@ -21,13 +23,15 @@ const PDFViewer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const isScrollingFromEditor = useRef(false);
-
+    const CommentPosition = useAppSelector(
+        (states) => states.toolbar.CommentPosition
+    );
     // Use the hook to get modified PDFs
     const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
     /*--------------------------------
-          Scroll Synchronization Logic
-      --------------------------------*/
+              Scroll Synchronization Logic
+          --------------------------------*/
 
     const handleScroll = () => {
         if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -82,8 +86,8 @@ const PDFViewer: React.FC = () => {
     }, [selectedFile]);
 
     /*-------------------------------------------------------------
-            Empty State
-                    -------------------------------------------------*/
+                Empty State
+                        -------------------------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
@@ -110,10 +114,10 @@ const PDFViewer: React.FC = () => {
     }
 
     return (
-        <div className="flex h-full flex-col">
+        <div className="relative flex h-full flex-col">
             {/* PDF Documents Container */}
             <div
-                className="flex-1 overflow-y-auto bg-gray-100 p-8"
+                className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100 p-8 pr-[420px]"
                 onScroll={handleScroll}
                 ref={containerRef}
             >
@@ -149,9 +153,7 @@ const PDFViewer: React.FC = () => {
                             <div className="flex flex-col items-center p-4">
                                 {file.url ? (
                                     // <DocumentComponent file={file} />
-                                    <TextHighlightableDocument
-                                        file={file}
-                                    />
+                                    <TextHighlightableDocument file={file} />
                                 ) : (
                                     <div className="flex h-96 w-full items-center justify-center rounded border-2 border-gray-300 border-dashed bg-gray-50">
                                         <div className="text-center">
@@ -167,7 +169,11 @@ const PDFViewer: React.FC = () => {
                         </div>
                     ))}
                 </div>
+                {/* Comment showing area */}
+                {/* Comments Sidebar - Shows all comments for visible files */}
+                {selectedFile && <CommentsSidebar fileId={selectedFile} />}
             </div>
+            {CommentPosition.x && CommentPosition.y ? <InputComment /> : ""}
         </div>
     );
 };

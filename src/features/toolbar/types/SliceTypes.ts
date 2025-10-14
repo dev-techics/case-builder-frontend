@@ -33,23 +33,39 @@ export type PendingHighlight = {
 };
 
 // Comment object
-type Comment = {
+export type Comment = {
   id: string;
   fileId: string;
   pageNumber: number;
-  coordinates: {
+  text: string;
+  selectedText?: string; // Optional: the text that was selected when comment was created
+  position: {
     x: number;
     y: number;
-    width: number;
-    height: number;
+    pageY: number; // Y position relative to the page (for scrolling)
   };
-  text: string;
-  createdAt?: number;
+  createdAt: string;
+  updatedAt: string;
+  resolved: boolean;
+  author?: string; // Optional: user who created the comment
+};
+
+export type PendingComment = {
+  fileId: string;
+  pageNumber: number;
+  selectedText?: string;
+  position: {
+    x: number;
+    y: number;
+    pageY: number;
+  };
 };
 
 export type EditorState = {
   ToolbarPosition: { x: number | null; y: number | null };
+  CommentPosition: { x: number | null; y: number | null };
   pendingHighlight: PendingHighlight | null;
+  pendingComment: PendingComment | null;
   highlights: Highlight[]; // Array to store multiple highlights
   comments: Comment[];
 };

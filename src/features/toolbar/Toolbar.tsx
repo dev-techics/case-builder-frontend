@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import ColorPicker from "./components/ColorPicker";
 import Comment from "./components/Comment";
+import { cancelHighlight } from "./toolbarSlice";
 /**
  * This component:
  * 1. Reads the pending highlight from Redux
@@ -11,15 +12,16 @@ import Comment from "./components/Comment";
  * 3. Creates the final highlight when a color is selected
  * 4. Clears the text selection after highlight creation
  * 5. Scrolls with the page content
+ * 6. On comment click its create a component in the side to write a comment
  */
 
 export function Toolbar() {
     const [isVisible, setIsVisible] = useState(false);
 
     // Get data from Redux
-    const position = useAppSelector((state) => state.editor.colorPickerPosition);
+    const position = useAppSelector((state) => state.toolbar.ToolbarPosition);
     const pendingHighlight = useAppSelector(
-        (state) => state.editor.pendingHighlight
+        (state) => state.toolbar.pendingHighlight
     );
     const dispatch = useAppDispatch();
 
@@ -81,11 +83,11 @@ export function Toolbar() {
             className="highlight-color-picker fade-in slide-in-from-bottom-2 absolute z-50 animate-in duration-200"
             style={{
                 left: `${position.x}px`,
-                top: `${position.y - 65}px`, // 50px above the selection
+                top: `${position.y - 65}px`, // 65px above the selection
                 transform: "translateX(-50%)",
             }}
         >
-            <div className="flex items-center gap-2 rounded-lg border-2 border-gray-200 bg-white p-2 shadow-xl">
+            <div className="flex h-14 items-center gap-2 rounded-lg border-2 border-gray-200 bg-white p-2 shadow-xl">
                 {/* Comment Option */}
                 <Comment />
                 {/* Divider */}

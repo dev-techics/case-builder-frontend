@@ -5,7 +5,7 @@
 import { CircleX } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { removeHighlight } from "@/features/toolbar/toolbarSlice";
-import type { Highlight, HighlightOverlayProps } from "../types";
+import type { Highlight, HighlightOverlayProps } from "../../editor/types";
 
 /**
  * Converts PDF coordinates to screen coordinates for HTML overlay rendering

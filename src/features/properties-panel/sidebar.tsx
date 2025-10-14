@@ -12,6 +12,7 @@ function PropertiesSidebar() {
 
             <hr />
             <Annotations />
+            <hr />
 
             <hr />
             <ExportPdfButtonWithToggle />
