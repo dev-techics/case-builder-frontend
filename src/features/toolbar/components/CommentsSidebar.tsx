@@ -1,65 +1,31 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/app/hooks";
 import { CommentThread } from "./CommentThread";
 
-type CommentsSidebarProps = {
-    fileId: string; // Current file being viewed
-    pageNumber?: number; // Optional: if you want to filter by page
-};
-
-export function CommentsSidebar({ fileId, pageNumber }: CommentsSidebarProps) {
+export function CommentsSidebar() {
     const comments = useAppSelector((state) => state.toolbar.comments);
     const containerRef = useRef<HTMLDivElement>(null);
-    const scrollOffsetRef = useRef(0);
+    const [mounted, setMounted] = useState(false);
 
-    // Filter comments for current file and optionally current page
-    const filteredComments = comments.filter(
-        (comment) =>
-            comment.fileId === fileId &&
-            (pageNumber === undefined || comment.pageNumber === pageNumber)
-    );
-
-    // Listen to scroll events on the document viewer
     useEffect(() => {
-        const handleScroll = () => {
-            // Get the scroll container (adjust selector to match your app)
-            const scrollContainer = document.querySelector(".pdf-viewer-container");
-            if (scrollContainer) {
-                scrollOffsetRef.current = scrollContainer.scrollTop;
-                // Force re-render to update comment positions
-                if (containerRef.current) {
-                    containerRef.current.style.transform = `translateY(${scrollOffsetRef.current}px)`;
-                }
-            }
-        };
-
-        const scrollContainer = document.querySelector(".pdf-viewer-container");
-        if (scrollContainer) {
-            scrollContainer.addEventListener("scroll", handleScroll);
-            return () => {
-                scrollContainer.removeEventListener("scroll", handleScroll);
-            };
-        }
+        setMounted(true);
     }, []);
 
-    if (filteredComments.length === 0) {
+    // Don't render if no comments exist
+    if (comments.length === 0 || !mounted) {
         return null;
     }
 
     return (
         <div
-            className="pointer-events-none absolute top-0 right-0 h-full"
+            className="pointer-events-none absolute top-0 right-0 z-40 h-full"
             ref={containerRef}
-            style={{ width: "400px" }}
+            style={{ width: "300px" }}
         >
             <div className="pointer-events-auto relative h-full">
-                {filteredComments.map((comment) => (
-                    <CommentThread
-                        comment={comment}
-                        key={comment.id}
-                        scrollOffset={scrollOffsetRef.current}
-                    />
+                {comments.map((comment) => (
+                    <CommentThread comment={comment} key={comment.id} />
                 ))}
             </div>
         </div>

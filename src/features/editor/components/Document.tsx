@@ -163,7 +163,7 @@ export function TextHighlightableDocument({
 
     return (
         <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
-            {/* Color Picker - Scrolls with content */}
+            {/* Toolbar - Scrolls with content */}
             <Toolbar />
             <Document
                 file={file.url}
@@ -184,6 +184,8 @@ export function TextHighlightableDocument({
                     return (
                         <div
                             className="relative mb-4"
+                            data-file-id={file.id}
+                            data-page-number={pageNumber}
                             key={`page_${pageNumber}`}
                             ref={(el) => {
                                 if (el) {

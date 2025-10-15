@@ -12,9 +12,8 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { CommentsSidebar } from "../toolbar/components/CommentsSidebar";
 import InputComment from "../toolbar/components/InputComment";
 import { TextHighlightableDocument } from "./components/Document";
-// import DocumentComponent from "./components/Document";
 import UploadFile from "./components/UploadFile";
-import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter"; // Import the hook
+import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter";
 
 const PDFViewer: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -26,6 +25,7 @@ const PDFViewer: React.FC = () => {
     const CommentPosition = useAppSelector(
         (states) => states.toolbar.CommentPosition
     );
+
     // Use the hook to get modified PDFs
     const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
@@ -85,9 +85,9 @@ const PDFViewer: React.FC = () => {
         }
     }, [selectedFile]);
 
-    /*-------------------------------------------------------------
-                Empty State
-                        -------------------------------------------------*/
+    /*----------------------------
+                  Empty State
+      ------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
@@ -117,15 +117,16 @@ const PDFViewer: React.FC = () => {
         <div className="relative flex h-full flex-col">
             {/* PDF Documents Container */}
             <div
-                className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100 p-8 pr-[420px]"
+                className="pdf-viewer-container flex-1 bg-gray-100 p-8 pr-[320px]"
                 onScroll={handleScroll}
                 ref={containerRef}
             >
                 <div className="mx-auto max-w-4xl space-y-8">
                     {modifiedFiles.map((file, index) => (
                         <div
-                            className={`overflow-hidden rounded-lg bg-white shadow-lg transition-all ${selectedFile === file.id ? "ring-4 ring-blue-500" : ""
+                            className={`rounded-lg bg-white shadow-lg transition-all ${selectedFile === file.id ? "ring-4 ring-blue-500" : ""
                                 }`}
+                            data-file-id={file.id}
                             key={file.id}
                             ref={(el) => {
                                 fileRefs.current[file.id] = el;
@@ -152,7 +153,6 @@ const PDFViewer: React.FC = () => {
                             {/* PDF Content Area */}
                             <div className="flex flex-col items-center p-4">
                                 {file.url ? (
-                                    // <DocumentComponent file={file} />
                                     <TextHighlightableDocument file={file} />
                                 ) : (
                                     <div className="flex h-96 w-full items-center justify-center rounded border-2 border-gray-300 border-dashed bg-gray-50">
@@ -169,11 +169,15 @@ const PDFViewer: React.FC = () => {
                         </div>
                     ))}
                 </div>
-                {/* Comment showing area */}
-                {/* Comments Sidebar - Shows all comments for visible files */}
-                {selectedFile && <CommentsSidebar fileId={selectedFile} />}
             </div>
-            {CommentPosition.x && CommentPosition.y ? <InputComment /> : ""}
+
+            {/* Comments Sidebar - Shows all comments at their exact positions */}
+            <CommentsSidebar />
+
+            {/* Comment Input - Shows when user clicks "Comment" button */}
+            {CommentPosition.x !== null && CommentPosition.y !== null && (
+                <InputComment />
+            )}
         </div>
     );
 };

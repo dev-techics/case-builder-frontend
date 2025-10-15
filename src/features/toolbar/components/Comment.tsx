@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <explanation> */
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { MessageSquareText } from "lucide-react";
@@ -16,11 +17,13 @@ function Comment() {
         // Get the selected text
         const selection = window.getSelection();
         const selectedText = selection?.toString() || "";
-
+        console.log(position);
         // Get the page element to calculate relative position
         const pageElement = document.querySelector(`[data-page-number="${pendingHighlight.pageNumber}"]`);
         const pageRect = pageElement?.getBoundingClientRect();
+        console.log("pageRect:", pageRect);
         const pageY = pageRect ? position.y - pageRect.top : position.y;
+        console.log(`pageY ${pageY}`);
 
         // Store pending comment data
         dispatch(
