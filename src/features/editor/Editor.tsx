@@ -22,9 +22,7 @@ const PDFViewer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const isScrollingFromEditor = useRef(false);
-    const CommentPosition = useAppSelector(
-        (states) => states.toolbar.CommentPosition
-    );
+
 
     // Use the hook to get modified PDFs
     const { modifiedFiles, isLoading, error } = useModifiedPDFs();
@@ -174,10 +172,7 @@ const PDFViewer: React.FC = () => {
             {/* Comments Sidebar - Shows all comments at their exact positions */}
             <CommentsSidebar />
 
-            {/* Comment Input - Shows when user clicks "Comment" button */}
-            {CommentPosition.x !== null && CommentPosition.y !== null && (
-                <InputComment />
-            )}
+
         </div>
     );
 };

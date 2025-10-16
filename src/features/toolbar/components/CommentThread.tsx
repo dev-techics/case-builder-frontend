@@ -209,14 +209,14 @@ export function CommentThread({ comment }: CommentThreadProps) {
                 </div>
 
                 {/* Selected text (if any) */}
-                {comment.selectedText && (
+                {/* {comment.selectedText && (
                     <div className="border-gray-200 border-b bg-gray-50 p-3">
                         <p className="mb-1 text-gray-500 text-xs">Selected text:</p>
                         <p className="line-clamp-3 text-gray-700 text-xs italic">
                             "{comment.selectedText}"
                         </p>
                     </div>
-                )}
+                )} */}
 
                 {/* Comment body */}
                 <div className="p-3">

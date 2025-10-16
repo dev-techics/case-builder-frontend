@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import InputComment from "@/features/toolbar/components/InputComment";
 import { Toolbar } from "@/features/toolbar/Toolbar";
 import {
     setPendingHighlight,
@@ -35,7 +36,16 @@ export function TextHighlightableDocument({
     const containerRef = useRef<HTMLDivElement>(null);
     const dispatch = useAppDispatch();
     const scale = useAppSelector((states) => states.editor.scale);
-
+    // const pageNumber = useAppSelector((states) => states.toolbar.pendingHighlight?.pageNumber);
+    const fileId = useAppSelector(
+        (states) => states.toolbar.pendingHighlight?.fileId
+    );
+    const CommentPosition = useAppSelector(
+        (states) => states.toolbar.CommentPosition
+    );
+    const pendingHighlight = useAppSelector(
+        (states) => states.toolbar.pendingHighlight
+    );
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
         console.log(`✅ PDF loaded: ${numPages} pages`);
@@ -163,8 +173,8 @@ export function TextHighlightableDocument({
 
     return (
         <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
-            {/* Toolbar - Scrolls with content */}
-            <Toolbar />
+            {file.id === fileId ? <Toolbar /> : ""}
+
             <Document
                 file={file.url}
                 loading={
@@ -180,7 +190,6 @@ export function TextHighlightableDocument({
                 {Array.from(new Array(numPages), (_, index) => {
                     const pageNumber = index + 1;
                     const pageData = pageInfo.get(pageNumber);
-
                     return (
                         <div
                             className="relative mb-4"
@@ -215,6 +224,11 @@ export function TextHighlightableDocument({
                     );
                 })}
             </Document>
+            {/* Comment Input - Shows when user clicks "Comment" button */}
+            {CommentPosition.x !== null &&
+                CommentPosition.y !== null &&
+                pendingHighlight?.fileId === file.id && <InputComment />}
+
         </div>
     );
 }

@@ -14,7 +14,7 @@ function InputComment() {
     const [isVisible, setIsVisible] = useState(false);
     const [commentText, setCommentText] = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
-
+    const toolbarPosition = useAppSelector((states) => states.toolbar.ToolbarPosition)
     const CommentPosition = useAppSelector(
         (states) => states.toolbar.CommentPosition
     );
@@ -102,10 +102,10 @@ function InputComment() {
 
     return (
         <div
-            className="comment-input fixed z-50 w-80 rounded-lg border border-gray-200 bg-white shadow-xl"
+            className="comment-input absolute z-50 w-80 rounded-lg border border-gray-200 bg-white shadow-xl"
             style={{
-                right: `${CommentPosition.x}px`,
-                top: `${CommentPosition.y}px`,
+                right: `${-480}px`, //
+                top: `${toolbarPosition.y}px`,
             }}
         >
             {pendingComment?.selectedText && (
