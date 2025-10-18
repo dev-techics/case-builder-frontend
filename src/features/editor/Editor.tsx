@@ -10,7 +10,6 @@ import {
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { CommentsSidebar } from "../toolbar/components/CommentsSidebar";
-import InputComment from "../toolbar/components/InputComment";
 import { TextHighlightableDocument } from "./components/Document";
 import UploadFile from "./components/UploadFile";
 import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter";
@@ -22,14 +21,13 @@ const PDFViewer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const isScrollingFromEditor = useRef(false);
-
-
+    const comment = useAppSelector((states) => states.toolbar.comments);
     // Use the hook to get modified PDFs
     const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
     /*--------------------------------
-              Scroll Synchronization Logic
-          --------------------------------*/
+                Scroll Synchronization Logic
+            --------------------------------*/
 
     const handleScroll = () => {
         if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -84,8 +82,8 @@ const PDFViewer: React.FC = () => {
     }, [selectedFile]);
 
     /*----------------------------
-                  Empty State
-      ------------------------------*/
+                    Empty State
+        ------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
@@ -112,10 +110,11 @@ const PDFViewer: React.FC = () => {
     }
 
     return (
-        <div className="relative flex h-full flex-col">
+        // <div className="relative flex h-full flex-col">
+        <div className="relative grid grid-cols-4 gap-0">
             {/* PDF Documents Container */}
             <div
-                className="pdf-viewer-container flex-1 bg-gray-100 p-8 pr-[320px]"
+                className={`pdf-viewer-container ${comment.length ? "col-span-3" : "col-span-4"} flex-1 bg-gray-100 p-8`}
                 onScroll={handleScroll}
                 ref={containerRef}
             >
@@ -170,8 +169,7 @@ const PDFViewer: React.FC = () => {
             </div>
 
             {/* Comments Sidebar - Shows all comments at their exact positions */}
-            <CommentsSidebar />
-
+            {comment != null ? <CommentsSidebar /> : " "}
 
         </div>
     );

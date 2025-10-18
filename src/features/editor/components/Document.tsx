@@ -175,6 +175,7 @@ export function TextHighlightableDocument({
         <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
             {file.id === fileId ? <Toolbar /> : ""}
 
+
             <Document
                 file={file.url}
                 loading={

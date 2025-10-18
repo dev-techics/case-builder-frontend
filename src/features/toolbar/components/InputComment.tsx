@@ -13,8 +13,12 @@ import {
 function InputComment() {
     const [isVisible, setIsVisible] = useState(false);
     const [commentText, setCommentText] = useState("");
-    const inputRef = useRef<HTMLInputElement>(null);
-    const toolbarPosition = useAppSelector((states) => states.toolbar.ToolbarPosition)
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const justOpenedRef = useRef(false); // Track if just opened
+
+    const toolbarPosition = useAppSelector(
+        (states) => states.toolbar.ToolbarPosition
+    );
     const CommentPosition = useAppSelector(
         (states) => states.toolbar.CommentPosition
     );
@@ -31,8 +35,16 @@ function InputComment() {
             CommentPosition.y !== null
         ) {
             setIsVisible(true);
+            justOpenedRef.current = true; // Mark as just opened
+
             // Focus input when visible
-            setTimeout(() => inputRef.current?.focus(), 0);
+            setTimeout(() => {
+                inputRef.current?.focus();
+                // Allow click-outside handler to work after a delay
+                setTimeout(() => {
+                    justOpenedRef.current = false;
+                }, 100);
+            }, 0);
         } else {
             setIsVisible(false);
             setCommentText("");
@@ -42,16 +54,35 @@ function InputComment() {
     // Handle click outside to close
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            // Close if clicking outside the comment input
-            if (!target.closest(".comment-input")) {
-                dispatch(cancelCommentCreation());
+            // Don't close if just opened
+            if (justOpenedRef.current) {
+                return;
             }
+
+            const target = e.target as HTMLElement;
+
+            // Don't close if clicking inside comment input
+            if (target.closest(".comment-input")) {
+                return;
+            }
+
+            // Don't close if clicking on the toolbar
+            if (target.closest(".highlight-color-picker")) {
+                return;
+            }
+
+            // Close the comment input
+            dispatch(cancelCommentCreation());
         };
 
         if (isVisible) {
-            document.addEventListener("mousedown", handleClickOutside);
+            // Add listener with a small delay to avoid immediate triggering
+            const timeoutId = setTimeout(() => {
+                document.addEventListener("mousedown", handleClickOutside);
+            }, 150);
+
             return () => {
+                clearTimeout(timeoutId);
                 document.removeEventListener("mousedown", handleClickOutside);
             };
         }
@@ -72,7 +103,8 @@ function InputComment() {
                 updatedAt: new Date().toISOString(),
                 resolved: false,
             };
-            console.log(comment);
+
+            console.log("✅ Comment created:", comment);
             dispatch(addComment(comment));
 
             // Clear text selection
@@ -81,14 +113,21 @@ function InputComment() {
                 selection.removeAllRanges();
             }
 
-            // Close the toolbar
+            // Close both comment input and toolbar
+            dispatch(cancelCommentCreation());
             dispatch(cancelHighlight());
+
+            // Reset form
+            setCommentText("");
         }
     };
-
+    // console.log("comment input position-y: ", toolbarPosition.y)
     const handleCancel = () => {
         dispatch(cancelCommentCreation());
         setCommentText("");
+
+        // Don't clear text selection on cancel
+        // User might want to try highlighting instead
     };
 
     // Don't render if no position or not visible
@@ -104,32 +143,36 @@ function InputComment() {
         <div
             className="comment-input absolute z-50 w-80 rounded-lg border border-gray-200 bg-white shadow-xl"
             style={{
-                right: `${-480}px`, //
-                top: `${toolbarPosition.y}px`,
+                right: `${-480}px`,
+                top: `${CommentPosition.y}px`,
             }}
         >
-            {pendingComment?.selectedText && (
+            {/* Show selected text preview */}
+            {/* {pendingComment?.selectedText && (
                 <div className="border-gray-200 border-b bg-gray-50 p-3">
                     <p className="mb-1 text-gray-500 text-xs">Selected text:</p>
                     <p className="line-clamp-2 text-gray-700 text-sm italic">
                         "{pendingComment.selectedText}"
                     </p>
                 </div>
-            )}
+            )} */}
+
+            {/* Comment form */}
             <form
                 className="relative flex items-start gap-2 p-3"
                 onSubmit={handleSubmit}
             >
                 <textarea
-                    className="min-h-[80px] flex-1 resize-none rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="min-h-[40px] flex-1 resize-none overflow-hidden rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Add a comment..."
-                    ref={inputRef as any}
+                    ref={inputRef}
                     value={commentText}
                 />
                 <div className="flex flex-col gap-2">
+                    {/* Submit button */}
                     <Button
-                        className="h-8 w-8 rounded-full"
+                        className="h-6 w-6 rounded-full"
                         disabled={!commentText.trim()}
                         size="icon"
                         title="Submit comment"
@@ -137,8 +180,9 @@ function InputComment() {
                     >
                         <ArrowUp size={16} />
                     </Button>
+                    {/* Cancel button */}
                     <Button
-                        className="h-8 w-8 rounded-full"
+                        className="h-6 w-6 rounded-full"
                         onClick={handleCancel}
                         size="icon"
                         title="Cancel"

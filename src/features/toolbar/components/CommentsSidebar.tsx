@@ -19,9 +19,8 @@ export function CommentsSidebar() {
 
     return (
         <div
-            className="pointer-events-none absolute top-0 right-0 z-40 h-full"
+            className="comments-sidebar pointer-events-none z-0 col-span-1 h-full bg-gray-100 pt-8"
             ref={containerRef}
-            style={{ width: "300px" }}
         >
             <div className="pointer-events-auto relative h-full">
                 {comments.map((comment) => (

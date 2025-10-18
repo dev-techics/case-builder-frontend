@@ -21,12 +21,20 @@ export function CommentThread({ comment }: CommentThreadProps) {
     const [editText, setEditText] = useState(comment.text);
     const [showMenu, setShowMenu] = useState(false);
     const [position, setPosition] = useState({ top: 0, visible: false });
+    const [lineWidth, setLineWidth] = useState(0); // Dynamic line width
     const commentRef = useRef<HTMLDivElement>(null);
     const dispatch = useAppDispatch();
 
-    // Calculate position based on the file element in the DOM
+    // Calculate position and line width
     useEffect(() => {
         const updatePosition = () => {
+            // Find the PDF viewer container
+            const pdfContainer = document.querySelector(".pdf-viewer-container");
+            if (!pdfContainer) {
+                setPosition({ top: 0, visible: false });
+                return;
+            }
+
             // Find the file container by data-file-id
             const fileElement = document.querySelector(
                 `[data-file-id="${comment.fileId}"]`
@@ -48,18 +56,30 @@ export function CommentThread({ comment }: CommentThreadProps) {
             }
 
             const pageRect = pageElement.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
+            const pdfContainerRect = pdfContainer.getBoundingClientRect();
 
-            // Calculate absolute position from top of viewport
-            // Add the stored pageY offset to get exact position within the page
-            const absoluteTop = pageRect.top + comment.position.pageY;
+            // Get comment sidebar position
+            const commentSidebar = document.querySelector(".comments-sidebar");
+            const commentSidebarRect = commentSidebar?.getBoundingClientRect();
 
-            // Check if comment is visible in viewport (with some buffer)
+            // Calculate position relative to the PDF container
+            const relativeTop = comment.position.pageY;
+
+            // Check if comment is visible
             const isVisible =
-                absoluteTop > -300 && absoluteTop < viewportHeight + 300;
+                relativeTop > -300 && relativeTop < pdfContainerRect.height + 300;
+
+            // Calculate line width dynamically
+            // Distance from right edge of PDF content to left edge of comment sidebar
+            if (commentSidebarRect && pageRect) {
+                const pdfRightEdge = pageRect.right;
+                const commentLeftEdge = commentSidebarRect.left;
+                const calculatedWidth = commentLeftEdge - pdfRightEdge;
+                setLineWidth(Math.max(0, calculatedWidth)); // Ensure non-negative
+            }
 
             setPosition({
-                top: absoluteTop,
+                top: relativeTop,
                 visible: isVisible,
             });
         };
@@ -67,17 +87,20 @@ export function CommentThread({ comment }: CommentThreadProps) {
         // Initial position
         updatePosition();
 
-        // Update on scroll
+        // Update on scroll and resize
         const scrollContainer = document.querySelector(".pdf-viewer-container");
         if (scrollContainer) {
             scrollContainer.addEventListener("scroll", updatePosition);
-            window.addEventListener("resize", updatePosition);
-
-            return () => {
-                scrollContainer.removeEventListener("scroll", updatePosition);
-                window.removeEventListener("resize", updatePosition);
-            };
         }
+
+        window.addEventListener("resize", updatePosition);
+
+        return () => {
+            if (scrollContainer) {
+                scrollContainer.removeEventListener("scroll", updatePosition);
+            }
+            window.removeEventListener("resize", updatePosition);
+        };
     }, [comment.fileId, comment.pageNumber, comment.position.pageY]);
 
     const handleUpdate = () => {
@@ -103,18 +126,10 @@ export function CommentThread({ comment }: CommentThreadProps) {
         const diffHours = Math.floor(diffMs / 3_600_000);
         const diffDays = Math.floor(diffMs / 86_400_000);
 
-        if (diffMins < 1) {
-            return "just now";
-        }
-        if (diffMins < 60) {
-            return `${diffMins}m ago`;
-        }
-        if (diffHours < 24) {
-            return `${diffHours}h ago`;
-        }
-        if (diffDays < 7) {
-            return `${diffDays}d ago`;
-        }
+        if (diffMins < 1) return "just now";
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
         return date.toLocaleDateString();
     };
 
@@ -125,18 +140,24 @@ export function CommentThread({ comment }: CommentThreadProps) {
 
     return (
         <div
-            className={`absolute left-0 w-60 transition-all duration-200 ${comment.resolved ? "opacity-60" : ""
+            className={`absolute left-0 w-60 transition-all duration-100 ${comment.resolved ? "opacity-60" : ""
                 }`}
             ref={commentRef}
             style={{
-                top: `${position.top}px`,
+                top: `${position.top + 25}px`,
             }}
         >
-            {/* Connection line to the text */}
-            {/* <div className="-left-32 absolute top-8 h-px w-36 bg-gray-300" /> */}
+            {/* Connection line - dynamically calculated */}
+            {/* <div
+                className="absolute top-10 h-px bg-blue-400 transition-all duration-200"
+                style={{
+                    right: "100%", // Start from the left edge of the comment
+                    width: `${lineWidth}px`, // Dynamic width
+                }}
+            /> */}
 
             <div
-                className={`ml-4 rounded-lg border bg-white shadow-lg ${comment.resolved ? "border-green-200 bg-green-50" : "border-gray-200"
+                className={`rounded-lg border bg-white shadow-lg ${comment.resolved ? "border-green-200 bg-green-50" : "border-gray-200"
                     }`}
             >
                 {/* Header */}
@@ -207,16 +228,6 @@ export function CommentThread({ comment }: CommentThreadProps) {
                         </div>
                     </div>
                 </div>
-
-                {/* Selected text (if any) */}
-                {/* {comment.selectedText && (
-                    <div className="border-gray-200 border-b bg-gray-50 p-3">
-                        <p className="mb-1 text-gray-500 text-xs">Selected text:</p>
-                        <p className="line-clamp-3 text-gray-700 text-xs italic">
-                            "{comment.selectedText}"
-                        </p>
-                    </div>
-                )} */}
 
                 {/* Comment body */}
                 <div className="p-3">
