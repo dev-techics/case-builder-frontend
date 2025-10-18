@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import { Download } from "lucide-react";
 import { PDFDocument, rgb } from "pdf-lib";
 import { useAppSelector } from "@/app/hooks";
