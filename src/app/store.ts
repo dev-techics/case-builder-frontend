@@ -1,4 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
+import indexGenerator from "@/features/auto-index/autoIndexSlice";
 import editorSlice from "@/features/editor/editorSlice";
 import propertiesPanelSlice from "@/features/properties-panel/propertiesPanelSlice";
 import toolbar from "@/features/toolbar/toolbarSlice";
@@ -10,6 +11,7 @@ const store = configureStore({
     editor: editorSlice,
     propertiesPanel: propertiesPanelSlice,
     toolbar,
+    indexGenerator,
   },
 });
 

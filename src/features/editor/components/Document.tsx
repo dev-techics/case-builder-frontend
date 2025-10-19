@@ -36,7 +36,6 @@ export function TextHighlightableDocument({
     const containerRef = useRef<HTMLDivElement>(null);
     const dispatch = useAppDispatch();
     const scale = useAppSelector((states) => states.editor.scale);
-    // const pageNumber = useAppSelector((states) => states.toolbar.pendingHighlight?.pageNumber);
     const fileId = useAppSelector(
         (states) => states.toolbar.pendingHighlight?.fileId
     );

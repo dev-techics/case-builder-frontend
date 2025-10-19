@@ -13,6 +13,7 @@ import { CommentsSidebar } from "../toolbar/components/CommentsSidebar";
 import { TextHighlightableDocument } from "./components/Document";
 import UploadFile from "./components/UploadFile";
 import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter";
+import { IndexPageWrapper } from "../auto-index/components/IndexPageWrapper";
 
 const PDFViewer: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -119,6 +120,7 @@ const PDFViewer: React.FC = () => {
                 ref={containerRef}
             >
                 <div className="mx-auto max-w-4xl space-y-8">
+                    <IndexPageWrapper />
                     {modifiedFiles.map((file, index) => (
                         <div
                             className={`rounded-lg bg-white shadow-lg transition-all ${selectedFile === file.id ? "ring-4 ring-blue-500" : ""
