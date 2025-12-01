@@ -5,11 +5,12 @@ import EditorSidebar from "../features/sidebar/EditorSidebar";
 
 export default function EditorLayout() {
     return (
-        <SidebarProvider>
-            {/* Sidebar */}
-
-            <EditorSidebar />
-            <SidebarTrigger className="text-xl" />
+        <div className="flex h-screen">
+            {/* Left Sidebar with its own provider */}
+            <SidebarProvider>
+                <EditorSidebar />
+                <SidebarTrigger className="text-xl" />
+            </SidebarProvider>
 
             {/* Main Area */}
             <div className="flex flex-1 flex-col">
@@ -29,12 +30,14 @@ export default function EditorLayout() {
 
                 {/* Canvas / Workspace */}
                 <main className="relative flex-1 overflow-auto bg-gray-50 p-4">
-                    {/* Outlet is where your page content goes */}
                     <Outlet />
                 </main>
             </div>
 
-            <PropertiesSidebar />
-        </SidebarProvider>
+            {/* Right Sidebar with its own provider */}
+            <SidebarProvider>
+                <PropertiesSidebar />
+            </SidebarProvider>
+        </div>
     );
 }

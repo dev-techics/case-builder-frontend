@@ -91,6 +91,7 @@ function InputComment() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (commentText.trim() && pendingComment) {
+
             // Create the comment
             const comment = {
                 id: `comment-${Date.now()}-${Math.random()}`,

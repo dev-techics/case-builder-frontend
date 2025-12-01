@@ -1,3 +1,7 @@
+/** biome-ignore-all lint/style/noMagicNumbers: <explanation> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import {
     closestCenter,
     DndContext,
