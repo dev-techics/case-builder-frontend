@@ -14,7 +14,7 @@ import {
     getPdfPageInfo,
     getTextSelectionCoordinates,
 } from "@/lib/pdfCoordinateUtils";
-import { CommentOverlay } from "../../toolbar/components/CommentOverlay";
+import CommentOverlay from "../../toolbar/components/CommentOverlay";
 import { InteractiveHighlightOverlay } from "../../toolbar/components/HighlightOverlay";
 import { ScreenToPdfCoordinates } from "../helpers";
 import type { TextHighlightableDocumentProps } from "../types";
@@ -74,6 +74,7 @@ export function TextHighlightableDocument({
     }, [file.url, numPages]);
 
     const handleMouseUp = () => {
+
         const selection = window.getSelection();
         if (!selection || selection.toString().trim() === "") {
             return;
@@ -98,7 +99,8 @@ export function TextHighlightableDocument({
             return;
         }
 
-        const pageData = pageInfo.get(selectedPageNumber);
+        const pageData = pageInfo.get(selectedPageNumber); // eg. {width: 595, height: 842, pageNumber: 1, left: 0, top: 0}
+
         if (!pageData) {
             console.warn("⚠️ Page info not loaded yet");
             return;
@@ -127,10 +129,14 @@ export function TextHighlightableDocument({
             pageNumber: selectedPageNumber,
             text: selectionCoords.selectedText,
             pdfCoordinates: pdfCoords,
+            selectionCoords,
         });
 
         const containerRect = containerRef.current?.getBoundingClientRect();
         const pageRect = pageElement.getBoundingClientRect();
+
+        // console.log(containerRect);
+        // console.log(pageRect);
 
         if (!containerRect) {
             console.warn("⚠️ Container ref not available");
@@ -142,6 +148,7 @@ export function TextHighlightableDocument({
             containerRect.left +
             selectionCoords.left +
             selectionCoords.width / 2;
+
         const pickerY = pageRect.top - containerRect.top + selectionCoords.top;
 
         dispatch(

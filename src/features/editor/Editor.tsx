@@ -25,8 +25,8 @@ const PDFViewer: React.FC = () => {
     const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
     /*--------------------------------
-                Scroll Synchronization Logic
-            --------------------------------*/
+                  Scroll Synchronization Logic
+              --------------------------------*/
 
     const handleScroll = () => {
         if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -81,8 +81,8 @@ const PDFViewer: React.FC = () => {
     }, [selectedFile]);
 
     /*----------------------------
-                    Empty State
-    ------------------------------*/
+                      Empty State
+      ------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
@@ -113,7 +113,7 @@ const PDFViewer: React.FC = () => {
         <div className="relative grid grid-cols-4 gap-0">
             {/* PDF Documents Container */}
             <div
-                className="pdf-viewer-container col-span-4 flex-1 bg-gray-100 p-8"
+                className="pdf-viewer-container col-span-4 flex-1 overflow-y-auto bg-gray-100 p-8"
                 onScroll={handleScroll}
                 ref={containerRef}
             >
@@ -166,7 +166,6 @@ const PDFViewer: React.FC = () => {
                     ))}
                 </div>
             </div>
-
         </div>
     );
 };

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import {
     Check,
     MessageSquare,
@@ -32,7 +33,21 @@ const CommentMarker = ({ comment, pageHeight, scale }: CommentMarkerProps) => {
 
     // Convert stored pageY (screen coordinates) to PDF percentage
     // This makes it scale-independent
-    const topPercentage = (comment.position.pageY / pageHeight) * 100;
+
+    const pageNumber = comment.pageNumber;
+    const pageY: number = comment.position.pageY;
+    let topPercentage: number | null = null;
+
+    if (comment.pageNumber === 1) {
+        topPercentage = (pageY / pageHeight) * 100;
+    } else {
+        topPercentage = ((pageY - ((pageNumber - 1) * pageHeight)) / pageHeight) * 100;
+    }
+
+    // Debugging
+    console.log(topPercentage);
+    console.log(comment.position.pageY);
+    console.log(pageHeight);
 
     const handleUpdate = () => {
         if (editText.trim()) {
@@ -80,8 +95,8 @@ const CommentMarker = ({ comment, pageHeight, scale }: CommentMarkerProps) => {
                 {/* Comment Icon */}
                 <button
                     className={`flex h-8 w-8 items-center justify-center rounded-full shadow-lg transition-all ${comment.resolved
-                            ? "border-2 border-green-400 bg-green-100 hover:bg-green-200"
-                            : "border-2 border-blue-400 bg-blue-100 hover:bg-blue-200"
+                        ? "border-2 border-green-400 bg-green-100 hover:bg-green-200"
+                        : "border-2 border-blue-400 bg-blue-100 hover:bg-blue-200"
                         }`}
                     onClick={() => setIsExpanded(!isExpanded)}
                     title="View comment"
