@@ -48,7 +48,7 @@ export function TextHighlightableDocument({
                 fileName: file.name,
             })
         );
-
+        console.log(file);
         console.log(`✅ PDF loaded: ${file.name} - ${numPages} pages`);
     };
 
@@ -182,6 +182,10 @@ export function TextHighlightableDocument({
                         </div>
                     </div>
                 }
+                onLoadError={(error) => {
+                    console.error('PDF load error:', error);
+                    // Don't crash the whole app
+                }}
                 onLoadSuccess={onDocumentLoadSuccess}
             >
                 {Array.from(new Array(numPages), (_, index) => {

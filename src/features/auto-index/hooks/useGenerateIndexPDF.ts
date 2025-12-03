@@ -2,7 +2,7 @@
 import { useCallback } from "react";
 import { useAppSelector } from "@/app/hooks";
 import type { IndexEntry } from "../types";
-import { generateIndexPDF } from "../utils/generateIndexPDF";
+import generateIndexPDF from "../utils/generateIndexPDF";
 
 export function useGenerateIndexPDF() {
   const tree = useAppSelector((state) => state.fileTree.tree);

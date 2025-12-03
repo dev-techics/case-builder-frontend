@@ -8,11 +8,9 @@ const MARGIN_TOP = 60;
 const MARGIN_BOTTOM = 60;
 const MARGIN_LEFT = 50;
 const MARGIN_RIGHT = 50;
-const ENTRY_HEIGHT = 200; // Space needed per entry
+const ENTRY_HEIGHT = 50; // Space needed per entry
 
-export async function generateIndexPDF(
-  entries: IndexEntry[]
-): Promise<Uint8Array> {
+const generateIndexPDF = async (entries: IndexEntry[]): Promise<Uint8Array> => {
   const pdfDoc = await PDFDocument.create();
 
   // Create first page and add header
@@ -27,6 +25,7 @@ export async function generateIndexPDF(
     color: rgb(0, 0, 0),
   });
 
+  // leaving some space between lines
   yPosition -= 30;
 
   // Separator line
@@ -37,6 +36,7 @@ export async function generateIndexPDF(
     color: rgb(0.8, 0.8, 0.8),
   });
 
+  // leaving some space between lines
   yPosition -= 30;
 
   // Index entries
@@ -72,7 +72,7 @@ export async function generateIndexPDF(
       yPosition -= 20;
     }
 
-    // Draw entry on current page (this is the key fix!)
+    // Draw entry on current page
     // File number
     currentPage.drawText(`${index + 1}.`, {
       x: MARGIN_LEFT,
@@ -102,4 +102,6 @@ export async function generateIndexPDF(
   });
 
   return pdfDoc.save();
-}
+};
+
+export default generateIndexPDF;

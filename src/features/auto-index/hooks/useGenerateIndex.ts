@@ -1,4 +1,8 @@
 // features/index-generator/hooks/useGenerateIndex.ts
+/**
+ * this hooks generate index number by iterating through the files
+ */
+
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { generateIndex } from "../autoIndexSlice";
