@@ -16,7 +16,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ChevronDown, ChevronRight, FilePlus2, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder } from "lucide-react";
 import type React from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { reorderFiles, selectFile, toggleFolder } from "../fileTreeSlice";

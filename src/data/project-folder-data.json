@@ -16,10 +16,28 @@
       "url": "/dummy-pdf_2.pdf"
     },
     {
-      "id": "file-3",
+      "id": "file-5",
       "name": "Report.pdf",
       "type": "file",
       "url": "/pdf_3.pdf"
+    },
+    {
+      "id": "file-6",
+      "name": "test.pdf",
+      "type": "file",
+      "url": "/test.pdf"
+    },
+    {
+      "id": "file-7",
+      "name": "test1.pdf",
+      "type": "file",
+      "url": "/test1.pdf"
+    },
+    {
+      "id": "file-8",
+      "name": "test-2.pdf",
+      "type": "file",
+      "url": "/test-2.pdf"
     }
   ]
 }
