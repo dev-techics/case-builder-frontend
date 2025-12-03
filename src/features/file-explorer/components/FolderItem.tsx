@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/style/noMagicNumbers: <explanation> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import {
     closestCenter,
@@ -13,7 +16,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ChevronDown, ChevronRight, FilePlus2, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder } from "lucide-react";
 import type React from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { reorderFiles, selectFile, toggleFolder } from "../fileTreeSlice";

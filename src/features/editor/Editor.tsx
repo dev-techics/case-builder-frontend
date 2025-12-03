@@ -9,7 +9,6 @@ import {
 } from "../../features/file-explorer/fileTreeSlice";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { CommentsSidebar } from "../toolbar/components/CommentsSidebar";
 import { TextHighlightableDocument } from "./components/Document";
 import UploadFile from "./components/UploadFile";
 import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter";
@@ -27,8 +26,8 @@ const PDFViewer: React.FC = () => {
     const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
     /*--------------------------------
-                Scroll Synchronization Logic
-            --------------------------------*/
+                  Scroll Synchronization Logic
+              --------------------------------*/
 
     const handleScroll = () => {
         if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -83,8 +82,8 @@ const PDFViewer: React.FC = () => {
     }, [selectedFile]);
 
     /*----------------------------
-                    Empty State
-        ------------------------------*/
+                      Empty State
+      ------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }
@@ -115,7 +114,7 @@ const PDFViewer: React.FC = () => {
         <div className="relative grid grid-cols-4 gap-0">
             {/* PDF Documents Container */}
             <div
-                className={`pdf-viewer-container ${comment.length ? "col-span-3" : "col-span-4"} flex-1 bg-gray-100 p-8`}
+                className="pdf-viewer-container col-span-4 flex-1 overflow-y-auto bg-gray-100 p-8"
                 onScroll={handleScroll}
                 ref={containerRef}
             >
@@ -169,10 +168,6 @@ const PDFViewer: React.FC = () => {
                     ))}
                 </div>
             </div>
-
-            {/* Comments Sidebar - Shows all comments at their exact positions */}
-            {comment != null ? <CommentsSidebar /> : " "}
-
         </div>
     );
 };

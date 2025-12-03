@@ -1,6 +1,6 @@
 import { Download, FileText, Settings } from "lucide-react";
 import { useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
+import AppSidebar from "@/components/AppSidebar";
 import Annotations from "./components/Annotations";
 import DocumentSettings from "./components/DocumentSettings";
 import Exports from "./components/Exports";
@@ -8,8 +8,8 @@ import Exports from "./components/Exports";
 type TabType = "properties" | "annotations" | "export";
 
 function PropertiesSidebar() {
-    const [activeTab, setActiveTab] = useState<TabType>("properties");
 
+    const [activeTab, setActiveTab] = useState<TabType>("properties");
     const tabs = [
         {
             id: "properties" as TabType,

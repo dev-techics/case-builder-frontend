@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { setDocumentPageCount } from "@/features/properties-panel/propertiesPanelSlice";
 import InputComment from "@/features/toolbar/components/InputComment";
 import { Toolbar } from "@/features/toolbar/Toolbar";
 import {
@@ -13,19 +14,10 @@ import {
     getPdfPageInfo,
     getTextSelectionCoordinates,
 } from "@/lib/pdfCoordinateUtils";
+import CommentOverlay from "../../toolbar/components/CommentOverlay";
 import { InteractiveHighlightOverlay } from "../../toolbar/components/HighlightOverlay";
 import { ScreenToPdfCoordinates } from "../helpers";
 import type { TextHighlightableDocumentProps } from "../types";
-
-/**
- * This component handles:
- * 1. Rendering the PDF document
- * 2. Detecting text selection (onMouseUp)
- * 3. Converting screen coordinates to PDF coordinates
- * 4. Storing pending highlight data in Redux
- * 5. Showing the color picker that scrolls with the content
- * 6. Rendering highlight overlays on top of PDF pages
- */
 
 export function TextHighlightableDocument({
     file,
@@ -45,12 +37,21 @@ export function TextHighlightableDocument({
     const pendingHighlight = useAppSelector(
         (states) => states.toolbar.pendingHighlight
     );
+
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
-        console.log(`✅ PDF loaded: ${numPages} pages`);
+
+        dispatch(
+            setDocumentPageCount({
+                fileId: file.id,
+                numPages,
+                fileName: file.name,
+            })
+        );
+
+        console.log(`✅ PDF loaded: ${file.name} - ${numPages} pages`);
     };
 
-    // Load page information for all pages
     useEffect(() => {
         async function loadPageInfo() {
             if (!file.url || numPages === 0) {
@@ -72,15 +73,13 @@ export function TextHighlightableDocument({
         loadPageInfo();
     }, [file.url, numPages]);
 
-    // Handle text selection - This is where we capture the selection data
     const handleMouseUp = () => {
-        // get user selection
+
         const selection = window.getSelection();
         if (!selection || selection.toString().trim() === "") {
             return;
         }
 
-        // Find which page the selection is on
         let selectedPageNumber: number | null = null;
         let pageElement: HTMLElement | null = null;
 
@@ -100,26 +99,24 @@ export function TextHighlightableDocument({
             return;
         }
 
-        const pageData = pageInfo.get(selectedPageNumber);
+        const pageData = pageInfo.get(selectedPageNumber); // eg. {width: 595, height: 842, pageNumber: 1, left: 0, top: 0}
+
         if (!pageData) {
             console.warn("⚠️ Page info not loaded yet");
             return;
         }
 
-        // Get selection coordinates
         const selectionCoords = getTextSelectionCoordinates(pageElement);
         if (!selectionCoords) {
             return;
         }
 
-        // Get page position for offset calculation
         const pageInfoWithOffset = {
             ...pageData,
-            left: 0, // Relative to page element
+            left: 0,
             top: 0,
         };
 
-        // Convert to PDF coordinates (for storage)
         const pdfCoords = ScreenToPdfCoordinates(
             selectionCoords,
             pageInfoWithOffset,
@@ -132,26 +129,28 @@ export function TextHighlightableDocument({
             pageNumber: selectedPageNumber,
             text: selectionCoords.selectedText,
             pdfCoordinates: pdfCoords,
+            selectionCoords,
         });
 
-        // Calculate position for Toolbar RELATIVE to container
         const containerRect = containerRef.current?.getBoundingClientRect();
         const pageRect = pageElement.getBoundingClientRect();
+
+        // console.log(containerRect);
+        // console.log(pageRect);
 
         if (!containerRect) {
             console.warn("⚠️ Container ref not available");
             return;
         }
 
-        // Calculate position relative to the scrollable container
         const pickerX =
             pageRect.left -
             containerRect.left +
             selectionCoords.left +
             selectionCoords.width / 2;
+
         const pickerY = pageRect.top - containerRect.top + selectionCoords.top;
 
-        // Store pending highlight data in Redux (using PDF coordinates)
         dispatch(
             setPendingHighlight({
                 fileId: file.id,
@@ -166,14 +165,12 @@ export function TextHighlightableDocument({
             })
         );
 
-        // Show color picker at the selection position
         dispatch(setToolbarPosition({ x: pickerX, y: pickerY }));
     };
 
     return (
         <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
             {file.id === fileId ? <Toolbar /> : ""}
-
 
             <Document
                 file={file.url}
@@ -211,9 +208,19 @@ export function TextHighlightableDocument({
                                 scale={scale}
                             />
 
-                            {/* Highlight Overlays - Rendered on top of the page */}
+                            {/* Highlight Overlays */}
                             {pageData && (
                                 <InteractiveHighlightOverlay
+                                    fileId={file.id}
+                                    pageHeight={pageData.height}
+                                    pageNumber={pageNumber}
+                                    scale={scale}
+                                />
+                            )}
+
+                            {/* Comment Overlays - NEW! */}
+                            {pageData && (
+                                <CommentOverlay
                                     fileId={file.id}
                                     pageHeight={pageData.height}
                                     pageNumber={pageNumber}
@@ -224,11 +231,11 @@ export function TextHighlightableDocument({
                     );
                 })}
             </Document>
-            {/* Comment Input - Shows when user clicks "Comment" button */}
+
+            {/* Comment Input */}
             {CommentPosition.x !== null &&
                 CommentPosition.y !== null &&
                 pendingHighlight?.fileId === file.id && <InputComment />}
-
         </div>
     );
 }
