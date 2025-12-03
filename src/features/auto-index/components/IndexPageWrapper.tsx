@@ -1,11 +1,11 @@
 import { FileText } from "lucide-react";
-import { IndexPDFPreview } from "./IndexPDFPreview";
+import IndexPDFPreview from "./IndexPDFPreview";
 
 type IndexPageWrapperProps = {
     scale?: number;
 };
 
-export function IndexPageWrapper({ scale = 1 }: IndexPageWrapperProps) {
+const IndexPageWrapper = ({ scale = 1 }: IndexPageWrapperProps) => {
     return (
         <div className="overflow-hidden rounded-lg bg-white shadow-lg">
             {/* Index Header */}
@@ -28,3 +28,5 @@ export function IndexPageWrapper({ scale = 1 }: IndexPageWrapperProps) {
         </div>
     );
 }
+
+export default IndexPageWrapper;

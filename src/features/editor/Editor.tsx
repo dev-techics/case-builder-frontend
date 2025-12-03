@@ -9,10 +9,10 @@ import {
 } from "../../features/file-explorer/fileTreeSlice";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import IndexPageWrapper from "../auto-index/components/IndexPageWrapper";
 import { TextHighlightableDocument } from "./components/Document";
 import UploadFile from "./components/UploadFile";
 import { useModifiedPDFs } from "./hooks/PdfWithHeaderFooter";
-import { IndexPageWrapper } from "../auto-index/components/IndexPageWrapper";
 
 const PDFViewer: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -26,8 +26,8 @@ const PDFViewer: React.FC = () => {
     const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
     /*--------------------------------
-                  Scroll Synchronization Logic
-              --------------------------------*/
+                    Scroll Synchronization Logic
+                --------------------------------*/
 
     const handleScroll = () => {
         if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -82,8 +82,8 @@ const PDFViewer: React.FC = () => {
     }, [selectedFile]);
 
     /*----------------------------
-                      Empty State
-      ------------------------------*/
+                        Empty State
+        ------------------------------*/
     if (tree.children.length === 0) {
         return <UploadFile />;
     }

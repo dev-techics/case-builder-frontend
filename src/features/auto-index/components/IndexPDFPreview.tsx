@@ -1,5 +1,6 @@
+/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
 import { useAppSelector } from "@/app/hooks";
 import { useGenerateIndexPDF } from "../hooks/useGenerateIndexPDF";
@@ -8,12 +9,15 @@ type IndexPDFPreviewProps = {
     scale?: number;
 };
 
-export function IndexPDFPreview({ scale = 1 }: IndexPDFPreviewProps) {
+const IndexPDFPreview = ({ scale = 1 }: IndexPDFPreviewProps) => {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [numPages, setNumPages] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Track the URL to revoke it properly
+    const urlToRevokeRef = useRef<string | null>(null);
 
     const indexEntries = useAppSelector((state) => state.indexGenerator.entries);
     const { generatePDF } = useGenerateIndexPDF();
@@ -33,8 +37,16 @@ export function IndexPDFPreview({ scale = 1 }: IndexPDFPreviewProps) {
 
                 const blob = await generatePDF(indexEntries);
                 const url = URL.createObjectURL(blob);
+
+                // Revoke old URL before setting new one
+                if (urlToRevokeRef.current) {
+                    URL.revokeObjectURL(urlToRevokeRef.current);
+                }
+
+                urlToRevokeRef.current = url;
                 setPdfUrl(url);
             } catch (err) {
+                console.error("Error generating index PDF:", err);
                 setError(
                     err instanceof Error ? err.message : "Failed to generate index"
                 );
@@ -45,12 +57,14 @@ export function IndexPDFPreview({ scale = 1 }: IndexPDFPreviewProps) {
 
         generateAndDisplay();
 
+        // Cleanup only on unmount
         return () => {
-            if (pdfUrl) {
-                URL.revokeObjectURL(pdfUrl);
+            if (urlToRevokeRef.current) {
+                URL.revokeObjectURL(urlToRevokeRef.current);
+                urlToRevokeRef.current = null;
             }
         };
-    }, [indexEntries, generatePDF]);
+    }, [indexEntries]);
 
     const handlePreviousPage = () => {
         if (currentPage > 1) {
@@ -86,10 +100,32 @@ export function IndexPDFPreview({ scale = 1 }: IndexPDFPreviewProps) {
             {/* PDF Viewer */}
             <div className="flex justify-center rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <Document
+                    error={
+                        <div className="p-4 text-center text-red-500">
+                            Failed to load index
+                        </div>
+                    }
                     file={pdfUrl}
-                    onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                    loading={
+                        <div className="flex items-center justify-center p-4">
+                            <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                        </div>
+                    }
+                    onLoadError={(error) => {
+                        console.error("❌ Index PDF load error:", error);
+                        setError("Failed to load index PDF");
+                    }}
+                    onLoadSuccess={({ numPages }) => {
+                        console.log(`✅ Index PDF loaded: ${numPages} page(s)`);
+                        setNumPages(numPages);
+                    }}
                 >
-                    <Page pageNumber={currentPage} scale={scale} />
+                    <Page
+                        pageNumber={currentPage}
+                        renderAnnotationLayer={false}
+                        renderTextLayer={false}
+                        scale={scale}
+                    />
                 </Document>
             </div>
 
@@ -124,3 +160,5 @@ export function IndexPDFPreview({ scale = 1 }: IndexPDFPreviewProps) {
         </div>
     );
 }
+
+export default IndexPDFPreview;

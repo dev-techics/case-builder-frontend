@@ -5,7 +5,6 @@ import type { IndexEntry } from "../types";
 import generateIndexPDF from "../utils/generateIndexPDF";
 
 export function useGenerateIndexPDF() {
-  const tree = useAppSelector((state) => state.fileTree.tree);
   const projectName = useAppSelector(
     (state) => state.fileTree.tree.name || "Project"
   );
@@ -16,10 +15,11 @@ export function useGenerateIndexPDF() {
         throw new Error("No entries to generate index");
       }
 
+      // projectName will always be the current value when this executes
       const pdfBytes = await generateIndexPDF(entries, projectName);
       return new Blob([pdfBytes], { type: "application/pdf" });
     },
-    [projectName]
+    [] // Empty dependencies - function reference stays stable
   );
 
   return { generatePDF };
