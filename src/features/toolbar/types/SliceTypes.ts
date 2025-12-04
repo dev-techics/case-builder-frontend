@@ -68,4 +68,5 @@ export type EditorState = {
   pendingComment: PendingComment | null;
   highlights: Highlight[]; // Array to store multiple highlights
   comments: Comment[];
+  isCommentExpended: boolean;
 };

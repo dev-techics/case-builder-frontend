@@ -144,7 +144,7 @@ function InputComment() {
         <div
             className="comment-input absolute z-50 w-80 rounded-lg border border-gray-200 bg-white shadow-xl"
             style={{
-                right: `${-480}px`,
+                right: `${-350}px`,
                 top: `${CommentPosition.y}px`,
             }}
         >

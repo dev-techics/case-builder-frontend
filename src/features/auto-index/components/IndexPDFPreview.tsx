@@ -10,6 +10,7 @@ type IndexPDFPreviewProps = {
 };
 
 const IndexPDFPreview = ({ scale = 1 }: IndexPDFPreviewProps) => {
+    // Stats
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,10 @@ const IndexPDFPreview = ({ scale = 1 }: IndexPDFPreviewProps) => {
     const indexEntries = useAppSelector((state) => state.indexGenerator.entries);
     const { generatePDF } = useGenerateIndexPDF();
 
+    // Understand whats happening here
     useEffect(() => {
+
+        // This function generates the indexes and display them
         const generateAndDisplay = async () => {
             try {
                 setIsLoading(true);
@@ -38,18 +42,11 @@ const IndexPDFPreview = ({ scale = 1 }: IndexPDFPreviewProps) => {
                 const blob = await generatePDF(indexEntries);
                 const url = URL.createObjectURL(blob);
 
-                // Revoke old URL before setting new one
-                if (urlToRevokeRef.current) {
-                    URL.revokeObjectURL(urlToRevokeRef.current);
-                }
-
                 urlToRevokeRef.current = url;
                 setPdfUrl(url);
             } catch (err) {
                 console.error("Error generating index PDF:", err);
-                setError(
-                    err instanceof Error ? err.message : "Failed to generate index"
-                );
+                setError(err instanceof Error ? err.message : "Failed to generate index");
             } finally {
                 setIsLoading(false);
             }
@@ -57,14 +54,15 @@ const IndexPDFPreview = ({ scale = 1 }: IndexPDFPreviewProps) => {
 
         generateAndDisplay();
 
-        // Cleanup only on unmount
         return () => {
             if (urlToRevokeRef.current) {
                 URL.revokeObjectURL(urlToRevokeRef.current);
                 urlToRevokeRef.current = null;
             }
         };
-    }, [indexEntries]);
+
+    }, []);
+
 
     const handlePreviousPage = () => {
         if (currentPage > 1) {
@@ -111,10 +109,12 @@ const IndexPDFPreview = ({ scale = 1 }: IndexPDFPreviewProps) => {
                             <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
                         </div>
                     }
-                    onLoadError={(error) => {
-                        console.error("❌ Index PDF load error:", error);
+
+                    onLoadError={(errors) => {
+                        console.error("❌ Index PDF load error:", errors);
                         setError("Failed to load index PDF");
                     }}
+
                     onLoadSuccess={({ numPages }) => {
                         console.log(`✅ Index PDF loaded: ${numPages} page(s)`);
                         setNumPages(numPages);

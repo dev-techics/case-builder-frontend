@@ -14,6 +14,7 @@ const initialState: EditorState = {
   pendingComment: null,
   highlights: [],
   comments: [],
+  isCommentExpended: false,
 };
 
 const toolbarSlice = createSlice({
@@ -151,6 +152,10 @@ const toolbarSlice = createSlice({
       state.CommentPosition = { x: null, y: null };
       state.pendingComment = null;
     },
+
+    setIsCommentExpanded: (state) => {
+      state.isCommentExpended = !state.isCommentExpended;
+    },
   },
 });
 
@@ -173,4 +178,5 @@ export const {
   clearFileComments,
   clearPageComments,
   cancelCommentCreation,
+  setIsCommentExpanded,
 } = toolbarSlice.actions;

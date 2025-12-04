@@ -16,7 +16,7 @@ export function useGenerateIndexPDF() {
       }
 
       // projectName will always be the current value when this executes
-      const pdfBytes = await generateIndexPDF(entries, projectName);
+      const pdfBytes = await generateIndexPDF(entries);
       return new Blob([pdfBytes], { type: "application/pdf" });
     },
     [] // Empty dependencies - function reference stays stable

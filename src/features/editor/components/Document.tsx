@@ -48,7 +48,7 @@ export function TextHighlightableDocument({
                 fileName: file.name,
             })
         );
-        console.log(file);
+        // console.log(file);
         console.log(`✅ PDF loaded: ${file.name} - ${numPages} pages`);
     };
 
