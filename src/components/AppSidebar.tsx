@@ -15,7 +15,7 @@ function AppSidebar({
         side === "left" ? "[--sidebar-width:256px]" : "[--sidebar-width:300px]";
 
     // Add collapsible="none" for right sidebar to prevent width issues
-    const collapsible = side === "right" ? "none" : "offcanvas";
+    const collapsible = side === "right" ? "offcanvas" : "offcanvas";
 
     return (
         <Sidebar

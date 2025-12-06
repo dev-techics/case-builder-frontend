@@ -15,7 +15,7 @@ export default function EditorLayout() {
             </SidebarProvider>
 
             {/* Main Area */}
-            <div className="flex flex-1 flex-col">
+            <div className="mr-4 flex flex-1 flex-col">
                 {/* Topbar */}
                 <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-white px-4">
                     <h1 className="font-semibold">Editor</h1>
@@ -39,6 +39,7 @@ export default function EditorLayout() {
             {/* Right Sidebar with its own provider */}
             <SidebarProvider>
                 <PropertiesSidebar />
+                <SidebarTrigger className="z-50 mt-1 text-2xl" size="lg" />
             </SidebarProvider>
         </div>
     );
