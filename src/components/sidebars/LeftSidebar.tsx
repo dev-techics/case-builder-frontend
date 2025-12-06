@@ -4,7 +4,7 @@ import {
     SidebarFooter,
 } from "@/components/ui/sidebar";
 
-function AppSidebar({
+function LeftSidebar({
     children,
     side,
 }: {
@@ -30,4 +30,4 @@ function AppSidebar({
     );
 }
 
-export default AppSidebar;
+export default LeftSidebar;

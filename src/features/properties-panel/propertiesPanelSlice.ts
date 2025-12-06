@@ -18,6 +18,7 @@ type PropertiesPanelState = {
     footer: HeaderFooterItem;
   };
   documentInfo: Record<string, DocumentPageInfo>; // Changed from array to object
+  openRightSidebar: boolean;
 };
 
 const initialState: PropertiesPanelState = {
@@ -39,6 +40,7 @@ const initialState: PropertiesPanelState = {
     },
   },
   documentInfo: {}, // Changed to empty object
+  openRightSidebar: true,
 };
 
 const propertiesPanelSlice = createSlice({
@@ -76,6 +78,9 @@ const propertiesPanelSlice = createSlice({
     clearDocumentInfo: (state) => {
       state.documentInfo = {};
     },
+    toggleRightSidebar: (state, action: PayloadAction<boolean>) => {
+      state.openRightSidebar = action.payload;
+    },
   },
 });
 
@@ -86,6 +91,7 @@ export const {
   setDocumentPageCount,
   removeDocumentPageCount,
   clearDocumentInfo,
+  toggleRightSidebar,
 } = propertiesPanelSlice.actions;
 
 export default propertiesPanelSlice.reducer;

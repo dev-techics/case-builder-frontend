@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <explanation> */
 import { MessageSquare } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useSidebarState } from "@/context/SidebarContext";
 import type { Comment } from "../types/SliceTypes";
 import CommentCard from "./CommentCard";
 
@@ -14,7 +15,8 @@ type CommentMarkerProps = {
 const CommentMarker = ({ comment, pageHeight, scale }: CommentMarkerProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
-
+    // Use the global sidebar state instead of useSidebar()
+    const { setIsOpen } = useSidebarState();
     // Convert stored pageY (screen coordinates) to PDF percentage
     // This makes it scale-independent
     const pageNumber = comment.pageNumber;
@@ -30,7 +32,9 @@ const CommentMarker = ({ comment, pageHeight, scale }: CommentMarkerProps) => {
 
     // Handle click outside to close
     useEffect(() => {
-        if (!isExpanded) { return; }
+        if (!isExpanded) {
+            return;
+        }
 
         const handleClickOutside = (event: MouseEvent) => {
             if (cardRef.current && !cardRef.current.contains(event.target as Node)) {
@@ -43,11 +47,13 @@ const CommentMarker = ({ comment, pageHeight, scale }: CommentMarkerProps) => {
             document.addEventListener("mousedown", handleClickOutside);
         }, 100);
 
+        setIsOpen(false);
+
         return () => {
             clearTimeout(timer);
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isExpanded]);
+    }, [isExpanded, setIsOpen]);
 
     return (
         <>
@@ -66,8 +72,8 @@ const CommentMarker = ({ comment, pageHeight, scale }: CommentMarkerProps) => {
                 {/* Comment Icon */}
                 <button
                     className={`flex h-8 w-8 items-center justify-center rounded-full shadow-lg transition-all ${comment.resolved
-                        ? "border-2 border-green-400 bg-green-100 hover:bg-green-200"
-                        : "border-2 border-blue-400 bg-blue-100 hover:bg-blue-200"
+                            ? "border-2 border-green-400 bg-green-100 hover:bg-green-200"
+                            : "border-2 border-blue-400 bg-blue-100 hover:bg-blue-200"
                         }`}
                     onClick={() => setIsExpanded(!isExpanded)}
                     title="View comment"

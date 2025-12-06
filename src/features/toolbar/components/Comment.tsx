@@ -4,14 +4,14 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 
 /**
- * This is the comment option component in the toolbar, 
- * clicking on the comment button will set the pending comment state 
+ * This is the comment option component in the toolbar,
+ * clicking on the comment button will set the pending comment state
  * and will create a input element at the right for adding a comment
  */
 
-
 import { MessageSquareText } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { useSidebarState } from "@/context/SidebarContext";
 import {
     setCommentPosition,
     setPendingComment,
@@ -19,15 +19,14 @@ import {
 } from "../toolbarSlice";
 
 function Comment() {
-
     const dispatch = useAppDispatch();
     const position = useAppSelector((state) => state.toolbar.ToolbarPosition);
     const pendingHighlight = useAppSelector(
         (state) => state.toolbar.pendingHighlight
     );
+    const { setIsOpen } = useSidebarState();
 
     const handleOnClick = () => {
-
         if (!pendingHighlight || position.y === null) {
             console.warn("⚠️ No pending highlight or position");
             return;
@@ -75,8 +74,10 @@ function Comment() {
         // The comment input will clear it when submitted or canceled
         dispatch(setToolbarPosition({ x: null, y: null }));
 
-        console.log("✅ Comment input opened, toolbar hidden");
+        //Close Right Sidebar for comment input field visibility
+        setIsOpen(false);
 
+        console.log("✅ Comment input opened, toolbar hidden");
     };
 
     return (

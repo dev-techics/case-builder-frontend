@@ -1,4 +1,4 @@
-import AppSidebar from "@/components/AppSidebar";
+import AppSidebar from "@/components/sidebars/LeftSidebar";
 
 // import { SidebarTrigger } from "@/components/ui/sidebar";
 

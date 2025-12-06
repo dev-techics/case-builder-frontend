@@ -1,6 +1,6 @@
 import { Download, FileText, Settings } from "lucide-react";
 import { useState } from "react";
-import AppSidebar from "@/components/AppSidebar";
+import RightSidebar from "@/components/sidebars/RightSidebar";
 import Annotations from "./components/Annotations";
 import DocumentSettings from "./components/DocumentSettings";
 import Exports from "./components/Exports";
@@ -8,7 +8,6 @@ import Exports from "./components/Exports";
 type TabType = "properties" | "annotations" | "export";
 
 function PropertiesSidebar() {
-
     const [activeTab, setActiveTab] = useState<TabType>("properties");
     const tabs = [
         {
@@ -35,7 +34,7 @@ function PropertiesSidebar() {
     const ActiveComponent = activeTabData?.component;
 
     return (
-        <AppSidebar side="right">
+        <RightSidebar>
             {/* Sidebar Header */}
             <div className="border-b bg-gray-50 px-4 py-3">
                 <h2 className="font-semibold text-gray-900 text-sm">Document Tools</h2>
@@ -74,7 +73,7 @@ function PropertiesSidebar() {
                     </div>
                 )}
             </div>
-        </AppSidebar>
+        </RightSidebar>
     );
 }
 

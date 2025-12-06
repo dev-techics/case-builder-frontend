@@ -12,7 +12,6 @@ function Annotations() {
     const { headerLeft, headerRight, footer } = useAppSelector(
         (states) => states.propertiesPanel
     );
-
     const handleReset = () => {
         dispatch(changeHeaderLeft(""));
         dispatch(changeHeaderRight(""));
