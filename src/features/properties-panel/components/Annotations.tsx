@@ -10,7 +10,7 @@ import {
 function Annotations() {
   const dispatch = useAppDispatch();
   const { headerLeft, headerRight, footer } = useAppSelector(
-    states => states.propertiesPanel
+    states => states.propertiesPanel.headersFooter
   );
   const handleReset = () => {
     dispatch(changeHeaderLeft(''));
@@ -53,7 +53,7 @@ function Annotations() {
               onChange={e => e.target.value}
               placeholder="e.g., Company Name"
               type="text"
-              value={headerLeft}
+              value={headerLeft.text}
             />
           </div>
         </div>
@@ -70,7 +70,7 @@ function Annotations() {
               onChange={e => e.target.value}
               placeholder="e.g., Document Version"
               type="text"
-              value={headerRight}
+              value={headerRight.text}
             />
           </div>
         </div>
@@ -97,7 +97,7 @@ function Annotations() {
               onChange={e => e.target.value}
               placeholder="e.g., Confidential"
               type="text"
-              value={footer}
+              value={footer.text}
             />
             <p className="mt-1.5 text-gray-500 text-xs">
               💡 Tip: Page numbers are automatically added to the right
@@ -112,8 +112,8 @@ function Annotations() {
         <div className="space-y-1 rounded border border-blue-100 bg-white p-2 font-mono text-blue-800 text-xs">
           {headerLeft && (
             <div className="flex justify-between">
-              <span className="text-gray-600">← {headerLeft}</span>
-              <span className="text-gray-600">{headerRight} →</span>
+              <span className="text-gray-600">← {headerLeft.text}</span>
+              <span className="text-gray-600">{headerRight.text} →</span>
             </div>
           )}
           {!(headerLeft || headerRight) && (
@@ -121,7 +121,7 @@ function Annotations() {
           )}
           {footer && (
             <div className="mt-1 flex justify-between border-blue-100 border-t pt-1">
-              <span className="text-gray-600">← {footer}</span>
+              <span className="text-gray-600">← {footer.text}</span>
               <span className="text-gray-600">Page # →</span>
             </div>
           )}

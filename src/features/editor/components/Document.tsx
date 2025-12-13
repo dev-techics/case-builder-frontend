@@ -46,7 +46,6 @@ export function TextHighlightableDocument({
         fileName: file.name,
       })
     );
-    // console.log(file);
     console.log(`✅ PDF loaded: ${file.name} - ${numPages} pages`);
   };
 
@@ -78,7 +77,7 @@ export function TextHighlightableDocument({
     }
 
     let selectedPageNumber: number | null = null;
-    let pageElement: HTMLElement | null = null;
+    let pageElement: HTMLDivElement | null = null;
 
     pageRefs.current.forEach((element, pageNumber) => {
       if (
@@ -91,19 +90,24 @@ export function TextHighlightableDocument({
       }
     });
 
-    if (!(selectedPageNumber && pageElement)) {
+    // Type guard to ensure both values exist
+    if (selectedPageNumber === null || pageElement === null) {
       console.warn('⚠️ Could not determine which page was selected');
       return;
     }
 
-    const pageData = pageInfo.get(selectedPageNumber); // eg. {width: 595, height: 842, pageNumber: 1, left: 0, top: 0}
+    // At this point, TypeScript knows both are non-null
+    const foundPageNumber: number = selectedPageNumber;
+    const foundPageElement: HTMLDivElement = pageElement;
+
+    const pageData = pageInfo.get(foundPageNumber);
 
     if (!pageData) {
       console.warn('⚠️ Page info not loaded yet');
       return;
     }
 
-    const selectionCoords = getTextSelectionCoordinates(pageElement);
+    const selectionCoords = getTextSelectionCoordinates(foundPageElement);
     if (!selectionCoords) {
       return;
     }
@@ -123,17 +127,14 @@ export function TextHighlightableDocument({
     console.log('📍 Selection info:', {
       fileId: file.id,
       fileName: file.name,
-      pageNumber: selectedPageNumber,
+      pageNumber: foundPageNumber,
       text: selectionCoords.selectedText,
       pdfCoordinates: pdfCoords,
       selectionCoords,
     });
 
     const containerRect = containerRef.current?.getBoundingClientRect();
-    const pageRect = pageElement.getBoundingClientRect();
-
-    // console.log(containerRect);
-    // console.log(pageRect);
+    const pageRect = foundPageElement.getBoundingClientRect();
 
     if (!containerRect) {
       console.warn('⚠️ Container ref not available');
@@ -151,7 +152,7 @@ export function TextHighlightableDocument({
     dispatch(
       setPendingHighlight({
         fileId: file.id,
-        pageNumber: selectedPageNumber,
+        pageNumber: foundPageNumber,
         coordinates: {
           x: pdfCoords.x,
           y: pdfCoords.y,
@@ -181,7 +182,6 @@ export function TextHighlightableDocument({
         }
         onLoadError={error => {
           console.error('PDF load error:', error);
-          // Don't crash the whole app
         }}
         onLoadSuccess={onDocumentLoadSuccess}
       >
@@ -219,7 +219,7 @@ export function TextHighlightableDocument({
                 />
               )}
 
-              {/* Comment Overlays - NEW! */}
+              {/* Comment Overlays */}
               {pageData && (
                 <CommentOverlay
                   fileId={file.id}

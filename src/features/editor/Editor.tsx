@@ -20,7 +20,6 @@ const PDFViewer: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const isScrollingFromEditor = useRef(false);
-  const comment = useAppSelector(states => states.toolbar.comments);
   // Use the hook to get modified PDFs
   const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 

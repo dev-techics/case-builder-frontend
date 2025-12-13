@@ -5,7 +5,7 @@ import { useAppSelector } from '@/app/hooks';
 function DocumentSettings() {
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const tree = useAppSelector(state => state.fileTree.tree);
-  const documentInfo = useAppSelector(state => state.editor.documentInfo); // If you store this
+  // const documentInfo = useAppSelector(state => state.editor.documentInfo); // If you store this
 
   const [fileSize, setFileSize] = useState<string>('Calculating...');
 
@@ -38,7 +38,9 @@ function DocumentSettings() {
     );
   }
 
-  const totalPages = documentInfo?.[currentFile.id]?.numPages || 'Loading...';
+  // TODO: fix it
+  // const totalPages = documentInfo?.[currentFile.id]?.numPages || 'Loading...';
+  const totalPages = 'Loading...';
 
   return (
     <div className="mx-2 space-y-1">
