@@ -1,4 +1,16 @@
+/**
+ * Annotations
+ *
+ * Responsibilities:
+ * Manage annotations - adding headers and footers, preview
+ *
+ * Notes:
+ * .........
+ *
+ * Author: Anik Dey
+ */
 import { Copy, RotateCcw } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,11 +19,32 @@ import {
   changeHeaderRight,
 } from '../propertiesPanelSlice';
 
-function Annotations() {
+const Annotations = () => {
   const dispatch = useAppDispatch();
   const { headerLeft, headerRight, footer } = useAppSelector(
     states => states.propertiesPanel.headersFooter
   );
+
+  // Local state for input fields
+  const [localHeaderLeft, setLocalHeaderLeft] = useState(headerLeft.text || '');
+  const [localHeaderRight, setLocalHeaderRight] = useState(
+    headerRight.text || ''
+  );
+  const [localFooter, setLocalFooter] = useState(footer.text || '');
+
+  // Sync local state with Redux state when it changes externally (like on reset)
+  useEffect(() => {
+    setLocalHeaderLeft(headerLeft.text || '');
+  }, [headerLeft.text]);
+
+  useEffect(() => {
+    setLocalHeaderRight(headerRight.text || '');
+  }, [headerRight.text]);
+
+  useEffect(() => {
+    setLocalFooter(footer.text || '');
+  }, [footer.text]);
+
   const handleReset = () => {
     dispatch(changeHeaderLeft(''));
     dispatch(changeHeaderRight(''));
@@ -19,7 +52,7 @@ function Annotations() {
   };
 
   const handleCopyPreview = () => {
-    const preview = `Header Left: ${headerLeft}\nHeader Right: ${headerRight}\nFooter: ${footer}`;
+    const preview = `Header Left: ${localHeaderLeft}\nHeader Right: ${localHeaderRight}\nFooter: ${localFooter}`;
     navigator.clipboard.writeText(preview);
   };
 
@@ -27,6 +60,7 @@ function Annotations() {
     'w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors';
 
   const labelClass = 'block text-xs font-semibold text-gray-700 mb-1.5';
+
   const sectionClass =
     'space-y-2 p-3 rounded-lg border border-gray-100 bg-gray-50 hover:border-gray-200 transition-colors';
 
@@ -49,11 +83,11 @@ function Annotations() {
             <input
               className={inputClass}
               id="header-left"
+              onChange={e => setLocalHeaderLeft(e.target.value)}
               onBlur={e => dispatch(changeHeaderLeft(e.target.value))}
-              onChange={e => e.target.value}
               placeholder="e.g., Company Name"
               type="text"
-              value={headerLeft.text}
+              value={localHeaderLeft}
             />
           </div>
         </div>
@@ -66,11 +100,11 @@ function Annotations() {
             <input
               className={inputClass}
               id="header-right"
+              onChange={e => setLocalHeaderRight(e.target.value)}
               onBlur={e => dispatch(changeHeaderRight(e.target.value))}
-              onChange={e => e.target.value}
               placeholder="e.g., Document Version"
               type="text"
-              value={headerRight.text}
+              value={localHeaderRight}
             />
           </div>
         </div>
@@ -93,11 +127,11 @@ function Annotations() {
             <input
               className={inputClass}
               id="footer"
+              onChange={e => setLocalFooter(e.target.value)}
               onBlur={e => dispatch(changeFooter(e.target.value))}
-              onChange={e => e.target.value}
               placeholder="e.g., Confidential"
               type="text"
-              value={footer.text}
+              value={localFooter}
             />
             <p className="mt-1.5 text-gray-500 text-xs">
               💡 Tip: Page numbers are automatically added to the right
@@ -110,18 +144,18 @@ function Annotations() {
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
         <p className="mb-2 font-semibold text-blue-900 text-xs">Preview</p>
         <div className="space-y-1 rounded border border-blue-100 bg-white p-2 font-mono text-blue-800 text-xs">
-          {headerLeft && (
+          {(localHeaderLeft || localHeaderRight) && (
             <div className="flex justify-between">
-              <span className="text-gray-600">← {headerLeft.text}</span>
-              <span className="text-gray-600">{headerRight.text} →</span>
+              <span className="text-gray-600">← {localHeaderLeft}</span>
+              <span className="text-gray-600">{localHeaderRight} →</span>
             </div>
           )}
-          {!(headerLeft || headerRight) && (
+          {!(localHeaderLeft || localHeaderRight) && (
             <div className="text-gray-400 italic">Headers will appear here</div>
           )}
-          {footer && (
+          {localFooter && (
             <div className="mt-1 flex justify-between border-blue-100 border-t pt-1">
-              <span className="text-gray-600">← {footer.text}</span>
+              <span className="text-gray-600">← {localFooter}</span>
               <span className="text-gray-600">Page # →</span>
             </div>
           )}
@@ -151,6 +185,6 @@ function Annotations() {
       </div>
     </div>
   );
-}
+};
 
 export default Annotations;
