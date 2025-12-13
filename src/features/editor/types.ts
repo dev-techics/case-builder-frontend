@@ -1,4 +1,4 @@
-import type { FileNode } from "../file-explorer/types";
+import type { FileNode } from '../file-explorer/types';
 
 export type PdfDocumentInfo = {
   fileId: string;
@@ -18,7 +18,7 @@ export type UseModifiedPDFsResult = {
   modifiedFiles: Array<{
     id: string;
     name: string;
-    type: "file";
+    type: 'file';
     url: string;
     originalUrl: string;
   }>;

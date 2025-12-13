@@ -1,16 +1,14 @@
-import { arrayMove } from "@dnd-kit/sortable";
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import fileTreeData from "../../data/project-folder-data.json" with {
-  type: "json",
-};
-import type { FileNode, FileTreeState, FolderNode } from "./types";
+import { arrayMove } from '@dnd-kit/sortable';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import fileTreeData from '../../data/project-folder-data.json' with { type: 'json' };
+import type { FileNode, FileTreeState, FolderNode } from './types';
 
 // Redux slice
 const fileTreeSlice = createSlice({
-  name: "fileTree",
+  name: 'fileTree',
   initialState: {
     tree: fileTreeData,
-    expandedFolders: ["proj-1"],
+    expandedFolders: ['proj-1'],
     selectedFile: null,
     scrollToFileId: null,
   } as FileTreeState,
@@ -19,7 +17,7 @@ const fileTreeSlice = createSlice({
       const folderId = action.payload;
       if (state.expandedFolders.includes(folderId)) {
         state.expandedFolders = state.expandedFolders.filter(
-          (id) => id !== folderId
+          id => id !== folderId
         );
       } else {
         state.expandedFolders.push(folderId);
@@ -36,7 +34,7 @@ const fileTreeSlice = createSlice({
     },
     removeFile: (state, action: PayloadAction<string>) => {
       state.tree.children = state.tree.children.filter(
-        (f) => f.id !== action.payload
+        f => f.id !== action.payload
       );
       if (state.selectedFile === action.payload) {
         state.selectedFile = null;

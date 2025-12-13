@@ -1,10 +1,8 @@
-/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
-/** biome-ignore-all lint/suspicious/noConsole: <explanation> */
-import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/app/hooks";
-import ColorPicker from "./components/ColorPicker";
-import Comment from "./components/Comment";
-import { cancelHighlight } from "./toolbarSlice";
+import { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import ColorPicker from './components/ColorPicker';
+import Comment from './components/Comment';
+import { cancelHighlight } from './toolbarSlice';
 /**
  * This component:
  * 1. Reads the pending highlight from Redux
@@ -16,114 +14,114 @@ import { cancelHighlight } from "./toolbarSlice";
  */
 
 export function Toolbar() {
-    const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
-    // Get data from Redux
-    const position = useAppSelector((state) => state.toolbar.ToolbarPosition);
-    const pendingHighlight = useAppSelector(
-        (state) => state.toolbar.pendingHighlight
-    );
-    const dispatch = useAppDispatch();
+  // Get data from Redux
+  const position = useAppSelector(state => state.toolbar.ToolbarPosition);
+  const pendingHighlight = useAppSelector(
+    state => state.toolbar.pendingHighlight
+  );
+  const dispatch = useAppDispatch();
 
-    // Show/hide based on position
-    useEffect(() => {
-        if (position && position.x !== null && position.y !== null) {
-            setIsVisible(true);
-        } else {
-            setIsVisible(false);
-        }
-    }, [position]);
+  // Show/hide based on position
+  useEffect(() => {
+    if (position && position.x !== null && position.y !== null) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  }, [position]);
 
-    // Handle click outside to close
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (!target.closest(".highlight-color-picker")) {
-                dispatch(cancelHighlight());
-
-                // Clear the text selection
-                const selection = window.getSelection();
-                if (selection) {
-                    selection.removeAllRanges();
-                }
-            }
-        };
-
-        if (isVisible) {
-            document.addEventListener("mousedown", handleClickOutside);
-            return () => {
-                document.removeEventListener("mousedown", handleClickOutside);
-            };
-        }
-    }, [isVisible, dispatch]);
-
-    const handleClose = () => {
+  // Handle click outside to close
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.highlight-color-picker')) {
         dispatch(cancelHighlight());
 
         // Clear the text selection
         const selection = window.getSelection();
         if (selection) {
-            selection.removeAllRanges();
+          selection.removeAllRanges();
         }
+      }
     };
 
-    // Don't render if no position or not visible
-    if (!(position && isVisible) || position.x === null || position.y === null) {
-        return null;
+    if (isVisible) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
     }
+  }, [isVisible, dispatch]);
 
-    // Show warning if no pending highlight (shouldn't happen, but good safeguard)
-    if (!pendingHighlight) {
-        console.warn("⚠️ Color picker visible but no pending highlight");
-        return null;
+  const handleClose = () => {
+    dispatch(cancelHighlight());
+
+    // Clear the text selection
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
     }
+  };
 
-    return (
-        <div
-            className="highlight-color-picker fade-in slide-in-from-bottom-2 absolute z-50 animate-in duration-200"
-            style={{
-                left: `${position.x}px`,
-                top: `${position.y - 65}px`, // 65px above the selection
-                transform: "translateX(-50%)",
-            }}
+  // Don't render if no position or not visible
+  if (!(position && isVisible) || position.x === null || position.y === null) {
+    return null;
+  }
+
+  // Show warning if no pending highlight (shouldn't happen, but good safeguard)
+  if (!pendingHighlight) {
+    console.warn('⚠️ Color picker visible but no pending highlight');
+    return null;
+  }
+
+  return (
+    <div
+      className="highlight-color-picker fade-in slide-in-from-bottom-2 absolute z-50 animate-in duration-200"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y - 65}px`, // 65px above the selection
+        transform: 'translateX(-50%)',
+      }}
+    >
+      <div className="flex h-14 items-center gap-2 rounded-lg border-2 border-gray-200 bg-white p-2 shadow-xl">
+        {/* Comment Option */}
+        <Comment />
+        {/* Divider */}
+        <div className="h-8 w-px bg-gray-300" />
+        {/* Color options */}
+        <ColorPicker />
+        {/* Divider */}
+        <div className="h-8 w-px bg-gray-300" />
+        {/* Cancel button */}
+        <button
+          className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-gray-100"
+          onClick={handleClose}
+          title="Cancel"
+          type="button"
         >
-            <div className="flex h-14 items-center gap-2 rounded-lg border-2 border-gray-200 bg-white p-2 shadow-xl">
-                {/* Comment Option */}
-                <Comment />
-                {/* Divider */}
-                <div className="h-8 w-px bg-gray-300" />
-                {/* Color options */}
-                <ColorPicker />
-                {/* Divider */}
-                <div className="h-8 w-px bg-gray-300" />
-                {/* Cancel button */}
-                <button
-                    className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-gray-100"
-                    onClick={handleClose}
-                    title="Cancel"
-                    type="button"
-                >
-                    <svg
-                        className="h-4 w-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            d="M6 18L18 6M6 6l12 12"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                        />
-                    </svg>
-                </button>
-            </div>
-
-            {/* Arrow pointing down to selection */}
-            <div
-                className="-translate-x-1/2 -bottom-2 absolute left-1/2 h-0 w-0 border-transparent border-t-8 border-t-white border-r-8 border-l-8"
-                style={{ filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.1))" }}
+          <svg
+            className="h-4 w-4 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M6 18L18 6M6 6l12 12"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
             />
-        </div>
-    );
+          </svg>
+        </button>
+      </div>
+
+      {/* Arrow pointing down to selection */}
+      <div
+        className="-translate-x-1/2 -bottom-2 absolute left-1/2 h-0 w-0 border-transparent border-t-8 border-t-white border-r-8 border-l-8"
+        style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.1))' }}
+      />
+    </div>
+  );
 }

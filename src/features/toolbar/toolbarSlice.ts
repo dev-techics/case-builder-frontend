@@ -1,11 +1,11 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
   Comment,
   EditorState,
   Highlight,
   PendingComment,
   PendingHighlight,
-} from "./types/SliceTypes";
+} from './types/SliceTypes';
 
 const initialState: EditorState = {
   ToolbarPosition: { x: null, y: null },
@@ -18,7 +18,7 @@ const initialState: EditorState = {
 };
 
 const toolbarSlice = createSlice({
-  name: "toolbar",
+  name: 'toolbar',
   initialState,
   reducers: {
     // Toolbar position
@@ -44,20 +44,18 @@ const toolbarSlice = createSlice({
 
     // Remove a specific highlight
     removeHighlight: (state, action: PayloadAction<string>) => {
-      state.highlights = state.highlights.filter(
-        (h) => h.id !== action.payload
-      );
+      state.highlights = state.highlights.filter(h => h.id !== action.payload);
     },
 
     // Clear all highlights
-    clearHighlights: (state) => {
+    clearHighlights: state => {
       state.highlights = [];
     },
 
     // Clear highlights for a specific file
     clearFileHighlights: (state, action: PayloadAction<string>) => {
       state.highlights = state.highlights.filter(
-        (h) => h.fileId !== action.payload
+        h => h.fileId !== action.payload
       );
     },
 
@@ -67,14 +65,14 @@ const toolbarSlice = createSlice({
       action: PayloadAction<{ fileId: string; pageNumber: number }>
     ) => {
       state.highlights = state.highlights.filter(
-        (h) =>
+        h =>
           h.fileId !== action.payload.fileId ||
           h.pageNumber !== action.payload.pageNumber
       );
     },
 
     // Cancel highlight creation
-    cancelHighlight: (state) => {
+    cancelHighlight: state => {
       state.ToolbarPosition = { x: null, y: null };
       state.pendingHighlight = null;
     },
@@ -108,7 +106,7 @@ const toolbarSlice = createSlice({
       state,
       action: PayloadAction<{ id: string; text: string }>
     ) => {
-      const comment = state.comments.find((c) => c.id === action.payload.id);
+      const comment = state.comments.find(c => c.id === action.payload.id);
       if (comment) {
         comment.text = action.payload.text;
         comment.updatedAt = new Date().toISOString();
@@ -117,12 +115,12 @@ const toolbarSlice = createSlice({
 
     // Delete comment
     deleteComment: (state, action: PayloadAction<string>) => {
-      state.comments = state.comments.filter((c) => c.id !== action.payload);
+      state.comments = state.comments.filter(c => c.id !== action.payload);
     },
 
     // Resolve/Unresolve comment
     toggleCommentResolved: (state, action: PayloadAction<string>) => {
-      const comment = state.comments.find((c) => c.id === action.payload);
+      const comment = state.comments.find(c => c.id === action.payload);
       if (comment) {
         comment.resolved = !comment.resolved;
       }
@@ -130,9 +128,7 @@ const toolbarSlice = createSlice({
 
     // Clear comments for a specific file
     clearFileComments: (state, action: PayloadAction<string>) => {
-      state.comments = state.comments.filter(
-        (c) => c.fileId !== action.payload
-      );
+      state.comments = state.comments.filter(c => c.fileId !== action.payload);
     },
 
     // Clear comments for a specific page
@@ -141,19 +137,19 @@ const toolbarSlice = createSlice({
       action: PayloadAction<{ fileId: string; pageNumber: number }>
     ) => {
       state.comments = state.comments.filter(
-        (c) =>
+        c =>
           c.fileId !== action.payload.fileId ||
           c.pageNumber !== action.payload.pageNumber
       );
     },
 
     // Cancel comment creation
-    cancelCommentCreation: (state) => {
+    cancelCommentCreation: state => {
       state.CommentPosition = { x: null, y: null };
       state.pendingComment = null;
     },
 
-    setIsCommentExpanded: (state) => {
+    setIsCommentExpanded: state => {
       state.isCommentExpended = !state.isCommentExpended;
     },
   },

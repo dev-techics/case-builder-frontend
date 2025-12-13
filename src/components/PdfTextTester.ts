@@ -1,4 +1,4 @@
-import { getDocument } from "pdfjs-dist";
+import { getDocument } from 'pdfjs-dist';
 
 export async function testPdfTextExtraction(fileUrl) {
   const loadingTask = getDocument(fileUrl);

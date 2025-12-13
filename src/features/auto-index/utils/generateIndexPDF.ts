@@ -1,6 +1,6 @@
 // features/index-generator/utils/generateIndexPDF.ts
-import { PDFDocument, rgb } from "pdf-lib";
-import type { IndexEntry } from "../types";
+import { PDFDocument, rgb } from 'pdf-lib';
+import type { IndexEntry } from '../types';
 
 const PAGE_WIDTH = 595; // A4
 const PAGE_HEIGHT = 842; // A4
@@ -18,7 +18,7 @@ const generateIndexPDF = async (entries: IndexEntry[]): Promise<Uint8Array> => {
   let yPosition = PAGE_HEIGHT - MARGIN_TOP;
 
   // Title on first page only
-  currentPage.drawText("Table of Contents", {
+  currentPage.drawText('Table of Contents', {
     x: PAGE_WIDTH / 3,
     y: yPosition,
     size: 24,
@@ -52,7 +52,7 @@ const generateIndexPDF = async (entries: IndexEntry[]): Promise<Uint8Array> => {
       yPosition = PAGE_HEIGHT - MARGIN_TOP;
 
       // Add "continued" header on new page
-      currentPage.drawText("Table of Contents (continued)", {
+      currentPage.drawText('Table of Contents (continued)', {
         x: MARGIN_LEFT,
         y: yPosition,
         size: 14,

@@ -3,16 +3,16 @@
  * this hooks generate index number by iterating through the files
  */
 
-import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/app/hooks";
-import { generateIndex } from "../autoIndexSlice";
-import type { IndexEntry } from "../types";
+import { useCallback, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { generateIndex } from '../autoIndexSlice';
+import type { IndexEntry } from '../types';
 
 export function useGenerateIndex() {
   const dispatch = useAppDispatch();
-  const tree = useAppSelector((state) => state.fileTree.tree);
+  const tree = useAppSelector(state => state.fileTree.tree);
   const documentInfo = useAppSelector(
-    (state) => state.propertiesPanel.documentInfo
+    state => state.propertiesPanel.documentInfo
   );
 
   const generateIndexFromFiles = useCallback(() => {
@@ -21,7 +21,7 @@ export function useGenerateIndex() {
 
     // Iterate through files in order
     tree.children.forEach((file, index) => {
-      if (file.type === "file" && file.url) {
+      if (file.type === 'file' && file.url) {
         const pageCount = documentInfo?.[file.id]?.numPages || 0;
 
         entries.push({
@@ -46,5 +46,5 @@ export function useGenerateIndex() {
     generateIndexFromFiles();
   }, [generateIndexFromFiles]);
 
-  return { entries: useAppSelector((state) => state.indexGenerator.entries) };
+  return { entries: useAppSelector(state => state.indexGenerator.entries) };
 }

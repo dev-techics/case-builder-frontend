@@ -1,9 +1,9 @@
-import { configureStore } from "@reduxjs/toolkit";
-import indexGenerator from "@/features/auto-index/autoIndexSlice";
-import editorSlice from "@/features/editor/editorSlice";
-import propertiesPanelSlice from "@/features/properties-panel/propertiesPanelSlice";
-import toolbar from "@/features/toolbar/toolbarSlice";
-import fileTreeSlice from "../features/file-explorer/fileTreeSlice";
+import { configureStore } from '@reduxjs/toolkit';
+import indexGenerator from '@/features/auto-index/autoIndexSlice';
+import editorSlice from '@/features/editor/editorSlice';
+import propertiesPanelSlice from '@/features/properties-panel/propertiesPanelSlice';
+import toolbar from '@/features/toolbar/toolbarSlice';
+import fileTreeSlice from '../features/file-explorer/fileTreeSlice';
 
 const store = configureStore({
   reducer: {

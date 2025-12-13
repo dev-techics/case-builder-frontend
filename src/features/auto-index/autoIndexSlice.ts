@@ -1,14 +1,14 @@
 // features/index-generator/indexSlice.ts
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { IndexEntry, IndexState } from "./types";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { IndexEntry, IndexState } from './types';
 
 const initialState: IndexState = {
   entries: [],
-  lastUpdated: "",
+  lastUpdated: '',
 };
 
 const indexSlice = createSlice({
-  name: "indexGenerator",
+  name: 'indexGenerator',
   initialState,
   reducers: {
     // Regenerate entire index
@@ -22,9 +22,7 @@ const indexSlice = createSlice({
       state,
       action: PayloadAction<{ fileId: string; fileName: string }>
     ) => {
-      const entry = state.entries.find(
-        (e) => e.fileId === action.payload.fileId
-      );
+      const entry = state.entries.find(e => e.fileId === action.payload.fileId);
       if (entry) {
         entry.fileName = action.payload.fileName;
         state.lastUpdated = new Date().toISOString();
@@ -32,9 +30,9 @@ const indexSlice = createSlice({
     },
 
     // Clear index
-    clearIndex: (state) => {
+    clearIndex: state => {
       state.entries = [];
-      state.lastUpdated = "";
+      state.lastUpdated = '';
     },
   },
 });

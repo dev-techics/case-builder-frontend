@@ -1,15 +1,14 @@
 export type FileNode = {
   id: string;
   name: string;
-  type: "file";
-  url?: string; // Blob URL for the PDF file
-  // Don't store File object in Redux - it's non-serializable
+  type: 'file';
+  url: string; // Blob URL for the PDF file
 };
 
 export type FolderNode = {
   id: string;
   name: string;
-  type: "folder";
+  type: 'folder';
   children: FileNode[];
 };
 

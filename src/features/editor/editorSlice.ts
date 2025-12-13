@@ -1,5 +1,5 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Highlight } from "./types";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { Highlight } from './types';
 
 type PendingHighlight = {
   fileId: string;
@@ -28,17 +28,17 @@ const initialState: EditorState = {
 };
 
 const editorSlice = createSlice({
-  name: "editor",
+  name: 'editor',
   initialState,
   reducers: {
     // Scale controls
     setScale: (state, action: PayloadAction<number>) => {
       state.scale = Math.min(Math.max(action.payload, 0.5), 3.0);
     },
-    zoomIn: (state) => {
+    zoomIn: state => {
       state.scale = Math.min(state.scale + 0.2, 3.0);
     },
-    zoomOut: (state) => {
+    zoomOut: state => {
       state.scale = Math.max(state.scale - 0.2, 0.5);
     },
 
@@ -65,20 +65,18 @@ const editorSlice = createSlice({
 
     // Remove a specific highlight
     removeHighlight: (state, action: PayloadAction<string>) => {
-      state.highlights = state.highlights.filter(
-        (h) => h.id !== action.payload
-      );
+      state.highlights = state.highlights.filter(h => h.id !== action.payload);
     },
 
     // Clear all highlights
-    clearHighlights: (state) => {
+    clearHighlights: state => {
       state.highlights = [];
     },
 
     // Clear highlights for a specific file
     clearFileHighlights: (state, action: PayloadAction<string>) => {
       state.highlights = state.highlights.filter(
-        (h) => h.fileId !== action.payload
+        h => h.fileId !== action.payload
       );
     },
 
@@ -88,14 +86,14 @@ const editorSlice = createSlice({
       action: PayloadAction<{ fileId: string; pageNumber: number }>
     ) => {
       state.highlights = state.highlights.filter(
-        (h) =>
+        h =>
           h.fileId !== action.payload.fileId ||
           h.pageNumber !== action.payload.pageNumber
       );
     },
 
     // Cancel highlight creation
-    cancelHighlight: (state) => {
+    cancelHighlight: state => {
       state.colorPickerPosition = { x: null, y: null };
       state.pendingHighlight = null;
     },

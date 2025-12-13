@@ -1,14 +1,14 @@
-import Lottie from "lottie-react";
-import { EllipsisIcon, Pencil } from "lucide-react";
-import { Button } from "@/features/file-explorer/components/ui/button";
+import Lottie from 'lottie-react';
+import { EllipsisIcon, Pencil } from 'lucide-react';
+import { Button } from '@/features/file-explorer/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/features/file-explorer/components/ui/dropdown-menu";
+} from '@/features/file-explorer/components/ui/dropdown-menu';
 
-import TrashCan from "../../../../public/Trash Can.json" with { type: "json" };
+import TrashCan from '../../../../public/Trash Can.json' with { type: 'json' };
 
 export default function Component() {
   return (
@@ -32,8 +32,8 @@ export default function Component() {
             style={{
               width: 24,
               height: 24,
-              color: "red",
-              marginBottom: "5px",
+              color: 'red',
+              marginBottom: '5px',
             }}
           />
           Delete

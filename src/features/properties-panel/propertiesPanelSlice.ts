@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 type HeaderFooterItem = {
   text: string;
@@ -24,18 +24,18 @@ type PropertiesPanelState = {
 const initialState: PropertiesPanelState = {
   headersFooter: {
     headerLeft: {
-      text: "Header Left",
-      color: "#000",
+      text: 'Header Left',
+      color: '#000',
       size: 10,
     },
     headerRight: {
-      text: "Header Right",
-      color: "#000",
+      text: 'Header Right',
+      color: '#000',
       size: 10,
     },
     footer: {
-      text: "ICS Legal",
-      color: "#000",
+      text: 'ICS Legal',
+      color: '#000',
       size: 10,
     },
   },
@@ -44,7 +44,7 @@ const initialState: PropertiesPanelState = {
 };
 
 const propertiesPanelSlice = createSlice({
-  name: "propertiesPanel",
+  name: 'propertiesPanel',
   initialState,
   reducers: {
     changeHeaderLeft: (state, action: PayloadAction<string>) => {
@@ -75,7 +75,7 @@ const propertiesPanelSlice = createSlice({
       delete state.documentInfo[action.payload];
     },
     // Clear all document info
-    clearDocumentInfo: (state) => {
+    clearDocumentInfo: state => {
       state.documentInfo = {};
     },
     toggleRightSidebar: (state, action: PayloadAction<boolean>) => {

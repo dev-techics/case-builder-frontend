@@ -1,6 +1,6 @@
-import { type ClassValue, clsx } from "clsx";
-import { useEffect } from "react";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from 'clsx';
+import { useEffect } from 'react';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,11 +18,11 @@ export function useTextSelection() {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
 
-      console.log("🟡 Selected text:", selection.toString());
-      console.log("📏 Position:", rect);
+      console.log('🟡 Selected text:', selection.toString());
+      console.log('📏 Position:', rect);
     };
 
-    document.addEventListener("mouseup", handleSelection);
-    return () => document.removeEventListener("mouseup", handleSelection);
+    document.addEventListener('mouseup', handleSelection);
+    return () => document.removeEventListener('mouseup', handleSelection);
   }, []);
 }
