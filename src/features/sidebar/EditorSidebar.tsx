@@ -6,7 +6,7 @@ import FileTree from '../file-explorer/FileExplorer';
 
 export default function Layout() {
   return (
-    <AppSidebar side="left">
+    <AppSidebar>
       <FileTree />
     </AppSidebar>
   );
