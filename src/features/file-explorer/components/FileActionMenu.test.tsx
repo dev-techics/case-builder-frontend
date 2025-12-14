@@ -3,11 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import FileActionMenu from './FileActionMenu';
-import fileTreeReducer, { removeFile } from '../fileTreeSlice';
-import type { FileNode } from '../types';
+import fileTreeReducer from '../fileTreeSlice';
 import type { Mock } from 'vitest';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
+import type { FileNode, FolderNode } from '../types'; // ✅ Import FolderNode
 
 // Mock file data
 const mockFile: FileNode = {
@@ -17,6 +17,7 @@ const mockFile: FileNode = {
   url: 'file-url',
 };
 
+// Helper function to create a mock store
 // Helper function to create a mock store
 const createMockStore = () => {
   return configureStore({
@@ -28,9 +29,9 @@ const createMockStore = () => {
         tree: {
           id: 'proj-1',
           name: 'Project',
-          type: 'folder',
-          children: [mockFile], // ✅ Files go in tree.children
-        },
+          type: 'folder', // ✅ Will be typed correctly now
+          children: [mockFile],
+        } as FolderNode, // ✅ Add type assertion
         expandedFolders: ['proj-1'],
         selectedFile: null,
         scrollToFileId: null,
@@ -38,7 +39,6 @@ const createMockStore = () => {
     },
   });
 };
-
 // Helper function to render component with Redux store
 const renderWithProvider = (component: React.ReactElement) => {
   const store = createMockStore();
