@@ -17,7 +17,8 @@ import type React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/hooks';
 import { reorderFiles, selectFile, toggleFolder } from '../fileTreeSlice';
 import type { FolderNode } from '../types';
-import { SortableFileItem } from './SortableFileItem';
+import SortableFileItem from './SortableFileItem';
+import FileUploadHandler from './fileUploadHandler';
 
 type FolderItemProps = {
   folder: FolderNode;
@@ -65,17 +66,23 @@ export const FolderItem: React.FC<FolderItemProps> = ({ folder, level }) => {
   return (
     <div>
       <div
-        className="flex cursor-pointer items-center px-2 py-1 hover:bg-gray-200"
+        className="flex items-center justify-between px-2 py-1 hover:bg-gray-200"
         onClick={handleFolderClick}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
-        {isExpanded ? (
-          <ChevronDown className="mr-1 h-4 w-4 flex-shrink-0" />
-        ) : (
-          <ChevronRight className="mr-1 h-4 w-4 flex-shrink-0" />
-        )}
-        <Folder className="mr-2 h-4 w-4 flex-shrink-0 text-blue-400" />
-        <span className="truncate text-gray-800 text-sm">{folder.name}</span>
+        <div className="flex items-center cursor-pointer ">
+          {isExpanded ? (
+            <ChevronDown className="mr-1 h-4 w-4 flex-shrink-0" />
+          ) : (
+            <ChevronRight className="mr-1 h-4 w-4 flex-shrink-0" />
+          )}
+          <Folder className="mr-2 h-4 w-4 flex-shrink-0 text-blue-400" />
+          <span className="truncate text-gray-800 text-sm">{folder.name}</span>
+        </div>
+
+        <div>
+          <FileUploadHandler />
+        </div>
       </div>
 
       {isExpanded && (

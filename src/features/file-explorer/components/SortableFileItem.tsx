@@ -1,10 +1,22 @@
+/**
+ * Single File Item
+ *
+ * Responsibilites
+ * Display a single file in the left sidebar with a action menu for edit and delete functionality.
+ *
+ *
+ * Author: Anik Dey
+ *
+ */
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { File, GripVertical } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FileNode } from '../types';
-import Menu from './comp-366';
+import ActionMenu from './FileActionMenu';
+import { useAppDispatch } from '@/app/hooks';
+import { renameFile } from '@/features/file-explorer/fileTreeSlice';
 
 type SortableFileItemProps = {
   file: FileNode;
@@ -14,13 +26,19 @@ type SortableFileItemProps = {
   onSelect: () => void;
 };
 
-export const SortableFileItem: React.FC<SortableFileItemProps> = ({
+const SortableFileItem: React.FC<SortableFileItemProps> = ({
   file,
   isSelected,
   shouldScrollIntoView,
   onSelect,
 }) => {
   const fileRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dispatch = useAppDispatch();
+
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(file.name);
+
   const {
     attributes,
     listeners,
@@ -35,12 +53,21 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
   // Scroll into view when this file should be highlighted
   useEffect(() => {
     if (shouldScrollIntoView && fileRef.current) {
       fileRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [shouldScrollIntoView]);
+
+  // Focus input when entering rename mode
+  useEffect(() => {
+    if (isRenaming && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isRenaming]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -56,6 +83,39 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
   const handleDragClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  const handleRenameClick = () => {
+    setIsRenaming(true);
+    setRenameValue(file.name);
+  };
+
+  const handleRenameSubmit = () => {
+    const trimmedValue = renameValue.trim();
+    if (trimmedValue && trimmedValue !== file.name) {
+      dispatch(renameFile({ id: file.id, newName: trimmedValue }));
+    }
+    setIsRenaming(false);
+  };
+
+  const handleRenameCancel = () => {
+    setRenameValue(file.name);
+    setIsRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleRenameSubmit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleRenameCancel();
+    }
+  };
+
+  const handleRenameBlur = () => {
+    handleRenameSubmit();
+  };
+
   return (
     <div
       aria-pressed={isSelected}
@@ -74,7 +134,7 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
       style={style}
       tabIndex={0}
     >
-      <div className="flex items-center truncate">
+      <div className="flex items-center truncate flex-1 min-w-0">
         <button
           {...attributes}
           {...listeners}
@@ -86,11 +146,28 @@ export const SortableFileItem: React.FC<SortableFileItemProps> = ({
         >
           <GripVertical className="h-4 w-4 text-gray-500" />
         </button>
+
         <File className="mr-2 h-4 w-4 flex-shrink-0 text-gray-800" />
-        <span className="truncate text-gray-800 text-sm">{file.name}</span>
+
+        {isRenaming ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onKeyDown={handleRenameKeyDown}
+            onBlur={handleRenameBlur}
+            onClick={handleRenameClick}
+            className="truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
+          />
+        ) : (
+          <span className="truncate text-gray-800 text-sm">{file.name}</span>
+        )}
       </div>
       {/* Rename and delete menu */}
-      <Menu />
+      <ActionMenu file={file} onRenameClick={handleRenameClick} />
     </div>
   );
 };
+
+export default SortableFileItem;

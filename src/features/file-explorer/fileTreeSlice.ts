@@ -40,6 +40,16 @@ const fileTreeSlice = createSlice({
         state.selectedFile = null;
       }
     },
+    renameFile: (
+      state,
+      action: PayloadAction<{ id: string; newName: string }>
+    ) => {
+      const { id, newName } = action.payload;
+      const file = state.tree.children.find(f => f.id === id);
+      if (file) {
+        file.name = newName;
+      }
+    },
     reorderFiles: (
       state,
       action: PayloadAction<{ oldIndex: number; newIndex: number }>
@@ -59,6 +69,7 @@ export const {
   setScrollToFile,
   addFiles,
   removeFile,
+  renameFile,
   reorderFiles,
   setTree,
 } = fileTreeSlice.actions;

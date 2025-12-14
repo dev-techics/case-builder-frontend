@@ -1,6 +1,5 @@
 import { useAppSelector } from '../../app/hooks';
 import { FolderItem } from './components/FolderItem';
-import { FileUploadHandler } from './components/fileUploadHandler';
 
 const FileTree: React.FC = () => {
   const tree = useAppSelector(state => state.fileTree.tree);
@@ -12,7 +11,6 @@ const FileTree: React.FC = () => {
           Explorer
         </h2>
       </div>
-      <FileUploadHandler />
       <div className="py-1">
         <FolderItem folder={tree} level={0} />
       </div>

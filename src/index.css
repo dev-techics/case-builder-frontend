@@ -118,13 +118,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* In your sidebar.tsx or global CSS */
-[data-state='open'] {
-  width: var(--sidebar-width);
-}
-
-[data-state='closed'] {
-  width: 0;
-  overflow: hidden;
-}

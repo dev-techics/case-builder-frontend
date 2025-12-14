@@ -1,10 +1,10 @@
-import { Upload } from 'lucide-react';
+import { FileUpIcon } from 'lucide-react';
 import type React from 'react';
 import { useAppDispatch } from '../../../app/hooks';
 import { addFiles } from '../../file-explorer/fileTreeSlice';
 import type { FileNode } from '../types';
 
-export const FileUploadHandler: React.FC = () => {
+const FileUploadHandler: React.FC = () => {
   const dispatch = useAppDispatch();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +32,6 @@ export const FileUploadHandler: React.FC = () => {
         name: file.name,
         type: 'file',
         url,
-        // Removed: file property (non-serializable)
       };
 
       fileNodes.push(fileNode);
@@ -49,10 +48,9 @@ export const FileUploadHandler: React.FC = () => {
   };
 
   return (
-    <div className="border-gray-700 border-b p-2">
-      <label className="flex cursor-pointer items-center justify-center gap-2 rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700">
-        <Upload className="h-4 w-4" />
-        Upload PDFs
+    <div className="p-2 cursor-pointer">
+      <label className="text-sm cursor-pointer hover:bg-gray-700">
+        <FileUpIcon size={18} />
         <input
           accept=".pdf,application/pdf"
           className="hidden"
@@ -64,3 +62,5 @@ export const FileUploadHandler: React.FC = () => {
     </div>
   );
 };
+
+export default FileUploadHandler;
