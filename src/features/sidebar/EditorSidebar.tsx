@@ -1,13 +1,12 @@
-import AppSidebar from '@/components/sidebars/LeftSidebar';
-
-// import { SidebarTrigger } from "@/components/ui/sidebar";
-
+import LeftSidebar from '@/components/sidebars/LeftSidebar';
 import FileTree from '../file-explorer/FileExplorer';
 
-export default function Layout() {
+const EditorLeftSidebar = () => {
   return (
-    <AppSidebar>
+    <LeftSidebar>
       <FileTree />
-    </AppSidebar>
+    </LeftSidebar>
   );
-}
+};
+
+export default EditorLeftSidebar;

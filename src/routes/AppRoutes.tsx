@@ -1,8 +1,12 @@
 import { Route, Routes } from 'react-router-dom';
-import EditorLayout from '../layouts/EditorLayout';
 import LandingLayout from '../layouts/LandingPageLayout';
-import EditorPage from '../pages/Editor/EditorPage';
-import LandingPage from '../pages/Landing/LandingPage';
+import DashboardLayout from '@/layouts/DashboardLayout';
+import EditorLayout from '../layouts/EditorLayout';
+import LandingPage from '../pages/landing/LandingPage';
+import DashboardPage from '@/pages/dashboard/DashboardPage';
+import BundlesPage from '@/pages/dashboard/BundlesPage';
+import EditorPage from '../pages/editor/EditorPage';
+import NotFound from '@/components/NotFound';
 
 export default function AppRoutes() {
   return (
@@ -15,6 +19,14 @@ export default function AppRoutes() {
       <Route element={<EditorLayout />}>
         <Route element={<EditorPage />} path="/editor" />
         {/* later you can add more routes like /editor/:id */}
+      </Route>
+      {/* Dashboard pages */}
+      <Route element={<DashboardLayout />}>
+        <Route element={<DashboardPage />} path="/dashboard" />
+        <Route element={<BundlesPage />} path="/dashboard/bundles" />
+      </Route>
+      <Route>
+        <Route element={<NotFound />} path="*" />
       </Route>
     </Routes>
   );
