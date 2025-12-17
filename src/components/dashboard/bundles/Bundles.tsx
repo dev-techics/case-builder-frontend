@@ -1,3 +1,12 @@
+/**
+ * This is the entry point of the main bundle list feature
+ *
+ * Responsibilites: renders all the components required for the bundle list page and crud operations
+ *
+ * Notes:
+ *
+ *Author: Anik Dey
+ */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import BundlesHeader from './components/BundlesHeader';
@@ -6,78 +15,39 @@ import BundleCard from './components/BundleCard';
 import BundleRow from './components/BundleRow';
 import { FileStack, Plus } from 'lucide-react';
 import type { Bundle, SortOption, ViewMode } from './types/types';
-
-// Mock data for bundles
-const mockBundles: Bundle[] = [
-  {
-    id: 'bundle-1',
-    name: 'Smith v. Johnson - Discovery',
-    caseNumber: 'CV-2024-001234',
-    documentCount: 45,
-    lastModified: '2025-12-15',
-    status: 'In Progress',
-    color: 'blue',
-  },
-  {
-    id: 'bundle-2',
-    name: 'Estate Planning - Williams',
-    caseNumber: 'PR-2024-005678',
-    documentCount: 23,
-    lastModified: '2025-12-14',
-    status: 'Complete',
-    color: 'green',
-  },
-  {
-    id: 'bundle-3',
-    name: 'Corporate Merger - TechCo',
-    caseNumber: 'CM-2024-009876',
-    documentCount: 128,
-    lastModified: '2025-12-13',
-    status: 'In Progress',
-    color: 'purple',
-  },
-  {
-    id: 'bundle-4',
-    name: 'Patent Infringement - ABC Inc',
-    caseNumber: 'IP-2024-004321',
-    documentCount: 67,
-    lastModified: '2025-12-12',
-    status: 'Review',
-    color: 'orange',
-  },
-  {
-    id: 'bundle-5',
-    name: 'Employment Dispute - Davis',
-    caseNumber: 'EM-2024-007890',
-    documentCount: 34,
-    lastModified: '2025-12-10',
-    status: 'Complete',
-    color: 'green',
-  },
-  {
-    id: 'bundle-6',
-    name: 'Real Estate Transaction',
-    caseNumber: 'RE-2024-002468',
-    documentCount: 19,
-    lastModified: '2025-12-08',
-    status: 'In Progress',
-    color: 'blue',
-  },
-];
+import { useNavigate } from 'react-router-dom';
+import CreateNewBundleDialog from './components/CreateBundleDialog';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import {
+  createDuplicate,
+  deleteBundle,
+} from '@/components/dashboard/bundles/redux/bundlesListSlice';
 
 const BundleList = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [openNewBundleDialog, setOpenNewBundleDialog] = useState(false);
+  const navigate = useNavigate();
+  const mockBundles = useAppSelector(state => state.bundleList.bundles);
+  const dispatch = useAppDispatch();
 
+  // Handle new bundle creation
   const handleCreateNew = () => {
-    alert('Opening bundle creation dialog...');
+    setOpenNewBundleDialog(true);
   };
-
+  // Handle opening a bundle in the editor
   const handleOpenBundle = (bundle: Bundle) => {
-    alert(`Opening bundle: ${bundle.name}`);
+    navigate(`/dashboard/editor/${bundle.id}`);
   };
-
+  // Handle bundle delete
+  const handleBundleDelete = (id: string) => {
+    dispatch(deleteBundle(id));
+  };
+  const handleBundleDuplicate = (bundle: Bundle) => {
+    console.log('hello world');
+    dispatch(createDuplicate(bundle));
+  };
   const filteredBundles = mockBundles.filter(
     bundle =>
       bundle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,6 +74,8 @@ const BundleList = () => {
                 key={bundle.id}
                 bundle={bundle}
                 onOpen={() => handleOpenBundle(bundle)}
+                onDelete={handleBundleDelete}
+                onDuplicate={handleBundleDuplicate}
               />
             ))}
           </div>
@@ -159,6 +131,10 @@ const BundleList = () => {
           </div>
         )}
       </div>
+      <CreateNewBundleDialog
+        open={openNewBundleDialog}
+        onOpenChange={setOpenNewBundleDialog}
+      />
     </div>
   );
 };

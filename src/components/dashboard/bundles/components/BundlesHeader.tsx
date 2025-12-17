@@ -18,10 +18,7 @@ const BundlesHeader = ({ onCreateNew }: BundlesHeaderProps) => {
               Manage and organize your legal case files
             </p>
           </div>
-          <Button
-            onClick={onCreateNew}
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-          >
+          <Button onClick={onCreateNew} className="gap-2" variant="default">
             <Plus className="h-4 w-4" />
             Create Bundle
           </Button>

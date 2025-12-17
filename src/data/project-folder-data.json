@@ -5,6 +5,12 @@
   "children": [
     {
       "id": "file-1",
+      "name": "Sample.pdf",
+      "type": "file",
+      "url": "/sample.pdf"
+    },
+    {
+      "id": "file-9",
       "name": "Design.pdf",
       "type": "file",
       "url": "/file-sample_150kB.pdf"
@@ -26,12 +32,6 @@
       "name": "test.pdf",
       "type": "file",
       "url": "/test.pdf"
-    },
-    {
-      "id": "file-7",
-      "name": "test1.pdf",
-      "type": "file",
-      "url": "/test1.pdf"
     },
     {
       "id": "file-8",

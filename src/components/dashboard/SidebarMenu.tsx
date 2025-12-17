@@ -14,7 +14,7 @@ const menuItems = [
   {
     name: 'Home',
     icon: <HugeiconsIcon icon={Home07Icon} color={iconColor} size={iconSize} />,
-    url: '/home',
+    url: '/dashboard',
   },
   {
     name: 'Bundles',

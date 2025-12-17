@@ -17,7 +17,7 @@ export default function AppRoutes() {
       </Route>
       {/* Editor layout wraps editor pages */}
       <Route element={<EditorLayout />}>
-        <Route element={<EditorPage />} path="/editor" />
+        <Route element={<EditorPage />} path="/dashboard/editor/:id?" />
         {/* later you can add more routes like /editor/:id */}
       </Route>
       {/* Dashboard pages */}

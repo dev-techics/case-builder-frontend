@@ -22,7 +22,12 @@ import type {
   StatusColorMap,
 } from '../types/types';
 
-const BundleCard = ({ bundle, onOpen }: BundleCardProps) => {
+const BundleCard = ({
+  bundle,
+  onOpen,
+  onDelete,
+  onDuplicate,
+}: BundleCardProps) => {
   const statusColors: StatusColorMap = {
     'In Progress': 'bg-blue-100 text-blue-700',
     Complete: 'bg-green-100 text-green-700',
@@ -41,15 +46,24 @@ const BundleCard = ({ bundle, onOpen }: BundleCardProps) => {
   const handleCardClick = () => {
     onOpen(bundle);
   };
+  const handleDelete = (id: string) => {
+    onDelete(id);
+  };
+  const handleDuplicate = () => {
+    onDuplicate(bundle);
+  };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden group cursor-pointer">
+    <div className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden group">
       <div className={`h-2 ${colorClasses[bundle.color]}`} />
 
-      <div className="p-5" onClick={handleCardClick}>
+      <div className="p-5">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div
+              onClick={handleCardClick}
+              className="flex items-center gap-2 mb-2 cursor-pointer"
+            >
               <FileStack className="h-5 w-5 text-gray-400" />
               <h3 className="font-semibold text-gray-900 line-clamp-1">
                 {bundle.name}
@@ -71,7 +85,7 @@ const BundleCard = ({ bundle, onOpen }: BundleCardProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCardClick}>
                 <FolderOpen className="h-4 w-4 mr-2" />
                 Open Bundle
               </DropdownMenuItem>
@@ -79,7 +93,7 @@ const BundleCard = ({ bundle, onOpen }: BundleCardProps) => {
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Details
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDuplicate()}>
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicate
               </DropdownMenuItem>
@@ -88,7 +102,10 @@ const BundleCard = ({ bundle, onOpen }: BundleCardProps) => {
                 Export
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem
+                onClick={() => handleDelete(bundle.id)}
+                className="text-red-600"
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenuItem>

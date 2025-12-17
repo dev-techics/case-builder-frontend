@@ -68,8 +68,8 @@ export interface BundleCardProps {
   bundle: Bundle;
   onOpen: (bundle: Bundle) => void;
   onEdit?: (bundle: Bundle) => void;
-  onDelete?: (bundleId: string) => void;
-  onDuplicate?: (bundle: Bundle) => void;
+  onDelete: (bundleId: string) => void;
+  onDuplicate: (bundle: Bundle) => void;
   onExport?: (bundle: Bundle) => void;
 }
 
