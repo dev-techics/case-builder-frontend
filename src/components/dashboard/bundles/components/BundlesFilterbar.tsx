@@ -7,8 +7,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Download, Grid3x3, List, Search } from 'lucide-react';
-import type { BundlesFilterBarProps } from './types/types';
+import { Grid3x3, List, Search } from 'lucide-react';
+import type { ViewMode, SortOption } from '../types/types';
+
+interface BundlesFilterBarProps {
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  sortBy: SortOption;
+  setSortBy: (option: SortOption) => void;
+}
 
 // Templates Filter Bar Component
 const BundlesFilterBar = ({
@@ -64,11 +73,6 @@ const BundlesFilterBar = ({
               <SelectItem value="documents">Document Count</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button variant="outline" className="bg-white gap-2">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
         </div>
       </div>
     </div>

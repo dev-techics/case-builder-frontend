@@ -19,7 +19,7 @@ import type {
   BundleRowProps,
   StatusColorMap,
   ColorClassMap,
-} from './types/types';
+} from '../types/types';
 
 const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
   const statusColors: StatusColorMap = {

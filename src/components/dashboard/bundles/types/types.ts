@@ -1,5 +1,3 @@
-// types/bundle.types.ts
-
 /**
  * Bundle Status Types
  */
@@ -50,42 +48,6 @@ export interface Bundle {
 }
 
 /**
- * Document Interface (for bundle contents)
- */
-export interface Document {
-  id: string;
-  bundleId: string;
-  name: string;
-  fileType: string;
-  fileSize: number;
-  uploadedAt: string;
-  uploadedBy: string;
-  pageCount?: number;
-  annotations?: Annotation[];
-  order: number;
-}
-
-/**
- * Annotation Interface (for document markup)
- */
-export interface Annotation {
-  id: string;
-  documentId: string;
-  type: 'highlight' | 'note' | 'comment' | 'redaction';
-  content: string;
-  pageNumber: number;
-  position: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  createdAt: string;
-  createdBy: string;
-  color?: string;
-}
-
-/**
  * Filter State Interface
  */
 export interface FilterState {
@@ -101,18 +63,6 @@ export interface FilterState {
 /**
  * Component Props Types
  */
-export interface BundlesHeaderProps {
-  onCreateNew: () => void;
-}
-
-export interface BundlesFilterBarProps {
-  viewMode: ViewMode;
-  setViewMode: (mode: ViewMode) => void;
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  sortBy: SortOption;
-  setSortBy: (option: SortOption) => void;
-}
 
 export interface BundleCardProps {
   bundle: Bundle;
@@ -131,109 +81,6 @@ export interface BundleRowProps {
   onDuplicate?: (bundle: Bundle) => void;
   onExport?: (bundle: Bundle) => void;
 }
-
-/**
- * API Response Types
- */
-export interface BundleListResponse {
-  bundles: Bundle[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export interface BundleDetailResponse {
-  bundle: Bundle;
-  documents: Document[];
-}
-
-export interface CreateBundleRequest {
-  name: string;
-  caseNumber: string;
-  status?: BundleStatus;
-  color?: BundleColor;
-  description?: string;
-  tags?: string[];
-}
-
-export interface UpdateBundleRequest {
-  name?: string;
-  caseNumber?: string;
-  status?: BundleStatus;
-  color?: BundleColor;
-  description?: string;
-  tags?: string[];
-}
-
-/**
- * Action Types for Bundle Operations
- */
-export type BundleAction =
-  | { type: 'OPEN'; payload: Bundle }
-  | { type: 'EDIT'; payload: Bundle }
-  | { type: 'DELETE'; payload: string }
-  | { type: 'DUPLICATE'; payload: Bundle }
-  | { type: 'EXPORT'; payload: Bundle }
-  | { type: 'CREATE'; payload: CreateBundleRequest };
-
-/**
- * User/Permission Types
- */
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'lawyer' | 'paralegal' | 'viewer';
-  permissions: Permission[];
-}
-
-export type Permission =
-  | 'create_bundle'
-  | 'edit_bundle'
-  | 'delete_bundle'
-  | 'view_bundle'
-  | 'add_documents'
-  | 'add_annotations'
-  | 'export_bundle';
-
-/**
- * Bundle History/Activity Types
- */
-export interface BundleActivity {
-  id: string;
-  bundleId: string;
-  userId: string;
-  userName: string;
-  action:
-    | 'created'
-    | 'updated'
-    | 'deleted'
-    | 'exported'
-    | 'document_added'
-    | 'annotation_added';
-  timestamp: string;
-  details?: string;
-}
-
-/**
- * Export Options
- */
-export interface ExportOptions {
-  format: 'pdf' | 'zip' | 'docx';
-  includeAnnotations: boolean;
-  includeMetadata: boolean;
-  pageRange?: {
-    start: number;
-    end: number;
-  };
-}
-
-/**
- * Utility Types
- */
-export type BundleWithDocuments = Bundle & {
-  documents: Document[];
-};
 
 export type PartialBundle = Partial<Bundle> & Pick<Bundle, 'id'>;
 

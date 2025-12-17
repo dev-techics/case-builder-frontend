@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import BundlesHeader from './BundlesHeader';
-import BundlesFilterBar from './BundlesFilterbar';
-import BundleCard from './BundleCard';
-import BundleRow from './BundleRow';
+import BundlesHeader from './components/BundlesHeader';
+import BundlesFilterBar from './components/BundlesFilterbar';
+import BundleCard from './components/BundleCard';
+import BundleRow from './components/BundleRow';
 import { FileStack, Plus } from 'lucide-react';
-import type { SortOption, ViewMode } from './types/types';
+import type { Bundle, SortOption, ViewMode } from './types/types';
 
 // Mock data for bundles
-const mockBundles = [
+const mockBundles: Bundle[] = [
   {
     id: 'bundle-1',
     name: 'Smith v. Johnson - Discovery',
@@ -74,7 +74,7 @@ const BundleList = () => {
     alert('Opening bundle creation dialog...');
   };
 
-  const handleOpenBundle = bundle => {
+  const handleOpenBundle = (bundle: Bundle) => {
     alert(`Opening bundle: ${bundle.name}`);
   };
 

@@ -1,6 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import type { BundlesHeaderProps } from './types/types';
+
+//type
+interface BundlesHeaderProps {
+  onCreateNew: () => void;
+}
 
 // Templates Header Component
 const BundlesHeader = ({ onCreateNew }: BundlesHeaderProps) => {
