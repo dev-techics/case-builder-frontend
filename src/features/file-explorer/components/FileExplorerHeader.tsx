@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Folder } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import FileUploadHandler from './fileUploadHandler';
 import { useAppDispatch } from '@/app/hooks';
 import { toggleFolder, type Tree, type Children } from '../fileTreeSlice';

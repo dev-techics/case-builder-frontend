@@ -1,6 +1,6 @@
 import { arrayMove } from '@dnd-kit/sortable';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { FileNode, FolderNode } from './types';
+import type { FileNode } from './types';
 
 export interface Children {
   id: string;
@@ -192,7 +192,7 @@ const fileTreeSlice = createSlice({
       const { oldIndex, newIndex } = action.payload;
       state.tree.children = arrayMove(state.tree.children, oldIndex, newIndex);
     },
-    setTree: (state, action: PayloadAction<FolderNode>) => {
+    setTree: (state, action: PayloadAction<Tree>) => {
       state.tree = action.payload;
     },
   },

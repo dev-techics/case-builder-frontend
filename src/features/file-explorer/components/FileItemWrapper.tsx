@@ -35,7 +35,7 @@ const FileItemWrapper = ({ folder, level }: FileItemWrapperProps) => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
+    if (over && active.id !== over.id && folder.children) {
       const oldIndex = folder.children.findIndex(
         child => child.id === active.id
       );
@@ -56,13 +56,13 @@ const FileItemWrapper = ({ folder, level }: FileItemWrapperProps) => {
     })
   );
 
-  // Safety check
+  // Safety check - early return if no children
   if (!folder.children || folder.children.length === 0) {
     return null;
   }
 
   return (
-    <div className="pl-4">
+    <div>
       <DndContext
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
