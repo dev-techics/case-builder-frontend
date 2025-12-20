@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createBundle } from '../redux/bundlesListSlice';
 import { useState, type FormEvent } from 'react';
+import { toast } from 'react-toastify';
 
 interface CreateNewBundleDialogProps {
   open: boolean;
@@ -52,7 +53,7 @@ const CreateNewBundleDialog = ({
         caseNumber: caseNumber.trim(),
       })
     );
-
+    toast.success('New bundle created successfully');
     setBundleName('');
     setCaseNumber('');
     onOpenChange(false);

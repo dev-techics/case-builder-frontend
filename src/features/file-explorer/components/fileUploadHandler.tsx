@@ -1,8 +1,9 @@
-import { FileUpIcon } from 'lucide-react';
 import type React from 'react';
 import { useAppDispatch } from '../../../app/hooks';
 import { addFiles } from '../../file-explorer/fileTreeSlice';
 import type { FileNode } from '../types';
+import { FileImportIcon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 
 const FileUploadHandler: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -48,9 +49,9 @@ const FileUploadHandler: React.FC = () => {
   };
 
   return (
-    <div className="p-2 cursor-pointer">
-      <label className="text-sm cursor-pointer hover:bg-gray-700">
-        <FileUpIcon size={18} />
+    <div className="p-2 cursor-pointer hover:bg-gray-200 rounded-lg">
+      <label className="text-sm">
+        <HugeiconsIcon icon={FileImportIcon} size={18} />
         <input
           accept=".pdf,application/pdf"
           className="hidden"

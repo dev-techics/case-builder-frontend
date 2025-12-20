@@ -1,25 +1,27 @@
 /**
  * Single File Item
  *
- * Responsibilites
- * Display a single file in the left sidebar with a action menu for edit and delete functionality.
- *
+ * Responsibilities:
+ * Display a single file in the left sidebar with action menu for edit and delete functionality.
  *
  * Author: Anik Dey
- *
  */
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { File, GripVertical } from 'lucide-react';
+import { GripVertical } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import type { FileNode } from '../types';
 import ActionMenu from './FileActionMenu';
 import { useAppDispatch } from '@/app/hooks';
-import { renameFile } from '@/features/file-explorer/fileTreeSlice';
+import {
+  renameFile,
+  type Children,
+} from '@/features/file-explorer/fileTreeSlice';
+import { File02Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 
 type SortableFileItemProps = {
-  file: FileNode;
+  file: Children;
   level: number;
   isSelected: boolean;
   shouldScrollIntoView: boolean;
@@ -116,6 +118,10 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
     handleRenameSubmit();
   };
 
+  const handleInputClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <div
       aria-pressed={isSelected}
@@ -146,9 +152,10 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
         >
           <GripVertical className="h-4 w-4 text-gray-500" />
         </button>
-
-        <File className="mr-2 h-4 w-4 flex-shrink-0 text-gray-800" />
-
+        <HugeiconsIcon
+          icon={File02Icon}
+          className="mr-2 h-4 w-4 flex-shrink-0 text-gray-800"
+        />
         {isRenaming ? (
           <input
             ref={inputRef}
@@ -157,7 +164,7 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
             onChange={e => setRenameValue(e.target.value)}
             onKeyDown={handleRenameKeyDown}
             onBlur={handleRenameBlur}
-            onClick={handleRenameClick}
+            onClick={handleInputClick}
             className="truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
           />
         ) : (

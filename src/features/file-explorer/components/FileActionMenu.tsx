@@ -27,13 +27,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import type { FileNode } from '../types';
 import { useAppDispatch } from '@/app/hooks';
-import { removeFile } from '../fileTreeSlice';
+import { removeFile, type Children } from '../fileTreeSlice';
 import { useState } from 'react';
 
 interface FileActionMenuProps {
-  file: FileNode;
+  file: Children;
   onRenameClick: () => void;
 }
 
@@ -67,7 +66,7 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
             <EllipsisIcon aria-hidden="true" size={14} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent side="right" sideOffset={20}>
           <DropdownMenuItem
             onClick={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
               handleRename(e)

@@ -5,7 +5,7 @@
  *
  * Notes:
  *
- *Author: Anik Dey
+ * Author: Anik Dey
  */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import {
   createDuplicate,
   deleteBundle,
 } from '@/components/dashboard/bundles/redux/bundlesListSlice';
+import { toast } from 'react-toastify';
 
 const BundleList = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -43,10 +44,12 @@ const BundleList = () => {
   // Handle bundle delete
   const handleBundleDelete = (id: string) => {
     dispatch(deleteBundle(id));
+    toast.success('Bundle Deleted Successfully');
   };
   const handleBundleDuplicate = (bundle: Bundle) => {
     console.log('hello world');
     dispatch(createDuplicate(bundle));
+    toast.success('Bundle Duplicated Successfully');
   };
   const filteredBundles = mockBundles.filter(
     bundle =>
