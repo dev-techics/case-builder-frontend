@@ -1,8 +1,9 @@
 import { PDFDocument, rgb } from 'pdf-lib';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
+import type { Children } from '@/features/file-explorer/fileTreeSlice';
 
-type modifiedFilesType = {
+type ModifiedFileType = {
   id: string;
   name: string;
   type: 'file';
@@ -10,12 +11,34 @@ type modifiedFilesType = {
   originalUrl: string;
 };
 
+/**
+ * Recursively collects all PDF files from the tree structure
+ * @param children - Array of children (files and folders)
+ * @returns Array of file objects with URLs
+ */
+const collectAllFiles = (children: Children[]): Children[] => {
+  const files: Children[] = [];
+
+  for (const child of children) {
+    if (child.type === 'file' && child.url) {
+      // It's a file with a URL, add it
+      files.push(child);
+    } else if (child.type === 'folder' && child.children) {
+      // It's a folder, recursively collect files from it
+      const nestedFiles = collectAllFiles(child.children);
+      files.push(...nestedFiles);
+    }
+  }
+
+  return files;
+};
+
 export function useModifiedPDFs() {
   const tree = useAppSelector(state => state.fileTree.tree);
   const { headerLeft, headerRight, footer } = useAppSelector(
     state => state.propertiesPanel.headersFooter
   );
-  const [modifiedFiles, setModifiedFiles] = useState<modifiedFilesType[]>([]);
+  const [modifiedFiles, setModifiedFiles] = useState<ModifiedFileType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,9 +50,11 @@ export function useModifiedPDFs() {
       try {
         setIsLoading(true);
         setError(null);
-        const pdfFiles = tree.children.filter(file => file.url);
 
-        if (pdfFiles.length === 0) {
+        // Recursively collect all files from the entire tree
+        const allFiles = collectAllFiles(tree.children);
+
+        if (allFiles.length === 0) {
           if (isMounted) {
             setModifiedFiles([]);
             setIsLoading(false);
@@ -37,9 +62,17 @@ export function useModifiedPDFs() {
           return;
         }
 
+        console.log(`📄 Processing ${allFiles.length} PDF files...`);
+
         const modified = await Promise.all(
-          pdfFiles.map(async file => {
+          allFiles.map(async file => {
             try {
+              // Safety check - this should never happen due to collectAllFiles filter
+              if (!file.url) {
+                console.warn(`⚠️ File ${file.name} has no URL, skipping`);
+                return null;
+              }
+
               // Fetch the original PDF
               const existingPdfBytes = await fetch(file.url).then(res =>
                 res.arrayBuffer()
@@ -53,7 +86,7 @@ export function useModifiedPDFs() {
               const pdfDoc = await PDFDocument.load(existingPdfBytes);
               const pages = pdfDoc.getPages();
 
-              // Add headers, footers, and highlights to each page
+              // Add headers, footers, and page numbers to each page
               pages.forEach((page, index) => {
                 const { width, height } = page.getSize();
                 const pageNumber = index + 1;
@@ -143,7 +176,9 @@ export function useModifiedPDFs() {
         );
 
         if (isMounted) {
-          const validFiles = modified.filter(f => f !== null);
+          const validFiles = modified.filter(
+            (f): f is ModifiedFileType => f !== null
+          );
           setModifiedFiles(validFiles);
           setIsLoading(false);
           console.log(`✅ Generated ${validFiles.length} modified PDFs`);

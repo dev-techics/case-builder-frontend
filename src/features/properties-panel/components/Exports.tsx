@@ -5,6 +5,25 @@ import { useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import { useGenerateIndexPDF } from '@/features/auto-index/hooks/useGenerateIndexPDF';
+import type { Children } from '@/features/file-explorer/fileTreeSlice';
+
+/**
+ * Recursively collects all PDF files from the tree structure
+ */
+const collectAllFiles = (children: Children[]): Children[] => {
+  const files: Children[] = [];
+
+  for (const child of children) {
+    if (child.type === 'file' && child.url) {
+      files.push(child);
+    } else if (child.type === 'folder' && child.children) {
+      const nestedFiles = collectAllFiles(child.children);
+      files.push(...nestedFiles);
+    }
+  }
+
+  return files;
+};
 
 function Exports() {
   const tree = useAppSelector(states => states.fileTree.tree);
@@ -21,7 +40,8 @@ function Exports() {
   const [exportMessage, setExportMessage] = useState('');
   const [includeIndex, setIncludeIndex] = useState(true);
 
-  const pdfFiles = tree.children.filter(file => file.url);
+  // Recursively collect all PDF files from the entire tree
+  const pdfFiles = collectAllFiles(tree.children);
   const hasFiles = pdfFiles.length > 0;
 
   const handleExport = async () => {
@@ -60,6 +80,14 @@ function Exports() {
 
       // Add all PDF files
       for (const file of pdfFiles) {
+        // Safety check - should never happen due to collectAllFiles filter
+        if (!file.url) {
+          console.warn(`File ${file.name} has no URL, skipping`);
+          continue;
+        }
+
+        setExportMessage(`Adding ${file.name}...`);
+
         const existingPdfBytes = await fetch(file.url).then(res =>
           res.arrayBuffer()
         );
@@ -73,39 +101,62 @@ function Exports() {
         });
       }
 
+      setExportMessage('Adding headers and footers...');
+
       // Add headers/footers to all pages
       const pages = pdfDoc.getPages();
       pages.forEach((page, index) => {
         const { width, height } = page.getSize();
         const pageNumber = index + 1;
 
+        // Header left
         if (headerLeft) {
-          page.drawText(headerLeft.text, {
-            x: 50,
-            y: height - 25,
-            size: 10,
-            color: rgb(0.4, 0.4, 0.4),
-          });
+          const headerText =
+            typeof headerLeft === 'string' ? headerLeft : headerLeft.text || '';
+
+          if (headerText) {
+            page.drawText(headerText, {
+              x: 50,
+              y: height - 25,
+              size: 10,
+              color: rgb(0.4, 0.4, 0.4),
+            });
+          }
         }
 
+        // Header right
         if (headerRight) {
-          page.drawText(headerRight.text, {
-            x: width - 120,
-            y: height - 25,
-            size: 10,
-            color: rgb(0.4, 0.4, 0.4),
-          });
+          const headerText =
+            typeof headerRight === 'string'
+              ? headerRight
+              : headerRight.text || '';
+
+          if (headerText) {
+            page.drawText(headerText, {
+              x: width - 120,
+              y: height - 25,
+              size: 10,
+              color: rgb(0.4, 0.4, 0.4),
+            });
+          }
         }
 
+        // Footer
         if (footer) {
-          page.drawText(footer.text, {
-            x: 50,
-            y: 25,
-            size: 10,
-            color: rgb(0.4, 0.4, 0.4),
-          });
+          const footerText =
+            typeof footer === 'string' ? footer : footer.text || '';
+
+          if (footerText) {
+            page.drawText(footerText, {
+              x: 50,
+              y: 25,
+              size: 10,
+              color: rgb(0.4, 0.4, 0.4),
+            });
+          }
         }
 
+        // Page number
         page.drawText(`Page ${pageNumber} of ${pages.length}`, {
           x: width - 120,
           y: 25,
@@ -114,17 +165,24 @@ function Exports() {
         });
       });
 
+      setExportMessage('Finalizing PDF...');
+
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const blob = new Blob([pdfBytes as BlobPart], {
+        type: 'application/pdf',
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${tree.name || 'Project'}_${new Date().getTime()}.pdf`;
+      link.download = `${tree.projectName || 'Project'}_${new Date().getTime()}.pdf`;
       link.click();
+
+      // Clean up the blob URL
+      setTimeout(() => URL.revokeObjectURL(url), 100);
 
       setExportStatus('success');
       setExportMessage(
-        `Successfully exported ${pages.length} pages${
+        `Successfully exported ${pages.length} pages from ${pdfFiles.length} files${
           includeIndex ? ' (including index)' : ''
         }`
       );
@@ -162,7 +220,7 @@ function Exports() {
             </span>
           </div>
           {pdfFiles.length > 0 && (
-            <div className="text-gray-500">
+            <div className="mt-2 max-h-32 overflow-y-auto text-gray-500">
               {pdfFiles.map(f => (
                 <div className="ml-2 truncate" key={f.id}>
                   • {f.name}
@@ -254,7 +312,7 @@ function Exports() {
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
           <p className="font-semibold text-blue-900 text-xs">{exportMessage}</p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-blue-100">
-            <div className="h-full animate-pulse bg-blue-500" />
+            <div className="h-full w-1/3 animate-pulse bg-blue-500" />
           </div>
         </div>
       )}

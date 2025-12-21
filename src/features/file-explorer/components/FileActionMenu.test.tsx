@@ -3,18 +3,67 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import FileActionMenu from './FileActionMenu';
-import fileTreeReducer from '../fileTreeSlice';
+import fileTreeReducer, { type Tree } from '../fileTreeSlice';
 import type { Mock } from 'vitest';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
-import type { FileNode, FolderNode } from '../types'; // ✅ Import FolderNode
 
 // Mock file data
-const mockFile: FileNode = {
-  id: 'file-1',
-  name: 'test-file.txt',
-  type: 'file',
-  url: 'file-url',
+const mockData: Tree = {
+  id: 'proj-1',
+  projectName: 'Project Alpha',
+  type: 'folder',
+  children: [
+    {
+      id: 'file-1',
+      name: 'Sample.pdf',
+      type: 'file',
+      url: '/sample.pdf',
+    },
+    {
+      id: 'file-9',
+      name: 'Design.pdf',
+      type: 'file',
+      url: '/file-sample_150kB.pdf',
+    },
+    {
+      id: 'file-2',
+      name: 'Specs.pdf',
+      type: 'file',
+      url: '/dummy-pdf_2.pdf',
+    },
+    {
+      id: 'file-5',
+      name: 'Report.pdf',
+      type: 'file',
+      url: '/pdf_3.pdf',
+    },
+    {
+      id: 'file-901',
+      name: 'importants',
+      type: 'folder',
+      children: [
+        {
+          id: 'file-98',
+          name: 'test.pdf',
+          type: 'file',
+          url: '/test.pdf',
+        },
+      ],
+    },
+    {
+      id: 'file-6',
+      name: 'test.pdf',
+      type: 'file',
+      url: '/test.pdf',
+    },
+    {
+      id: 'file-8',
+      name: 'test-2.pdf',
+      type: 'file',
+      url: '/test-2.pdf',
+    },
+  ],
 };
 
 // Helper function to create a mock store
@@ -26,12 +75,7 @@ const createMockStore = () => {
     },
     preloadedState: {
       fileTree: {
-        tree: {
-          id: 'proj-1',
-          name: 'Project',
-          type: 'folder', // ✅ Will be typed correctly now
-          children: [mockFile],
-        } as FolderNode, // ✅ Add type assertion
+        tree: mockData,
         expandedFolders: ['proj-1'],
         selectedFile: null,
         scrollToFileId: null,
@@ -58,7 +102,10 @@ describe('FileActionMenu', () => {
   describe('Dropdown Menu', () => {
     it('should render the ellipsis button', () => {
       renderWithProvider(
-        <FileActionMenu file={mockFile} onRenameClick={onRenameClick} />
+        <FileActionMenu
+          file={mockData.children[0]}
+          onRenameClick={onRenameClick}
+        />
       );
 
       const button = screen.getByRole('button', { name: /open edit menu/i });
@@ -69,7 +116,10 @@ describe('FileActionMenu', () => {
       const user = userEvent.setup(); // ✅ Setup user-event
 
       renderWithProvider(
-        <FileActionMenu file={mockFile} onRenameClick={onRenameClick} />
+        <FileActionMenu
+          file={mockData.children[0]}
+          onRenameClick={onRenameClick}
+        />
       );
 
       const button = screen.getByRole('button', { name: /open edit menu/i });
