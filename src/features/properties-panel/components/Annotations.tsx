@@ -68,7 +68,7 @@ const Annotations = () => {
     <div className="space-y-4">
       {/* Header Section */}
       <div>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-col items-start justify-between">
           <h3 className="font-semibold text-gray-900 text-sm">Page Headers</h3>
           <span className="text-gray-400 text-xs">
             Appears on top of each page
@@ -112,7 +112,7 @@ const Annotations = () => {
 
       {/* Footer Section */}
       <div>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-col items-start justify-between">
           <h3 className="font-semibold text-gray-900 text-sm">Page Footer</h3>
           <span className="text-gray-400 text-xs">
             Appears on bottom of each page

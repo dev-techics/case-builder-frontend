@@ -48,7 +48,7 @@ function PropertiesSidebar() {
             const isActive = activeTab === tab.id;
             return (
               <button
-                className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-3 font-medium text-xs transition-colors ${
+                className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-3 font-medium text-xs transition-colors ${
                   isActive
                     ? 'border-blue-500 bg-blue-50 text-blue-600'
                     : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
