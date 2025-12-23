@@ -37,11 +37,10 @@ export interface Bundle {
   name: string;
   caseNumber: string;
   documentCount: number;
-  lastModified: string; // ISO date string or formatted date
+  lastModified: string;
   status: BundleStatus;
   color: BundleColor;
   createdAt?: string;
-  createdBy?: string;
   updatedBy?: string;
   description?: string;
   tags?: string[];

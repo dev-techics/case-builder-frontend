@@ -5,9 +5,11 @@ import propertiesPanelSlice from '@/features/properties-panel/propertiesPanelSli
 import toolbar from '@/features/toolbar/toolbarSlice';
 import fileTreeSlice from '../features/file-explorer/fileTreeSlice';
 import bundlesListSlice from '@/components/dashboard/bundles/redux/bundlesListSlice';
+import authReducer from '@/features/auth/redux/authSlice';
 
 const store = configureStore({
   reducer: {
+    auth: authReducer,
     fileTree: fileTreeSlice,
     editor: editorSlice,
     propertiesPanel: propertiesPanelSlice,
