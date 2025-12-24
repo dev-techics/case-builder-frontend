@@ -31,6 +31,8 @@ export interface RegisterCredentials {
 export interface AuthResponse {
   user: User;
   message?: string;
+  access_token: string; // Add this
+  token_type: string;
 }
 
 export interface ErrorResponse {

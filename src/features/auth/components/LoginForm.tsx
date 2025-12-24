@@ -33,7 +33,7 @@ const LoginForm = () => {
 
     const result = await dispatch(login(formData));
     if (login.fulfilled.match(result)) {
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 

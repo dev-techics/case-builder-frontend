@@ -1,10 +1,4 @@
-import { Route, Routes, Navigate } from 'react-router-dom';
-import { useAppSelector } from '@/app/hooks';
-import { selectIsAuthenticated } from '@/features/auth/redux/authSlice';
-import ProtectedRoute from '@/features/auth/components/ProtectedRoute';
-import AuthLayout from '@/features/auth/components/AuthLayout';
-import LoginForm from '@/features/auth/components/LoginForm';
-import RegisterForm from '@/features/auth/components/RegisterForm';
+import { Route, Routes } from 'react-router-dom';
 import LandingLayout from '../layouts/LandingPageLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import EditorLayout from '../layouts/EditorLayout';
@@ -13,10 +7,13 @@ import DashboardPage from '@/pages/dashboard/DashboardPage';
 import BundlesPage from '@/pages/dashboard/BundlesPage';
 import EditorPage from '../pages/editor/EditorPage';
 import NotFound from '@/components/NotFound';
+import SignInPage from '@/pages/auth/SignInPage';
+import SignUpPage from '@/pages/auth/SignUpPage';
+import ProtectedRoute from './ProtectedRoutes';
+import useAuthInit from '@/features/auth/hooks/useAuthInit';
 
 export default function AppRoutes() {
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-
+  useAuthInit();
   return (
     <Routes>
       {/* Public routes - Landing page */}
@@ -25,52 +22,20 @@ export default function AppRoutes() {
       </Route>
 
       {/* Auth routes - Redirect to dashboard if already logged in */}
-      <Route
-        path="/login"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <AuthLayout>
-              <LoginForm />
-            </AuthLayout>
-          )
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <AuthLayout>
-              <RegisterForm />
-            </AuthLayout>
-          )
-        }
-      />
+      <Route path="/login" element={<SignInPage />} />
+      <Route path="/register" element={<SignUpPage />} />
 
-      {/* Protected routes - Editor layout */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <EditorLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route element={<EditorPage />} path="/dashboard/editor/:id?" />
-      </Route>
+      <Route element={<ProtectedRoute />}>
+        {/* Protected routes - Editor layout */}
+        <Route element={<EditorLayout />}>
+          <Route element={<EditorPage />} path="/dashboard/editor/:id?" />
+        </Route>
 
-      {/* Protected routes - Dashboard layout */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route element={<DashboardPage />} path="/dashboard" />
-        <Route element={<BundlesPage />} path="/dashboard/bundles" />
+        {/* Protected routes - Dashboard layout */}
+        <Route element={<DashboardLayout />}>
+          <Route element={<DashboardPage />} path="/dashboard" />
+          <Route element={<BundlesPage />} path="/dashboard/bundles" />
+        </Route>
       </Route>
 
       {/* 404 Not Found */}

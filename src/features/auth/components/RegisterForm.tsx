@@ -38,7 +38,7 @@ const RegisterForm = () => {
 
     const result = await dispatch(register(formData));
     if (register.fulfilled.match(result)) {
-      navigate('/');
+      navigate('/login');
     }
   };
 

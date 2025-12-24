@@ -1,5 +1,4 @@
 // features/auth/redux/authSlice.ts
-
 import {
   createSlice,
   createAsyncThunk,
@@ -60,6 +59,8 @@ export const logout = createAsyncThunk<
   try {
     await authApi.logout();
   } catch (error: any) {
+    // Even if logout fails on server, remove token locally
+    localStorage.removeItem('access_token');
     return rejectWithValue(
       error.response?.data || { message: 'Logout failed' }
     );
