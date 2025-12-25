@@ -1,8 +1,18 @@
-import { useAppSelector } from '../../app/hooks';
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import FilesTree from './components/FilesTree';
+import { loadTreeFromBackend } from './fileTreeSlice';
+import { useParams } from 'react-router-dom';
 
 const FileTree: React.FC = () => {
   const tree = useAppSelector(state => state.fileTree.tree);
+
+  const dispatch = useAppDispatch();
+  const { bundleId } = useParams<{ bundleId: string }>();
+
+  useEffect(() => {
+    dispatch(loadTreeFromBackend(Number(bundleId)));
+  }, [bundleId, dispatch]);
 
   return (
     <div className="h-screen w-64 overflow-auto bg-white text-gray-800">

@@ -7,7 +7,7 @@
  *
  * Author: Anik Dey
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import BundlesHeader from './components/BundlesHeader';
 import BundlesFilterBar from './components/BundlesFilterbar';
@@ -20,7 +20,8 @@ import CreateNewBundleDialog from './components/CreateBundleDialog';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
   createDuplicate,
-  deleteBundle,
+  deleteBundleAsync,
+  fetchBundles,
 } from '@/components/dashboard/bundles/redux/bundlesListSlice';
 import { toast } from 'react-toastify';
 
@@ -30,8 +31,12 @@ const BundleList = () => {
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [openNewBundleDialog, setOpenNewBundleDialog] = useState(false);
   const navigate = useNavigate();
-  const mockBundles = useAppSelector(state => state.bundleList.bundles);
+  const bundles = useAppSelector(state => state.bundleList.bundles);
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(fetchBundles());
+  }, [dispatch]);
 
   // Handle new bundle creation
   const handleCreateNew = () => {
@@ -42,20 +47,28 @@ const BundleList = () => {
     navigate(`/dashboard/editor/${bundle.id}`);
   };
   // Handle bundle delete
-  const handleBundleDelete = (id: string) => {
-    dispatch(deleteBundle(id));
-    toast.success('Bundle Deleted Successfully');
+  const handleBundleDelete = async (id: string | number) => {
+    try {
+      await dispatch(deleteBundleAsync(id)).unwrap;
+      toast.success('Bundle Deleted Successfully');
+    } catch (err) {
+      toast.error('Failed to delete bundle');
+    }
   };
   const handleBundleDuplicate = (bundle: Bundle) => {
     console.log('hello world');
     dispatch(createDuplicate(bundle));
     toast.success('Bundle Duplicated Successfully');
   };
-  const filteredBundles = mockBundles.filter(
-    bundle =>
+
+  const filteredBundles = bundles.filter(bundle => {
+    if (!bundle?.name || !bundle?.caseNumber) return false;
+
+    return (
       bundle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bundle.caseNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    );
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">

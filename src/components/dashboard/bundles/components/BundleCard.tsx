@@ -16,11 +16,17 @@ import {
   Trash2,
   FileStack,
 } from 'lucide-react';
-import type {
-  BundleCardProps,
-  ColorClassMap,
-  StatusColorMap,
-} from '../types/types';
+import type { Bundle, ColorClassMap, StatusColorMap } from '../types/types';
+
+// Component Props Types
+interface BundleCardProps {
+  bundle: Bundle;
+  onOpen: (bundle: Bundle) => void;
+  onEdit?: (bundle: Bundle) => void;
+  onDelete: (bundleId: string | number) => void;
+  onDuplicate: (bundle: Bundle) => void;
+  onExport?: (bundle: Bundle) => void;
+}
 
 const BundleCard = ({
   bundle,
@@ -46,7 +52,7 @@ const BundleCard = ({
   const handleCardClick = () => {
     onOpen(bundle);
   };
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string | number) => {
     onDelete(id);
   };
   const handleDuplicate = () => {

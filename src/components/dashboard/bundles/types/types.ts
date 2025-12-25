@@ -33,19 +33,26 @@ export type SortOption =
  * Main Bundle Interface
  */
 export interface Bundle {
-  id: string;
+  id: string | number; // Backend uses number, frontend may use string
   name: string;
-  caseNumber: string;
-  documentCount: number;
+  caseNumber: string; // Frontend uses camelCase
+  case_number?: string; // Backend uses snake_case
+  documentCount: number; // Frontend uses camelCase
+  document_count?: number; // Backend uses snake_case
   lastModified: string;
+  last_modified?: string;
   status: BundleStatus;
   color: BundleColor;
   createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
   updatedBy?: string;
   description?: string;
   tags?: string[];
+  userId?: number;
+  user_id?: number;
 }
-
 /**
  * Filter State Interface
  */
@@ -62,15 +69,6 @@ export interface FilterState {
 /**
  * Component Props Types
  */
-
-export interface BundleCardProps {
-  bundle: Bundle;
-  onOpen: (bundle: Bundle) => void;
-  onEdit?: (bundle: Bundle) => void;
-  onDelete: (bundleId: string) => void;
-  onDuplicate: (bundle: Bundle) => void;
-  onExport?: (bundle: Bundle) => void;
-}
 
 export interface BundleRowProps {
   bundle: Bundle;
@@ -141,3 +139,8 @@ export type StatusColorMap = {
 export type ColorClassMap = {
   [K in BundleColor]: string;
 };
+
+export interface ErrorResponse {
+  message: string;
+  errors?: Record<string, string[]>;
+}

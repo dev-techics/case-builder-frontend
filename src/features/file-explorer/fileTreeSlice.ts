@@ -1,6 +1,11 @@
 import { arrayMove } from '@dnd-kit/sortable';
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit';
 import type { FileNode } from './types';
+import axiosInstance from '@/api/axiosInstance';
 
 export interface Children {
   id: string;
@@ -22,8 +27,10 @@ interface FileTreeeState {
   expandedFolders: string[];
   selectedFile: string | null;
   scrollToFileId: string | null;
+  loading: boolean;
+  error: string | null;
 }
-
+/*
 const mockData: Tree = {
   id: 'proj-1',
   projectName: 'Project Alpha',
@@ -80,12 +87,19 @@ const mockData: Tree = {
     },
   ],
 };
-
+*/
 const initialState: FileTreeeState = {
-  tree: mockData,
+  tree: {
+    id: 'proj-1',
+    projectName: 'Project Alpha',
+    type: 'folder',
+    children: [],
+  },
   expandedFolders: ['proj-1'],
   selectedFile: null,
   scrollToFileId: null,
+  loading: false,
+  error: null,
 };
 
 // Helper function to find and update a node in the tree
@@ -125,6 +139,24 @@ const findAndRemoveNode = (children: Children[], id: string): boolean => {
   }
   return false;
 };
+
+// Async thunks
+// Async thunk for loading tree from backend
+// Async thunk for loading tree from backend
+
+export const loadTreeFromBackend = createAsyncThunk<Tree, number>(
+  'fileTree/loadTreeFromBackend',
+  async (id: number) => {
+    // Placeholder for actual API call
+    try {
+      const response = await axiosInstance(`api/bundles/${id}/documents`);
+      return response.data as Tree;
+    } catch (err) {
+      console.error('Failed to load tree from backend', err);
+      return initialState.tree;
+    }
+  }
+);
 
 // Redux slice
 const fileTreeSlice = createSlice({
@@ -195,6 +227,20 @@ const fileTreeSlice = createSlice({
     setTree: (state, action: PayloadAction<Tree>) => {
       state.tree = action.payload;
     },
+  },
+  extraReducers: builder => {
+    builder.addCase(loadTreeFromBackend.pending, state => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(loadTreeFromBackend.fulfilled, (state, action) => {
+      state.loading = false;
+      state.tree = action.payload;
+    });
+    builder.addCase(loadTreeFromBackend.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to load tree';
+    });
   },
 });
 

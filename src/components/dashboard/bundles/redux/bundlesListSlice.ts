@@ -1,10 +1,16 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { Bundle } from '../types/types';
+import axiosInstance from '@/api/axiosInstance';
+import camelcaseKeys from 'camelcase-keys';
 
 type bundlesListState = {
   bundles: Bundle[];
+  isLoading: boolean;
+  error: string | null;
+  currentBundle: Bundle | null;
 };
 
+/*
 // Mock data for bundles
 const mockBundles: Bundle[] = [
   {
@@ -62,25 +68,58 @@ const mockBundles: Bundle[] = [
     color: 'blue',
   },
 ];
+*/
 
 const initialState: bundlesListState = {
-  bundles: mockBundles,
+  bundles: [],
+  isLoading: false,
+  error: null,
+  currentBundle: null,
 };
+
+// Async thunk to fetch bundles from API
+export const fetchBundles = createAsyncThunk(
+  'bundles/fetchBundles',
+  async () => {
+    const response = await axiosInstance.get('/api/bundles');
+    return camelcaseKeys(response.data.data, { deep: true });
+  }
+);
+
+// Async thunk to fetch a single bundle by ID
+export const fetchBundleById = createAsyncThunk(
+  'bundles/fetchBundleById',
+  async (bundleId: string) => {
+    const response = await axiosInstance.get(`/api/bundles/${bundleId}`);
+    return camelcaseKeys(response.data.bundle, { deep: true }) as Bundle;
+  }
+);
+
+// Async thunk to create a new bundle
+
+export const createBundleAsync = createAsyncThunk(
+  'bundles/createBundle',
+  async (bundleData: Partial<Bundle>) => {
+    const response = await axiosInstance.post('/api/bundles', bundleData);
+    return camelcaseKeys(response.data.bundle, { deep: true }) as Bundle;
+  }
+);
+
+// Async thunk to delete a bundle by ID (not implemented in slice yet)
+export const deleteBundleAsync = createAsyncThunk(
+  'bundles/deleteBundle',
+  async (bundleId: string | number) => {
+    await axiosInstance.delete(`/api/bundles/${bundleId}`);
+    return bundleId;
+  }
+);
 
 const bundleListSlice = createSlice({
   name: 'bundleListSlice',
   initialState,
   reducers: {
     createBundle: (state, action) => {
-      const newBundle: Bundle = {
-        id: crypto.randomUUID(),
-        name: action.payload.name,
-        caseNumber: action.payload.caseNumber,
-        documentCount: 0,
-        lastModified: new Date().toISOString().split('T')[0],
-        status: 'In Progress',
-        color: 'blue',
-      };
+      const newBundle: Bundle = action.payload;
 
       state.bundles.unshift(newBundle);
     },
@@ -108,13 +147,68 @@ const bundleListSlice = createSlice({
         state.bundles.splice(originalIndex + 1, 0, duplicatedBundle);
       }
     },
-    deleteBundle: (state, action) => {
-      const bundleId = action.payload;
-      state.bundles = state.bundles.filter(bundle => bundle.id != bundleId);
-    },
+  },
+  extraReducers: builder => {
+    builder
+      .addCase(fetchBundles.pending, state => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchBundles.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.bundles = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchBundles.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch bundles';
+      });
+    builder
+      .addCase(fetchBundleById.pending, state => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchBundleById.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.currentBundle = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchBundleById.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch bundle';
+      });
+    builder
+      .addCase(createBundleAsync.pending, state => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createBundleAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.bundles.unshift(action.payload);
+        state.error = null;
+      })
+      .addCase(createBundleAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to create bundle';
+      });
+    builder
+      .addCase(deleteBundleAsync.pending, state => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(deleteBundleAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.bundles = state.bundles.filter(
+          bundle => bundle.id !== action.payload
+        );
+        state.error = null;
+      })
+      .addCase(deleteBundleAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to delete bundle';
+      });
   },
 });
 
-export const { createBundle, createDuplicate, deleteBundle } =
-  bundleListSlice.actions;
+export const { createBundle, createDuplicate } = bundleListSlice.actions;
 export default bundleListSlice.reducer;

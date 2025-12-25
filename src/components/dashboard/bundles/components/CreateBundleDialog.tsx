@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createBundle } from '../redux/bundlesListSlice';
+import { createBundleAsync } from '../redux/bundlesListSlice';
 import { useState, type FormEvent } from 'react';
 import { toast } from 'react-toastify';
 
@@ -46,13 +46,12 @@ const CreateNewBundleDialog = ({
     if (!bundleName.trim() || !caseNumber.trim()) {
       return;
     }
+    const payload = {
+      name: bundleName.trim(),
+      case_number: caseNumber.trim(),
+    };
 
-    dispatch(
-      createBundle({
-        name: bundleName.trim(),
-        caseNumber: caseNumber.trim(),
-      })
-    );
+    dispatch(createBundleAsync(payload));
     toast.success('New bundle created successfully');
     setBundleName('');
     setCaseNumber('');

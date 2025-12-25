@@ -28,7 +28,7 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         {/* Protected routes - Editor layout */}
         <Route element={<EditorLayout />}>
-          <Route element={<EditorPage />} path="/dashboard/editor/:id?" />
+          <Route element={<EditorPage />} path="/dashboard/editor/:bundleId?" />
         </Route>
 
         {/* Protected routes - Dashboard layout */}
