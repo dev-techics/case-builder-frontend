@@ -79,6 +79,8 @@ const createMockStore = () => {
         expandedFolders: ['proj-1'],
         selectedFile: null,
         scrollToFileId: null,
+        loading: false,
+        error: null,
       },
     },
   });
