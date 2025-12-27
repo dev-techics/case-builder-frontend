@@ -6,7 +6,7 @@ import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import { useGenerateIndexPDF } from '@/features/auto-index/hooks/useGenerateIndexPDF';
 import type { Children } from '@/features/file-explorer/fileTreeSlice';
-import axios from 'axios';
+import axiosInstance from '@/api/axiosInstance';
 
 /**
  * Recursively collects all PDF files from the tree structure
@@ -26,6 +26,61 @@ const collectAllFiles = (children: Children[]): Children[] => {
   return files;
 };
 
+/**
+ * Fetch PDF with authentication
+ */
+const fetchAuthenticatedPdf = async (url: string): Promise<ArrayBuffer> => {
+  // Extract path from full URL if needed
+  let fetchUrl = url;
+  if (url.startsWith('http')) {
+    const urlObj = new URL(url);
+    fetchUrl = urlObj.pathname;
+  }
+
+  console.log('🔄 Fetching PDF:', fetchUrl);
+
+  try {
+    const response = await axiosInstance.get(fetchUrl, {
+      responseType: 'arraybuffer',
+      validateStatus: status => status === 200,
+    });
+
+    // Verify it's a PDF
+    const contentType = response.headers['content-type'];
+    if (!contentType || !contentType.includes('application/pdf')) {
+      throw new Error(
+        `Invalid content type: ${contentType}. Expected application/pdf.`
+      );
+    }
+
+    // Verify PDF header
+    const firstBytes = new Uint8Array(response.data).slice(0, 4);
+    const pdfHeader = String.fromCharCode(...firstBytes);
+
+    if (!pdfHeader.startsWith('%PDF')) {
+      throw new Error('Invalid PDF data - missing PDF header');
+    }
+
+    console.log('✅ PDF fetched successfully');
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Failed to fetch PDF:', error);
+
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
+      } else if (status === 403) {
+        throw new Error('Permission denied for this file.');
+      } else if (status === 404) {
+        throw new Error('File not found on server.');
+      }
+    }
+
+    throw new Error(error.message || 'Failed to fetch PDF');
+  }
+};
+
 function Exports() {
   const tree = useAppSelector(states => states.fileTree.tree);
   const { headerLeft, headerRight, footer } = useAppSelector(
@@ -33,6 +88,9 @@ function Exports() {
   );
   const indexEntries = useAppSelector(state => state.indexGenerator.entries);
   const { generatePDF: generateIndexPDF } = useGenerateIndexPDF();
+
+  // Get highlights from toolbar slice
+  const highlights = useAppSelector(state => state.toolbar.highlights);
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState<
@@ -62,6 +120,7 @@ function Exports() {
       // Add index as first page if enabled
       if (includeIndex && indexEntries.length > 0) {
         try {
+          setExportMessage('Generating index page...');
           const indexBlob = await generateIndexPDF(indexEntries);
           const indexBytes = await indexBlob.arrayBuffer();
           const indexPdf = await PDFDocument.load(indexBytes);
@@ -72,54 +131,125 @@ function Exports() {
           indexPages.forEach(page => {
             pdfDoc.addPage(page);
           });
-          setExportMessage('Index page added...');
+          console.log('✅ Index page added');
         } catch (error) {
           console.error('Error adding index:', error);
           // Continue without index if there's an error
         }
       }
 
-      // Add all PDF files
-      for (const file of pdfFiles) {
-        // Safety check - should never happen due to collectAllFiles filter
+      // Add all PDF files with authentication
+      for (let i = 0; i < pdfFiles.length; i++) {
+        const file = pdfFiles[i];
+
         if (!file.url) {
           console.warn(`File ${file.name} has no URL, skipping`);
           continue;
         }
 
-        setExportMessage(`Adding ${file.name}...`);
-
-        // const existingPdfBytes = await fetch(file.url).then(res =>
-        //   res.arrayBuffer()
-        // );
-
-        const accessToken = localStorage.getItem('access_token');
-        const existingPdfBytes = await axios
-          .get<ArrayBuffer>(file.url, {
-            responseType: 'arraybuffer',
-            headers: accessToken
-              ? { Authorization: `Bearer ${accessToken}` }
-              : {},
-          })
-          .then(res => res.data);
-
-        const loadedPdf = await PDFDocument.load(existingPdfBytes);
-        const copiedPages = await pdfDoc.copyPages(
-          loadedPdf,
-          loadedPdf.getPageIndices()
+        setExportMessage(
+          `Adding ${file.name}... (${i + 1}/${pdfFiles.length})`
         );
-        copiedPages.forEach(page => {
-          pdfDoc.addPage(page);
-        });
+
+        try {
+          // Fetch with authentication
+          const existingPdfBytes = await fetchAuthenticatedPdf(file.url);
+
+          // Load and copy pages
+          const loadedPdf = await PDFDocument.load(existingPdfBytes);
+          const copiedPages = await pdfDoc.copyPages(
+            loadedPdf,
+            loadedPdf.getPageIndices()
+          );
+
+          copiedPages.forEach(page => {
+            pdfDoc.addPage(page);
+          });
+
+          console.log(`✅ Added ${file.name} (${copiedPages.length} pages)`);
+        } catch (error: any) {
+          console.error(`Failed to add ${file.name}:`, error);
+          throw new Error(`Failed to add ${file.name}: ${error.message}`);
+        }
       }
 
-      setExportMessage('Adding headers and footers...');
+      setExportMessage('Adding headers, footers, and highlights...');
 
-      // Add headers/footers to all pages
+      // Track page index mapping (for highlights)
+      let globalPageIndex = 0;
+      const filePageMapping: {
+        [fileId: string]: { start: number; end: number };
+      } = {};
+
+      // Calculate page mapping for each file
+      if (includeIndex && indexEntries.length > 0) {
+        globalPageIndex = 1; // Index takes page 0
+      }
+
+      for (const file of pdfFiles) {
+        if (!file.url) continue;
+
+        try {
+          const pdfBytes = await fetchAuthenticatedPdf(file.url);
+          const tempPdf = await PDFDocument.load(pdfBytes);
+          const pageCount = tempPdf.getPageCount();
+
+          filePageMapping[file.id] = {
+            start: globalPageIndex,
+            end: globalPageIndex + pageCount - 1,
+          };
+
+          globalPageIndex += pageCount;
+        } catch (error) {
+          console.error(`Failed to map pages for ${file.name}:`, error);
+        }
+      }
+
+      // Add headers/footers/highlights to all pages
       const pages = pdfDoc.getPages();
-      pages.forEach((page, index) => {
+      pages.forEach((page, pageIndex) => {
         const { width, height } = page.getSize();
-        const pageNumber = index + 1;
+        const pageNumber = pageIndex + 1;
+
+        // Find which file this page belongs to
+        let currentFileId: string | null = null;
+        let relativePageNumber = 0;
+
+        for (const [fileId, mapping] of Object.entries(filePageMapping)) {
+          if (pageIndex >= mapping.start && pageIndex <= mapping.end) {
+            currentFileId = fileId;
+            relativePageNumber = pageIndex - mapping.start + 1;
+            break;
+          }
+        }
+
+        // Draw highlights for this page
+        if (currentFileId) {
+          const pageHighlights = highlights.filter(
+            h =>
+              h.fileId === currentFileId && h.pageNumber === relativePageNumber
+          );
+
+          pageHighlights.forEach(highlight => {
+            try {
+              // Draw semi-transparent rectangle for highlight
+              page.drawRectangle({
+                x: highlight.coordinates.x,
+                y: highlight.coordinates.y, // PDF coordinates start from bottom
+                width: highlight.coordinates.width,
+                height: highlight.coordinates.height,
+                color: rgb(
+                  highlight.color.rgb.r,
+                  highlight.color.rgb.g,
+                  highlight.color.rgb.b
+                ),
+                opacity: 0.3,
+              });
+            } catch (error) {
+              console.error('Failed to draw highlight:', error);
+            }
+          });
+        }
 
         // Header left
         if (headerLeft) {
@@ -195,7 +325,7 @@ function Exports() {
       setExportStatus('success');
       setExportMessage(
         `Successfully exported ${pages.length} pages from ${pdfFiles.length} files${
-          includeIndex ? ' (including index)' : ''
+          includeIndex && indexEntries.length > 0 ? ' (including index)' : ''
         }`
       );
 
@@ -334,7 +464,6 @@ function Exports() {
         className="w-full"
         disabled={!hasFiles || isExporting}
         onClick={handleExport}
-        variant={'default'}
       >
         <Download className="mr-2 h-4 w-4" />
         {isExporting ? 'Exporting...' : 'Export All'}
