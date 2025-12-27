@@ -81,6 +81,11 @@ const createMockStore = () => {
         scrollToFileId: null,
         loading: false,
         error: null,
+        operationsInProgress: {
+          deleting: [],
+          renaming: [],
+          uploading: false,
+        },
       },
     },
   });
