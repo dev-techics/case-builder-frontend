@@ -1,7 +1,7 @@
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useSidebarState } from '@/context/SidebarContext';
-import type { Comment } from '../types/SliceTypes';
+import type { Comment } from '../types/types';
 import CommentCard from './CommentCard';
 
 // Individual comment marker component

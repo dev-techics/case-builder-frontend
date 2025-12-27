@@ -20,12 +20,13 @@ const PDFViewer: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const isScrollingFromEditor = useRef(false);
+
   // Use the hook to get modified PDFs
   const { modifiedFiles, isLoading, error } = useModifiedPDFs();
 
   /*--------------------------------
-                    Scroll Synchronization Logic
-                --------------------------------*/
+    Scroll Synchronization Logic
+  --------------------------------*/
 
   const handleScroll = () => {
     if (!containerRef.current || isScrollingFromEditor.current) return;
@@ -80,8 +81,8 @@ const PDFViewer: React.FC = () => {
   }, [selectedFile]);
 
   /*----------------------------
-                        Empty State
-        ------------------------------*/
+      Empty State
+  ------------------------------*/
   if (tree.children.length === 0) {
     return <UploadFile />;
   }

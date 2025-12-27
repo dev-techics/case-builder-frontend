@@ -49,7 +49,7 @@ const FileExplorerHeader = ({
       {level === 0 && (
         <div className="flex items-center">
           <CreateNewFolder />
-          <FileUploadHandler />
+          <FileUploadHandler bundleId={folder.id} />
         </div>
       )}
     </div>

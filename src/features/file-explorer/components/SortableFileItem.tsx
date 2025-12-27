@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import ActionMenu from './FileActionMenu';
 import { useAppDispatch } from '@/app/hooks';
 import {
-  renameFile,
+  renameDocument,
   type Children,
 } from '@/features/file-explorer/fileTreeSlice';
 import { File02Icon } from '@hugeicons/core-free-icons';
@@ -94,7 +94,7 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
   const handleRenameSubmit = () => {
     const trimmedValue = renameValue.trim();
     if (trimmedValue && trimmedValue !== file.name) {
-      dispatch(renameFile({ id: file.id, newName: trimmedValue }));
+      dispatch(renameDocument({ documentId: file.id, newName: trimmedValue }));
     }
     setIsRenaming(false);
   };

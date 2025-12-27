@@ -6,6 +6,7 @@ import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import { useGenerateIndexPDF } from '@/features/auto-index/hooks/useGenerateIndexPDF';
 import type { Children } from '@/features/file-explorer/fileTreeSlice';
+import axios from 'axios';
 
 /**
  * Recursively collects all PDF files from the tree structure
@@ -88,9 +89,20 @@ function Exports() {
 
         setExportMessage(`Adding ${file.name}...`);
 
-        const existingPdfBytes = await fetch(file.url).then(res =>
-          res.arrayBuffer()
-        );
+        // const existingPdfBytes = await fetch(file.url).then(res =>
+        //   res.arrayBuffer()
+        // );
+
+        const accessToken = localStorage.getItem('access_token');
+        const existingPdfBytes = await axios
+          .get<ArrayBuffer>(file.url, {
+            responseType: 'arraybuffer',
+            headers: accessToken
+              ? { Authorization: `Bearer ${accessToken}` }
+              : {},
+          })
+          .then(res => res.data);
+
         const loadedPdf = await PDFDocument.load(existingPdfBytes);
         const copiedPages = await pdfDoc.copyPages(
           loadedPdf,
@@ -319,9 +331,10 @@ function Exports() {
 
       {/* Export Button */}
       <Button
-        className="w-full bg-blue-600 text-white hover:bg-blue-700"
+        className="w-full"
         disabled={!hasFiles || isExporting}
         onClick={handleExport}
+        variant={'default'}
       >
         <Download className="mr-2 h-4 w-4" />
         {isExporting ? 'Exporting...' : 'Export All'}

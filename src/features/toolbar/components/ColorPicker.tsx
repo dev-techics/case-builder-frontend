@@ -1,9 +1,6 @@
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { addHighlight, cancelHighlight } from '@/features/toolbar/toolbarSlice';
-import type {
-  Highlight,
-  HighlightColor,
-} from '@/features/toolbar/types/SliceTypes';
+import type { Highlight, HighlightColor } from '@/features/toolbar/types/types';
 
 export const HIGHLIGHT_COLORS: HighlightColor[] = [
   { name: 'Yellow', rgb: { r: 1, g: 1, b: 0 }, hex: '#FFFF00', opacity: 0.3 },

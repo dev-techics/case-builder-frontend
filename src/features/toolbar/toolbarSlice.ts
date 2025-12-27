@@ -5,7 +5,7 @@ import type {
   Highlight,
   PendingComment,
   PendingHighlight,
-} from './types/SliceTypes';
+} from './types/types';
 
 const initialState: EditorState = {
   ToolbarPosition: { x: null, y: null },

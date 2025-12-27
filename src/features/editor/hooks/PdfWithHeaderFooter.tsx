@@ -2,6 +2,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import type { Children } from '@/features/file-explorer/fileTreeSlice';
+import axios from 'axios';
 
 type ModifiedFileType = {
   id: string;
@@ -74,9 +75,17 @@ export function useModifiedPDFs() {
               }
 
               // Fetch the original PDF
-              const existingPdfBytes = await fetch(file.url).then(res =>
-                res.arrayBuffer()
-              );
+              // const existingPdfBytes = await fetch(file.url).then(res =>
+              //   res.arrayBuffer()
+              // );
+
+              const token = localStorage.getItem('access_token');
+              const existingPdfBytes = await axios
+                .get<ArrayBuffer>(file.url, {
+                  responseType: 'arraybuffer',
+                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                })
+                .then(res => res.data);
 
               if (!isMounted) {
                 return null;

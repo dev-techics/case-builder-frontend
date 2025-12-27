@@ -4,6 +4,7 @@ import RightSidebar from '@/components/sidebars/RightSidebar';
 import Annotations from './components/Annotations';
 import DocumentSettings from './components/DocumentSettings';
 import Exports from './components/Exports';
+// import Exports from '@/components/ExportButton';
 
 type TabType = 'properties' | 'annotations' | 'export';
 

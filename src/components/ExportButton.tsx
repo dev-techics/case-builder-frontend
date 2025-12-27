@@ -2,6 +2,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
+import axios from 'axios';
 
 type ExportPdfButtonProps = {
   fileId?: string; // Optional: export specific file, or merge all if not provided
@@ -15,10 +16,11 @@ type ExportPdfButtonProps = {
  * 1. Export each file separately
  * 2. Merge all files into one PDF (when mergeAll=true)
  */
-export function ExportPdfButton({
+
+const ExportPdfButton = ({
   fileId,
   mergeAll = true, // Default to merging all files
-}: ExportPdfButtonProps) {
+}: ExportPdfButtonProps) => {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,7 +116,7 @@ export function ExportPdfButton({
       )}
     </div>
   );
-}
+};
 
 /**
  * Export all files merged into a single PDF
@@ -136,9 +138,14 @@ async function exportMergedPdf(
     console.log(`📄 Processing ${file.name}...`);
 
     // Load the source PDF
-    const existingPdfBytes = await fetch(file.url).then(res =>
-      res.arrayBuffer()
-    );
+    const token = localStorage.getItem('access_token');
+    const existingPdfBytes = await axios
+      .get<ArrayBuffer>(file.url, {
+        responseType: 'arraybuffer',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      .then(res => res.data);
+
     const sourcePdf = await PDFDocument.load(existingPdfBytes);
 
     // Get highlights for this file
@@ -283,9 +290,14 @@ async function exportSeparateFiles(
       `📄 Processing ${file.name} with ${fileHighlights.length} highlights`
     );
 
-    const existingPdfBytes = await fetch(file.url).then(res =>
-      res.arrayBuffer()
-    );
+    const token = localStorage.getItem('access_token');
+    const existingPdfBytes = await axios
+      .get<ArrayBuffer>(file.url, {
+        responseType: 'arraybuffer',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      .then(res => res.data);
+
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
     const pages = pdfDoc.getPages();
 
@@ -406,3 +418,5 @@ export function ExportPdfButtonWithToggle({
     </div>
   );
 }
+
+export default ExportPdfButton;

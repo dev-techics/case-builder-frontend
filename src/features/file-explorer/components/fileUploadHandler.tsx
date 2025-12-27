@@ -1,56 +1,106 @@
 import type React from 'react';
+import { useState } from 'react';
 import { useAppDispatch } from '../../../app/hooks';
 import { addFiles } from '../../file-explorer/fileTreeSlice';
 import type { FileNode } from '../types';
 import { FileImportIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import axiosInstance from '@/api/axiosInstance';
+import { useParams } from 'react-router-dom';
 
-const FileUploadHandler: React.FC = () => {
+interface FileUploadHandlerProps {
+  bundleId: string; // The bundle/project ID
+  parentId?: string | null; // Optional: if uploading into a specific folder
+}
+
+const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
+  bundleId,
+  parentId = null,
+}) => {
   const dispatch = useAppDispatch();
-
+  const [isUploading, setIsUploading] = useState(false);
+  bundleId = useParams<{ bundleId: string }>().bundleId || bundleId;
+  console.log('FileUploadHandler bundleId:', bundleId);
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const fileNodes: FileNode[] = [];
-
+    // Validate all files are PDFs
+    const pdfFiles: File[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-
-      // Validate it's a PDF
-      if (file.type !== 'application/pdf') {
+      if (file.type === 'application/pdf') {
+        pdfFiles.push(file);
+      } else {
         console.warn(`Skipping non-PDF file: ${file.name}`);
-        continue;
+      }
+    }
+
+    if (pdfFiles.length === 0) {
+      alert('Please select at least one PDF file');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+
+      // Append all PDF files
+      pdfFiles.forEach(file => {
+        formData.append('files[]', file);
+      });
+
+      // Add parent_id if uploading into a folder
+      if (parentId) {
+        formData.append('parent_id', parentId);
       }
 
-      // Create blob URL for PDF preview
-      const url = URL.createObjectURL(file);
-      console.log('✅ Created blob URL for:', file.name, url);
+      // Upload to server
+      const response = await axiosInstance.post(
+        `/api/bundles/${bundleId}/documents/upload`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
-      // Don't store File object - it's non-serializable!
-      const fileNode: FileNode = {
-        id: `file-${Date.now()}-${i}`,
-        name: file.name,
-        type: 'file',
-        url,
-      };
+      console.log('✅ Upload successful:', response.data);
 
-      fileNodes.push(fileNode);
-    }
+      // Extract the uploaded documents from response
+      const uploadedDocuments: FileNode[] = response.data.documents.map(
+        (doc: any) => ({
+          id: doc.id,
+          name: doc.name,
+          type: doc.type,
+          url: doc.url,
+        })
+      );
 
-    if (fileNodes.length > 0) {
       // Add files to Redux store
-      dispatch(addFiles(fileNodes));
-      console.log(`📁 Added ${fileNodes.length} file(s) to store`);
-    }
+      dispatch(addFiles(uploadedDocuments));
 
-    // Reset input
-    e.target.value = '';
+      alert(`Successfully uploaded ${uploadedDocuments.length} file(s)`);
+    } catch (error: any) {
+      console.error('❌ Upload failed:', error);
+      const errorMessage =
+        error.response?.data?.message || 'Failed to upload files';
+      alert(`Upload failed: ${errorMessage}`);
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      e.target.value = '';
+    }
   };
 
   return (
     <div className="p-2 cursor-pointer hover:bg-gray-200 rounded-lg">
-      <label className="text-sm">
+      <label
+        className={`text-sm ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      >
         <HugeiconsIcon icon={FileImportIcon} size={18} />
         <input
           accept=".pdf,application/pdf"
@@ -58,8 +108,12 @@ const FileUploadHandler: React.FC = () => {
           multiple
           onChange={handleFileUpload}
           type="file"
+          disabled={isUploading}
         />
       </label>
+      {isUploading && (
+        <span className="text-xs text-gray-500 ml-2">Uploading...</span>
+      )}
     </div>
   );
 };

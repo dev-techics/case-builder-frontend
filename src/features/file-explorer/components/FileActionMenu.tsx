@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAppDispatch } from '@/app/hooks';
-import { removeFile, type Children } from '../fileTreeSlice';
+import { deleteDocument, type Children } from '../fileTreeSlice';
 import { useState } from 'react';
 
 interface FileActionMenuProps {
@@ -37,9 +37,9 @@ interface FileActionMenuProps {
 }
 
 const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
-  const id = file.id;
   const dispatch = useAppDispatch();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  // const bundleId = useParams<{ bundleId: string }>().bundleId || '';
 
   const handleRename = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.stopPropagation();
@@ -54,7 +54,7 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
   };
 
   const handleConfirmDelete = () => {
-    dispatch(removeFile(id));
+    dispatch(deleteDocument({ documentId: file.id }));
     setShowDeleteDialog(false);
   };
 
