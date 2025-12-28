@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { Highlight } from './types';
+import type { Highlight } from '@/features/toolbar/types/types';
 
 type PendingHighlight = {
   fileId: string;
