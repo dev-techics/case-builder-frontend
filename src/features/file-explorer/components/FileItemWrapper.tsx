@@ -19,8 +19,11 @@ import {
   selectFile,
   type Tree,
   type Children,
+  reorderDocuments,
 } from '../fileTreeSlice';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useParams } from 'react-router-dom';
+import { arrayMove } from '@dnd-kit/sortable';
 
 interface FileItemWrapperProps {
   folder: Tree | Children;
@@ -32,7 +35,13 @@ const FileItemWrapper = ({ folder, level }: FileItemWrapperProps) => {
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Get bundleId from route params or folder id
+  const { bundleId } = useParams<{ bundleId: string }>();
+
+  // Extract numeric bundle ID from folder.id (e.g., "bundle-123" -> "123")
+  const extractedBundleId = bundleId || folder.id.replace('bundle-', '');
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id && folder.children) {
@@ -41,7 +50,44 @@ const FileItemWrapper = ({ folder, level }: FileItemWrapperProps) => {
       );
       const newIndex = folder.children.findIndex(child => child.id === over.id);
 
+      if (oldIndex === -1 || newIndex === -1) {
+        console.error('Could not find item indices');
+        return;
+      }
+
+      // 1. Optimistic update (immediate UI feedback)
       dispatch(reorderFiles({ oldIndex, newIndex }));
+
+      // 2. Calculate new order for ALL items
+      const reorderedChildren = arrayMove(folder.children, oldIndex, newIndex);
+
+      // Create array with new order positions
+      const items = reorderedChildren.map((child, index) => ({
+        id: child.id,
+        order: index, // New order position (0-indexed)
+      }));
+
+      console.log('Sending reorder to server:', items);
+
+      // 3. Send to backend
+      try {
+        const result = await dispatch(
+          reorderDocuments({
+            bundleId: extractedBundleId,
+            items,
+          })
+        );
+
+        if (reorderDocuments.fulfilled.match(result)) {
+          console.log('✅ Reorder saved successfully');
+        } else if (reorderDocuments.rejected.match(result)) {
+          console.error('❌ Reorder failed:', result.payload);
+          // Optionally: reload tree to get correct order from server
+          // dispatch(loadTreeFromBackend(parseInt(extractedBundleId)));
+        }
+      } catch (error) {
+        console.error('Error reordering:', error);
+      }
     }
   };
 
@@ -50,7 +96,11 @@ const FileItemWrapper = ({ folder, level }: FileItemWrapperProps) => {
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })

@@ -1,3 +1,6 @@
+// src/features/toolbar/types/types.ts
+
+// Highlight color object
 export type HighlightColor = {
   name: string;
   rgb: { r: number; g: number; b: number };
@@ -5,6 +8,7 @@ export type HighlightColor = {
   opacity: number;
 };
 
+// Highlight object
 export type Highlight = {
   id: string;
   fileId: string; // Which file this highlight belongs to
