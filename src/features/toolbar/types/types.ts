@@ -21,7 +21,7 @@ export type Highlight = {
   };
   text: string;
   color: HighlightColor;
-  createdAt?: number; // Optional: timestamp
+  createdAt?: string | number; // Optional: timestamp
 };
 
 export type PendingHighlight = {
@@ -73,4 +73,8 @@ export type EditorState = {
   highlights: Highlight[]; // Array to store multiple highlights
   comments: Comment[];
   isCommentExpended: boolean;
+
+  // Loading states for async operations
+  loadingHighlights?: boolean;
+  highlightError?: string | null;
 };

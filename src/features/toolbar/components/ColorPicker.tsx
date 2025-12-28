@@ -1,6 +1,10 @@
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { addHighlight, cancelHighlight } from '@/features/toolbar/toolbarSlice';
-import type { Highlight, HighlightColor } from '@/features/toolbar/types/types';
+import {
+  type CreateHighlightRequest,
+  cancelHighlight,
+  createHighlight,
+} from '@/features/toolbar/toolbarSlice';
+import type { HighlightColor } from '@/features/toolbar/types/types';
 
 export const HIGHLIGHT_COLORS: HighlightColor[] = [
   { name: 'Yellow', rgb: { r: 1, g: 1, b: 0 }, hex: '#FFFF00', opacity: 0.3 },
@@ -30,6 +34,7 @@ function HighlightColorPicker() {
   const pendingHighlight = useAppSelector(
     state => state.toolbar.pendingHighlight
   );
+  const bundleId = useAppSelector(state => state.fileTree.tree.id);
   const dispatch = useAppDispatch();
 
   const handleColorClick = (color: HighlightColor) => {
@@ -39,19 +44,26 @@ function HighlightColorPicker() {
     }
 
     // Create the final highlight with the selected color
-    const highlight: Highlight = {
-      id: `highlight-${Date.now()}-${Math.random()}`,
-      fileId: pendingHighlight.fileId,
-      pageNumber: pendingHighlight.pageNumber,
-      coordinates: pendingHighlight.coordinates,
+    const highlight: CreateHighlightRequest = {
+      document_id: pendingHighlight.fileId,
+      page_number: pendingHighlight.pageNumber,
+      x: pendingHighlight.coordinates.x,
+      y: pendingHighlight.coordinates.y,
+      width: pendingHighlight.coordinates.width,
+      height: pendingHighlight.coordinates.height,
       text: pendingHighlight.text,
-      color,
+      color_name: color.name,
+      color_rgb: color.rgb,
+      color_hex: color.hex,
+      opacity: color.opacity,
     };
 
     console.log('✅ Creating highlight:', highlight);
 
     // Add highlight to Redux store
-    dispatch(addHighlight(highlight));
+    dispatch(
+      createHighlight({ bundleId: bundleId.split('-')[1], data: highlight })
+    );
 
     // Close the color picker and clear pending data
     dispatch(cancelHighlight());

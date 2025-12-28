@@ -1,7 +1,8 @@
 import { CircleX } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { removeHighlight } from '@/features/toolbar/toolbarSlice';
-import type { Highlight, HighlightOverlayProps } from '../../editor/types';
+import { deleteHighlight } from '@/features/toolbar/toolbarSlice';
+import type { HighlightOverlayProps } from '../../editor/types';
+import type { Highlight } from '@/features/toolbar/types/types';
 
 /**
  * Converts PDF coordinates to screen coordinates for HTML overlay rendering
@@ -113,9 +114,10 @@ export function InteractiveHighlightOverlay({
     h => h.fileId === fileId && h.pageNumber === pageNumber
   );
 
+  // Handle delete button click
   const handleDelete = (e: React.MouseEvent, highlightId: string) => {
     e.stopPropagation(); // Prevent triggering onClick
-    dispatch(removeHighlight(highlightId));
+    dispatch(deleteHighlight({ highlightId }));
   };
 
   if (pageHighlights.length === 0) {
