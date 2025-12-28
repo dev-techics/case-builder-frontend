@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import {
-  deleteComment,
-  toggleCommentResolved,
-  updateComment,
+  deleteCommentThunk,
+  toggleCommentResolvedThunk,
+  updateCommentThunk,
 } from '../toolbarSlice';
 
 type CommentCardProps = {
@@ -42,20 +42,24 @@ const CommentCard = ({ comment, onClose }: CommentCardProps) => {
     return date.toLocaleDateString();
   };
 
+  // Handle comment update
   const handleUpdate = () => {
     if (editText.trim()) {
-      dispatch(updateComment({ id: comment.id, text: editText.trim() }));
+      dispatch(
+        updateCommentThunk({ commentId: comment.id, text: editText.trim() })
+      );
       setIsEditing(false);
     }
   };
-
+  // Handle comment delete
   const handleDelete = () => {
-    dispatch(deleteComment(comment.id));
+    console.log('Deleting comment with id:', comment.id);
+    dispatch(deleteCommentThunk({ commentId: comment.id }));
     onClose?.();
   };
-
+  // Handle resolve/unresolve
   const handleResolve = () => {
-    dispatch(toggleCommentResolved(comment.id));
+    dispatch(toggleCommentResolvedThunk({ commentId: comment.id }));
   };
 
   return (

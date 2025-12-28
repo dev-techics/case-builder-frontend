@@ -3,17 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import {
-  addComment,
   cancelCommentCreation,
   cancelHighlight,
+  createComment,
 } from '@/features/toolbar/toolbarSlice';
+import type { CreateCommentRequest } from '../types/types';
 
 function InputComment() {
   const [isVisible, setIsVisible] = useState(false);
   const [commentText, setCommentText] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const justOpenedRef = useRef(false); // Track if just opened
-
+  const bundleId = useAppSelector(states => states.fileTree.tree.id);
   //   const toolbarPosition = useAppSelector(
   //     states => states.toolbar.ToolbarPosition
   //   );
@@ -91,20 +92,20 @@ function InputComment() {
     e.preventDefault();
     if (commentText.trim() && pendingComment) {
       // Create the comment
-      const comment = {
-        id: `comment-${Date.now()}-${Math.random()}`,
-        fileId: pendingComment.fileId,
-        pageNumber: pendingComment.pageNumber,
+      const comment: CreateCommentRequest = {
+        document_id: pendingComment.fileId,
+        page_number: pendingComment.pageNumber,
         text: commentText.trim(),
-        selectedText: pendingComment.selectedText,
-        position: pendingComment.position,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        resolved: false,
+        selected_text: pendingComment.selectedText,
+        x: pendingComment.position.x,
+        y: pendingComment.position.y,
+        page_y: pendingComment.position.pageY,
       };
 
       console.log('✅ Comment created:', comment);
-      dispatch(addComment(comment));
+      dispatch(
+        createComment({ bundleId: bundleId.split('-')[1], data: comment })
+      );
 
       // Clear text selection
       const selection = window.getSelection();

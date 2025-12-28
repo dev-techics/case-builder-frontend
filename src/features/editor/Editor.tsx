@@ -12,6 +12,7 @@ import IndexPageWrapper from '../auto-index/components/IndexPageWrapper';
 import { TextHighlightableDocument } from './components/Document';
 import UploadFile from './components/UploadFile';
 import { useModifiedPDFs } from './hooks/PdfWithHeaderFooter';
+import { loadComments } from '../toolbar/toolbarSlice';
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -79,7 +80,9 @@ const PDFViewer: React.FC = () => {
       }, 1000);
     }
   }, [selectedFile]);
-
+  useEffect(() => {
+    dispatch(loadComments({ bundleId: tree.id.split('-')[1] }));
+  }, [dispatch, tree.id]);
   /*----------------------------
       Empty State
   ------------------------------*/

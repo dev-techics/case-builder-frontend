@@ -40,11 +40,11 @@ interface FileTreeState {
 const initialState: FileTreeState = {
   tree: {
     id: 'proj-1',
-    projectName: 'Project Alpha',
+    projectName: 'Project name',
     type: 'folder',
     children: [],
   },
-  expandedFolders: ['proj-1'],
+  expandedFolders: [],
   selectedFile: null,
   scrollToFileId: null,
   loading: false,
@@ -366,6 +366,7 @@ const fileTreeSlice = createSlice({
       .addCase(loadTreeFromBackend.fulfilled, (state, action) => {
         state.loading = false;
         state.tree = action.payload;
+        state.expandedFolders = [action.payload.id, ...state.expandedFolders];
       })
       .addCase(loadTreeFromBackend.rejected, (state, action) => {
         state.loading = false;

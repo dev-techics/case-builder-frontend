@@ -77,4 +77,79 @@ export type EditorState = {
   // Loading states for async operations
   loadingHighlights?: boolean;
   highlightError?: string | null;
+
+  // Comments loading states
+  loadingComments?: boolean;
+  commentError?: string | null;
 };
+
+export interface CreateHighlightRequest {
+  document_id: string;
+  page_number: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text: string;
+  color_name: string;
+  color_hex: string;
+  color_rgb: {
+    r: number;
+    g: number;
+    b: number;
+  };
+  opacity: number;
+}
+
+export interface HighlightApiResponse {
+  id: number;
+  bundle_id: number;
+  document_id: number;
+  user_id: number;
+  page_number: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text: string;
+  color_name: string;
+  color_hex: string;
+  color_rgb: {
+    r: number;
+    g: number;
+    b: number;
+  };
+  opacity: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCommentRequest {
+  document_id: string;
+  page_number: number;
+  text: string;
+  selected_text?: string;
+  x: number;
+  y: number;
+  page_y: number;
+}
+
+export interface CommentApiResponse {
+  id: number;
+  bundle_id: number;
+  document_id: number;
+  user_id: number;
+  page_number: number;
+  text: string;
+  selected_text?: string;
+  x: number;
+  y: number;
+  page_y: number;
+  resolved: boolean;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: number;
+    name: string;
+  };
+}

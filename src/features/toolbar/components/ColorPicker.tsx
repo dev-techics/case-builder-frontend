@@ -1,10 +1,12 @@
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
-  type CreateHighlightRequest,
   cancelHighlight,
   createHighlight,
 } from '@/features/toolbar/toolbarSlice';
-import type { HighlightColor } from '@/features/toolbar/types/types';
+import type {
+  HighlightColor,
+  CreateHighlightRequest,
+} from '@/features/toolbar/types/types';
 
 export const HIGHLIGHT_COLORS: HighlightColor[] = [
   { name: 'Yellow', rgb: { r: 1, g: 1, b: 0 }, hex: '#FFFF00', opacity: 0.3 },

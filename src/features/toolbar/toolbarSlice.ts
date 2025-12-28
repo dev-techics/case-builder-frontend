@@ -5,53 +5,16 @@ import {
 } from '@reduxjs/toolkit';
 import type {
   Comment,
+  CreateCommentRequest,
+  CommentApiResponse,
   EditorState,
   Highlight,
+  CreateHighlightRequest,
+  HighlightApiResponse,
   PendingComment,
   PendingHighlight,
 } from './types/types';
 import axiosInstance from '@/api/axiosInstance';
-
-export interface CreateHighlightRequest {
-  document_id: string;
-  page_number: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  text: string;
-  color_name: string;
-  color_hex: string;
-  color_rgb: {
-    r: number;
-    g: number;
-    b: number;
-  };
-  opacity: number;
-}
-
-interface HighlightApiResponse {
-  id: number;
-  bundle_id: number;
-  document_id: number;
-  user_id: number;
-  page_number: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  text: string;
-  color_name: string;
-  color_hex: string;
-  color_rgb: {
-    r: number;
-    g: number;
-    b: number;
-  };
-  opacity: number;
-  created_at: string;
-  updated_at: string;
-}
 
 const initialState: EditorState = {
   ToolbarPosition: { x: null, y: null },
@@ -61,10 +24,267 @@ const initialState: EditorState = {
   highlights: [],
   comments: [],
   isCommentExpended: false,
-  // Loading states
+  // Highlights loading states
   loadingHighlights: false,
   highlightError: null,
+  // Comments loading states
+  loadingComments: false,
+  commentError: null,
 };
+
+/*=============================================
+=            Async Thunks - Comments          =
+=============================================*/
+
+/**
+ * Load all comments for a bundle
+ */
+export const loadComments = createAsyncThunk<
+  Comment[],
+  { bundleId: string },
+  { rejectValue: string }
+>('toolbar/loadComments', async ({ bundleId }, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(
+      `/api/bundles/${bundleId}/comments`
+    );
+
+    // Transform API response to match frontend Comment type
+    const comments: Comment[] = response.data.comments.map(
+      (c: CommentApiResponse) => ({
+        id: String(c.id),
+        fileId: String(c.document_id),
+        pageNumber: c.page_number,
+        text: c.text,
+        selectedText: c.selected_text,
+        position: {
+          x: c.x,
+          y: c.y,
+          pageY: c.page_y,
+        },
+        resolved: c.resolved,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        author: c.user?.name,
+      })
+    );
+
+    return comments;
+  } catch (err: any) {
+    console.error('Failed to load comments:', err);
+    const errorMessage =
+      err.response?.data?.message || err.message || 'Failed to load comments';
+    return rejectWithValue(errorMessage);
+  }
+});
+
+/**
+ * Create a new comment
+ */
+export const createComment = createAsyncThunk<
+  Comment,
+  { bundleId: string; data: CreateCommentRequest },
+  { rejectValue: string }
+>('toolbar/createComment', async ({ bundleId, data }, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.post(
+      `/api/bundles/${bundleId}/comments`,
+      data
+    );
+
+    const c: CommentApiResponse = response.data.comment;
+
+    // Transform to frontend format
+    const comment: Comment = {
+      id: String(c.id),
+      fileId: String(c.document_id),
+      pageNumber: c.page_number,
+      text: c.text,
+      selectedText: c.selected_text,
+      position: {
+        x: c.x,
+        y: c.y,
+        pageY: c.page_y,
+      },
+      resolved: c.resolved,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
+      author: c.user?.name,
+    };
+
+    console.log('✅ Comment created:', comment);
+    return comment;
+  } catch (err: any) {
+    console.error('Failed to create comment:', err);
+    const errorMessage =
+      err.response?.data?.message || err.message || 'Failed to create comment';
+    return rejectWithValue(errorMessage);
+  }
+});
+
+/**
+ * Update comment text
+ */
+export const updateCommentThunk = createAsyncThunk<
+  Comment,
+  { commentId: string; text: string },
+  { rejectValue: string }
+>('toolbar/updateComment', async ({ commentId, text }, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.put(`/api/comments/${commentId}`, {
+      text,
+    });
+
+    const c: CommentApiResponse = response.data.comment;
+
+    const comment: Comment = {
+      id: String(c.id),
+      fileId: String(c.document_id),
+      pageNumber: c.page_number,
+      text: c.text,
+      selectedText: c.selected_text,
+      position: {
+        x: c.x,
+        y: c.y,
+        pageY: c.page_y,
+      },
+      resolved: c.resolved,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
+      author: c.user?.name,
+    };
+
+    console.log('✅ Comment updated:', comment);
+    return comment;
+  } catch (err: any) {
+    console.error('Failed to update comment:', err);
+    const errorMessage =
+      err.response?.data?.message || err.message || 'Failed to update comment';
+    return rejectWithValue(errorMessage);
+  }
+});
+
+/**
+ * Toggle comment resolved status
+ */
+export const toggleCommentResolvedThunk = createAsyncThunk<
+  Comment,
+  { commentId: string },
+  { rejectValue: string }
+>(
+  'toolbar/toggleCommentResolved',
+  async ({ commentId }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        `/api/comments/${commentId}/toggle-resolved`
+      );
+
+      const c: CommentApiResponse = response.data.comment;
+
+      const comment: Comment = {
+        id: String(c.id),
+        fileId: String(c.document_id),
+        pageNumber: c.page_number,
+        text: c.text,
+        selectedText: c.selected_text,
+        position: {
+          x: c.x,
+          y: c.y,
+          pageY: c.page_y,
+        },
+        resolved: c.resolved,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        author: c.user?.name,
+      };
+
+      console.log('✅ Comment resolved status toggled:', comment);
+      return comment;
+    } catch (err: any) {
+      console.error('Failed to toggle comment resolved:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to toggle comment';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+/**
+ * Delete a comment
+ */
+export const deleteCommentThunk = createAsyncThunk<
+  string,
+  { commentId: string },
+  { rejectValue: string }
+>('toolbar/deleteComment', async ({ commentId }, { rejectWithValue }) => {
+  try {
+    await axiosInstance.delete(`/api/comments/${commentId}`);
+    console.log('✅ Comment deleted:', commentId);
+    return commentId;
+  } catch (err: any) {
+    console.error('Failed to delete comment:', err);
+    const errorMessage =
+      err.response?.data?.message || err.message || 'Failed to delete comment';
+    return rejectWithValue(errorMessage);
+  }
+});
+
+/**
+ * Bulk delete comments
+ */
+export const bulkDeleteComments = createAsyncThunk<
+  string[],
+  { bundleId: string; commentIds: string[] },
+  { rejectValue: string }
+>(
+  'toolbar/bulkDeleteComments',
+  async ({ bundleId, commentIds }, { rejectWithValue }) => {
+    try {
+      await axiosInstance.post(
+        `/api/bundles/${bundleId}/comments/bulk-delete`,
+        {
+          comment_ids: commentIds.map(id => parseInt(id)),
+        }
+      );
+      console.log('✅ Bulk deleted comments:', commentIds);
+      return commentIds;
+    } catch (err: any) {
+      console.error('Failed to bulk delete comments:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to delete comments';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+/**
+ * Clear all comments for a document
+ */
+export const clearDocumentComments = createAsyncThunk<
+  string,
+  { documentId: string },
+  { rejectValue: string }
+>(
+  'toolbar/clearDocumentComments',
+  async ({ documentId }, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/api/documents/${documentId}/comments`);
+      console.log('✅ Cleared all comments for document:', documentId);
+      return documentId;
+    } catch (err: any) {
+      console.error('Failed to clear document comments:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to clear comments';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
 
 /*=============================================
 =            Async Thunks                     =
@@ -543,6 +763,112 @@ const toolbarSlice = createSlice({
       })
       .addCase(clearDocumentHighlights.rejected, (state, action) => {
         state.highlightError = action.payload || 'Failed to clear highlights';
+      });
+
+    /*-------------------
+      Load Comments
+    -------------------*/
+    builder
+      .addCase(loadComments.pending, state => {
+        state.loadingComments = true;
+        state.commentError = null;
+      })
+      .addCase(loadComments.fulfilled, (state, action) => {
+        state.loadingComments = false;
+        state.comments = action.payload;
+      })
+      .addCase(loadComments.rejected, (state, action) => {
+        state.loadingComments = false;
+        state.commentError = action.payload || 'Failed to load comments';
+      });
+
+    /*-------------------
+      Create Comment
+    -------------------*/
+    builder
+      .addCase(createComment.pending, state => {
+        state.commentError = null;
+      })
+      .addCase(createComment.fulfilled, (state, action) => {
+        state.comments.push(action.payload);
+        // Clear pending comment after creation
+        state.pendingComment = null;
+        state.CommentPosition = { x: null, y: null };
+        state.ToolbarPosition = { x: null, y: null };
+      })
+      .addCase(createComment.rejected, (state, action) => {
+        state.commentError = action.payload || 'Failed to create comment';
+      });
+
+    /*-------------------
+      Update Comment
+    -------------------*/
+    builder
+      .addCase(updateCommentThunk.pending, state => {
+        state.commentError = null;
+      })
+      .addCase(updateCommentThunk.fulfilled, (state, action) => {
+        const index = state.comments.findIndex(c => c.id === action.payload.id);
+        if (index !== -1) {
+          state.comments[index] = action.payload;
+        }
+      })
+      .addCase(updateCommentThunk.rejected, (state, action) => {
+        state.commentError = action.payload || 'Failed to update comment';
+      });
+
+    /*-------------------
+      Toggle Comment Resolved
+    -------------------*/
+    builder
+      .addCase(toggleCommentResolvedThunk.fulfilled, (state, action) => {
+        const index = state.comments.findIndex(c => c.id === action.payload.id);
+        if (index !== -1) {
+          state.comments[index] = action.payload;
+        }
+      })
+      .addCase(toggleCommentResolvedThunk.rejected, (state, action) => {
+        state.commentError = action.payload || 'Failed to toggle comment';
+      });
+
+    /*-------------------
+      Delete Comment
+    -------------------*/
+    builder
+      .addCase(deleteCommentThunk.pending, state => {
+        state.commentError = null;
+      })
+      .addCase(deleteCommentThunk.fulfilled, (state, action) => {
+        state.comments = state.comments.filter(c => c.id !== action.payload);
+      })
+      .addCase(deleteCommentThunk.rejected, (state, action) => {
+        state.commentError = action.payload || 'Failed to delete comment';
+      });
+
+    /*-------------------
+      Bulk Delete Comments
+    -------------------*/
+    builder
+      .addCase(bulkDeleteComments.fulfilled, (state, action) => {
+        state.comments = state.comments.filter(
+          c => !action.payload.includes(c.id)
+        );
+      })
+      .addCase(bulkDeleteComments.rejected, (state, action) => {
+        state.commentError = action.payload || 'Failed to delete comments';
+      });
+
+    /*-------------------
+      Clear Document Comments
+    -------------------*/
+    builder
+      .addCase(clearDocumentComments.fulfilled, (state, action) => {
+        state.comments = state.comments.filter(
+          c => c.fileId !== action.payload
+        );
+      })
+      .addCase(clearDocumentComments.rejected, (state, action) => {
+        state.commentError = action.payload || 'Failed to clear comments';
       });
   },
 });

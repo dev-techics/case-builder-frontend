@@ -7,6 +7,7 @@ import type { Highlight } from '@/features/toolbar/types/types';
 /**
  * Converts PDF coordinates to screen coordinates for HTML overlay rendering
  */
+
 function pdfToScreenCoordinates(
   pdfCoords: { x: number; y: number; width: number; height: number },
   pageHeight: number,
