@@ -1,4 +1,4 @@
-import Bundles from '@/components/dashboard/bundles/Bundles';
+import Bundles from '@/features/bundles-list/Bundles';
 
 const BundlesPage = () => {
   return <Bundles />;

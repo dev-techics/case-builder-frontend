@@ -22,7 +22,7 @@ import {
   createDuplicate,
   deleteBundleAsync,
   fetchBundles,
-} from '@/components/dashboard/bundles/redux/bundlesListSlice';
+} from './redux/bundlesListSlice';
 import { toast } from 'react-toastify';
 
 const BundleList = () => {

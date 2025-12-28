@@ -4,7 +4,7 @@ import editorSlice from '@/features/editor/editorSlice';
 import propertiesPanelSlice from '@/features/properties-panel/propertiesPanelSlice';
 import toolbar from '@/features/toolbar/toolbarSlice';
 import fileTreeSlice from '../features/file-explorer/fileTreeSlice';
-import bundlesListSlice from '@/components/dashboard/bundles/redux/bundlesListSlice';
+import bundlesListSlice from '@/features/bundles-list/redux/bundlesListSlice';
 import authReducer from '@/features/auth/redux/authSlice';
 
 const store = configureStore({
