@@ -132,7 +132,7 @@ const BundleCard = ({
         </div>
 
         <div className="text-xs text-gray-500">
-          Last modified: {bundle.lastModified}
+          Last modified: {bundle.updatedAt}
         </div>
       </div>
     </div>

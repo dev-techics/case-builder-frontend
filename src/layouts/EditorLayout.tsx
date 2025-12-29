@@ -4,6 +4,7 @@ import IndexInitializer from '@/features/auto-index/components/IndexInitializer'
 import PropertiesSidebar from '@/features/properties-panel/sidebar';
 import EditorSidebar from '../features/sidebar/EditorSidebar';
 import { SidebarStateProvider } from '@/context/SidebarContext';
+import Header from '@/features/editor/components/Header';
 
 export default function EditorLayout() {
   return (
@@ -19,19 +20,7 @@ export default function EditorLayout() {
         {/* Main Area */}
         <div className="mr-12 flex flex-1 flex-col">
           {/* Topbar */}
-          <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-white px-4">
-            <h1 className="font-semibold">Editor</h1>
-            <div className="flex items-center gap-4">
-              <button
-                className="rounded bg-blue-600 px-3 py-1 text-white"
-                type="button"
-              >
-                Save
-              </button>
-              <div className="h-8 w-8 rounded-full bg-gray-300" />
-            </div>
-          </header>
-
+          <Header />
           {/* Canvas / Workspace */}
           <main className="relative flex-1 overflow-auto bg-gray-50 p-4">
             <Outlet />
