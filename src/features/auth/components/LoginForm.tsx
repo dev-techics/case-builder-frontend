@@ -1,7 +1,7 @@
 // features/auth/components/LoginForm.tsx
 
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
   login,
@@ -14,13 +14,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const LoginForm = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const isLoading = useAppSelector(selectAuthLoading);
   const error = useAppSelector(selectAuthError);
+  const location = useLocation();
 
+  useEffect(() => {
+    if (location.state?.fromRegister) {
+      toast.success('Registration successful! Please log in.');
+    }
+  }, []);
   const [formData, setFormData] = useState({
     email: '',
     password: '',

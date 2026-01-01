@@ -33,11 +33,12 @@ const SidebarFooterMenu = () => {
       dispatch(logout());
     };
   };
+
   return (
     <SidebarMenuItem>
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuButton className="focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+          <SidebarMenuButton className="mb-1 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
             <Avatar className="h-8 w-8 rounded-lg">
               <AvatarImage src="" alt="Username" />
               <AvatarFallback className="rounded-lg">

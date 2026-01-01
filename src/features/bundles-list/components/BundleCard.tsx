@@ -53,7 +53,7 @@ const BundleCard = ({
     onOpen(bundle);
   };
   const handleDelete = (id: string | number) => {
-    onDelete(id);
+    confirm('Are you sure you want to delete this bundle?') && onDelete(id);
   };
   const handleDuplicate = () => {
     onDuplicate(bundle);

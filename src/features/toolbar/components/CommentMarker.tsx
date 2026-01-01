@@ -26,7 +26,7 @@ const CommentMarker = ({ comment, pageHeight }: CommentMarkerProps) => {
     topPercentage = (pageY / pageHeight) * 100;
   } else {
     topPercentage =
-      ((pageY - (pageNumber - 1) * pageHeight) / pageHeight) * 100;
+      ((pageY - (pageNumber - 1) * (pageHeight + 15.8)) / pageHeight) * 100; // 15.8 is the gap between pages
   }
 
   // Handle click outside to close

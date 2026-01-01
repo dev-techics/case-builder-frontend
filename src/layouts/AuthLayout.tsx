@@ -1,5 +1,6 @@
 // features/auth/components/AuthLayout.tsx
 import type { ReactNode } from 'react';
+import { ToastContainer } from 'react-toastify';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -10,6 +11,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
     <div className="min-h-screen flex">
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
+        <ToastContainer position="top-center" className="text-sm" />
         {children}
       </div>
 

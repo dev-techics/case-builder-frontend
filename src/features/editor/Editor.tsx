@@ -72,7 +72,7 @@ const PDFViewer: React.FC = () => {
       isScrollingFromEditor.current = true;
       fileRefs.current[selectedFile]?.scrollIntoView({
         behavior: 'smooth',
-        block: 'center',
+        block: 'start',
       });
 
       setTimeout(() => {
@@ -80,6 +80,7 @@ const PDFViewer: React.FC = () => {
       }, 1000);
     }
   }, [selectedFile]);
+
   useEffect(() => {
     dispatch(loadComments({ bundleId: tree.id.split('-')[1] }));
   }, [dispatch, tree.id]);

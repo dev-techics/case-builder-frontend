@@ -8,7 +8,7 @@ const DashboardLayout = () => {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden">
       {/* Fixed Topbar */}
-      <div className="h-14 border-b bg-background flex items-center px-4 flex-shrink-0">
+      <div className="h-16 border-b bg-background flex items-center px-4 flex-shrink-0">
         Case Bundler
       </div>
 
