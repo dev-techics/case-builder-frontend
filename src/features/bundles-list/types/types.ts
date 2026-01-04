@@ -38,7 +38,9 @@ export interface Bundle {
   caseNumber: string; // Frontend uses camelCase
   case_number?: string; // Backend uses snake_case
   documentCount: number; // Frontend uses camelCase
+  documentsCount: number; // Frontend uses camelCase
   document_count?: number; // Backend uses snake_case
+  documents_count?: number; // Backend uses snake_case
   lastModified: string;
   last_modified?: string;
   status: BundleStatus;

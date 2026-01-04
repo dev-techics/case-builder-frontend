@@ -1,4 +1,4 @@
-import type { FileNode } from '../file-explorer/types';
+import type { FileNode } from '../file-explorer/types/types';
 import type { HighlightColor } from '../toolbar/types/types';
 
 export type PdfDocumentInfo = {

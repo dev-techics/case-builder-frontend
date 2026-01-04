@@ -1,21 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit';
-import indexGenerator from '@/features/auto-index/autoIndexSlice';
-import editorSlice from '@/features/editor/editorSlice';
-import propertiesPanelSlice from '@/features/properties-panel/propertiesPanelSlice';
-import toolbar from '@/features/toolbar/toolbarSlice';
-import fileTreeSlice from '../features/file-explorer/fileTreeSlice';
-import bundlesListSlice from '@/features/bundles-list/redux/bundlesListSlice';
+import indexGeneratorReducer from '@/features/auto-index/autoIndexSlice';
+import editorReducer from '@/features/editor/editorSlice';
+import propertiesPanelReducer from '@/features/properties-panel/propertiesPanelSlice';
+import toolbarReducer from '@/features/toolbar/toolbarSlice';
+import fileTreeReducer from '../features/file-explorer/redux/fileTreeSlice';
+import bundlesListReducer from '@/features/bundles-list/redux/bundlesListSlice';
 import authReducer from '@/features/auth/redux/authSlice';
 
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    fileTree: fileTreeSlice,
-    editor: editorSlice,
-    propertiesPanel: propertiesPanelSlice,
-    toolbar,
-    indexGenerator,
-    bundleList: bundlesListSlice,
+    fileTree: fileTreeReducer,
+    editor: editorReducer,
+    propertiesPanel: propertiesPanelReducer,
+    toolbar: toolbarReducer,
+    indexGenerator: indexGeneratorReducer,
+    bundleList: bundlesListReducer,
   },
 });
 

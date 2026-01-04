@@ -19,7 +19,7 @@ import {
   renameFile,
   toggleFolder,
   type Children,
-} from '@/features/file-explorer/fileTreeSlice';
+} from '@/features/file-explorer/redux/fileTreeSlice';
 import ActionMenu from './FileActionMenu';
 import FileItemWrapper from './FileItemWrapper';
 import { Folder01Icon } from '@hugeicons/core-free-icons';

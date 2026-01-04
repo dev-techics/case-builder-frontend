@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import FilesTree from './components/FilesTree';
-import { loadTreeFromBackend } from './fileTreeSlice';
+import { loadTreeFromBackend } from './redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
 import { loadHighlights } from '../toolbar/toolbarSlice';
 

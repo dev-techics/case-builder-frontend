@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import FileActionMenu from './FileActionMenu';
-import fileTreeReducer, { type Tree } from '../fileTreeSlice';
+import fileTreeReducer, { type Tree } from '../redux/fileTreeSlice';
 import type { Mock } from 'vitest';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';

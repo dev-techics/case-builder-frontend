@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import {
   selectFile,
   setScrollToFile,
-} from '../../features/file-explorer/fileTreeSlice';
+} from '../file-explorer/redux/fileTreeSlice';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import IndexPageWrapper from '../auto-index/components/IndexPageWrapper';

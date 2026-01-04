@@ -20,7 +20,7 @@ import {
   type Tree,
   type Children,
   reorderDocuments,
-} from '../fileTreeSlice';
+} from '../redux/fileTreeSlice';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { useParams } from 'react-router-dom';
 import { arrayMove } from '@dnd-kit/sortable';

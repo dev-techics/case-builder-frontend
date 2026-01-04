@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import { useGenerateIndexPDF } from '@/features/auto-index/hooks/useGenerateIndexPDF';
-import type { Children } from '@/features/file-explorer/fileTreeSlice';
+import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
 
 /**

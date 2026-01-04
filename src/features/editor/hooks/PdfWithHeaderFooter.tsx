@@ -1,7 +1,7 @@
 import { PDFDocument, rgb } from 'pdf-lib';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
-import type { Children } from '@/features/file-explorer/fileTreeSlice';
+import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axios from 'axios';
 
 type ModifiedFileType = {

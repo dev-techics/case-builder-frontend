@@ -1,4 +1,4 @@
-import type { Tree } from '@/features/file-explorer/fileTreeSlice';
+import type { Tree } from '@/features/file-explorer/redux/fileTreeSlice';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_BASE_URL;

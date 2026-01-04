@@ -16,7 +16,7 @@ function RightSidebar({ children }: { children: React.ReactNode }) {
         size="lg"
       />
       <Sidebar
-        className="transition-all duration-300 ease-in-out [--sidebar-width:300px]"
+        className="transition-all z-0 duration-300 ease-in-out [--sidebar-width:300px]"
         collapsible="offcanvas"
         side="right"
         variant="sidebar"

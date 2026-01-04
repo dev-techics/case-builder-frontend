@@ -11,7 +11,7 @@ const Header = () => {
   };
   return (
     <div>
-      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-white px-4">
+      <header className="sticky top-0 z-0 flex h-14 items-center justify-between border-b bg-white px-4">
         <h1 className="font-semibold">Editor</h1>
         <div>
           <Button

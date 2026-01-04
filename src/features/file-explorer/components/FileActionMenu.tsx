@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAppDispatch } from '@/app/hooks';
-import { deleteDocument, type Children } from '../fileTreeSlice';
+import { deleteDocument, type Children } from '../redux/fileTreeSlice';
 import { useState } from 'react';
 
 interface FileActionMenuProps {

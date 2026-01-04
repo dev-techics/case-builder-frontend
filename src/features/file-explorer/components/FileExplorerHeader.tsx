@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import FileUploadHandler from './fileUploadHandler';
 import { useAppDispatch } from '@/app/hooks';
-import { toggleFolder, type Tree, type Children } from '../fileTreeSlice';
+import { toggleFolder, type Tree, type Children } from '../redux/fileTreeSlice';
 import CreateNewFolder from './CreateNewFolder';
 import { Folder01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';

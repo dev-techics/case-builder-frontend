@@ -16,7 +16,7 @@ import { useAppDispatch } from '@/app/hooks';
 import {
   renameDocument,
   type Children,
-} from '@/features/file-explorer/fileTreeSlice';
+} from '@/features/file-explorer/redux/fileTreeSlice';
 import { File02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 

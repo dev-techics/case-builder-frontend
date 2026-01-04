@@ -4,7 +4,7 @@ import {
   createSlice,
   type PayloadAction,
 } from '@reduxjs/toolkit';
-import type { FileNode } from './types';
+import type { FileNode } from '../types/types';
 import axiosInstance from '@/api/axiosInstance';
 
 export interface Children {

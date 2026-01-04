@@ -10,7 +10,7 @@
  */
 import type React from 'react';
 import { useAppSelector } from '../../../app/hooks';
-import type { Tree, Children } from '../fileTreeSlice';
+import type { Tree, Children } from '../redux/fileTreeSlice';
 import FileExplorerHeader from './FileExplorerHeader';
 import FileItemWrapper from './FileItemWrapper';
 
