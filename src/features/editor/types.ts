@@ -1,3 +1,4 @@
+import type { Children } from '../file-explorer/redux/fileTreeSlice';
 import type { FileNode } from '../file-explorer/types/types';
 import type { HighlightColor } from '../toolbar/types/types';
 
@@ -28,11 +29,7 @@ export type UseModifiedPDFsResult = {
 };
 
 export type TextHighlightableDocumentProps = {
-  file: {
-    url: string;
-    name: string;
-    id: string;
-  };
+  file: Children;
   scale?: number;
 };
 

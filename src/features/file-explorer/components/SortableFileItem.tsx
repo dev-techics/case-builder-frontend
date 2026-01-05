@@ -106,12 +106,14 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
 
   const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.stopPropagation();
       e.preventDefault();
       handleRenameSubmit();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       handleRenameCancel();
     }
+    e.stopPropagation();
   };
 
   const handleRenameBlur = () => {
