@@ -67,6 +67,7 @@ const PDFViewer: React.FC = () => {
     }
   };
 
+  /* Scroll to selected file when it changes */
   useEffect(() => {
     if (selectedFile && fileRefs.current[selectedFile]) {
       isScrollingFromEditor.current = true;
@@ -81,9 +82,11 @@ const PDFViewer: React.FC = () => {
     }
   }, [selectedFile]);
 
+  /* Load comments for the current bundle */
   useEffect(() => {
     dispatch(loadComments({ bundleId: tree.id.split('-')[1] }));
   }, [dispatch, tree.id]);
+
   /*----------------------------
       Empty State
   ------------------------------*/

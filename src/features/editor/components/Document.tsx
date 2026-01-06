@@ -36,6 +36,7 @@ export function TextHighlightableDocument({
     states => states.toolbar.pendingHighlight
   );
 
+  /* Document page count handler */
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
 
@@ -49,6 +50,7 @@ export function TextHighlightableDocument({
     console.log(`✅ PDF loaded: ${file.name} - ${numPages} pages`);
   };
 
+  
   useEffect(() => {
     async function loadPageInfo() {
       if (!file.url || numPages === 0) {
