@@ -45,6 +45,7 @@ export const loadComments = createAsyncThunk<
   { rejectValue: string }
 >('toolbar/loadComments', async ({ bundleId }, { rejectWithValue }) => {
   try {
+    console.log('Loading comments for bundle:', bundleId);
     const response = await axiosInstance.get(
       `/api/bundles/${bundleId}/comments`
     );

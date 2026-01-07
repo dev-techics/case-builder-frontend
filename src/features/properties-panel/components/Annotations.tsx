@@ -1,15 +1,5 @@
-/**
- * Annotations
- *
- * Responsibilities:
- * Manage annotations - adding headers and footers, preview
- *
- * Notes:
- * .........
- *
- * Author: Anik Dey
- */
-import { Copy, RotateCcw } from 'lucide-react';
+// src/features/properties-panel/components/Annotations.tsx
+import { Copy, RotateCcw, Save, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
@@ -17,12 +7,16 @@ import {
   changeFooter,
   changeHeaderLeft,
   changeHeaderRight,
+  saveMetadataToBackend,
 } from '../propertiesPanelSlice';
 
 const Annotations = () => {
   const dispatch = useAppDispatch();
   const { headerLeft, headerRight, footer } = useAppSelector(
     states => states.propertiesPanel.headersFooter
+  );
+  const { isSaving, lastSaved } = useAppSelector(
+    states => states.propertiesPanel
   );
 
   // Local state for input fields
@@ -32,7 +26,7 @@ const Annotations = () => {
   );
   const [localFooter, setLocalFooter] = useState(footer.text || '');
 
-  // Sync local state with Redux state when it changes externally (like on reset)
+  // Sync local state with Redux state when it changes externally
   useEffect(() => {
     setLocalHeaderLeft(headerLeft.text || '');
   }, [headerLeft.text]);
@@ -49,11 +43,38 @@ const Annotations = () => {
     dispatch(changeHeaderLeft(''));
     dispatch(changeHeaderRight(''));
     dispatch(changeFooter(''));
+    // Save to backend after reset
+    setTimeout(() => {
+      dispatch(saveMetadataToBackend());
+    }, 100);
+  };
+
+  const handleSave = () => {
+    dispatch(saveMetadataToBackend());
   };
 
   const handleCopyPreview = () => {
     const preview = `Header Left: ${localHeaderLeft}\nHeader Right: ${localHeaderRight}\nFooter: ${localFooter}`;
     navigator.clipboard.writeText(preview);
+  };
+
+  const handleBlur = (
+    field: 'headerLeft' | 'headerRight' | 'footer',
+    value: string
+  ) => {
+    // Update Redux state
+    if (field === 'headerLeft') {
+      dispatch(changeHeaderLeft(value));
+    } else if (field === 'headerRight') {
+      dispatch(changeHeaderRight(value));
+    } else if (field === 'footer') {
+      dispatch(changeFooter(value));
+    }
+
+    // Auto-save to backend after a short delay
+    setTimeout(() => {
+      dispatch(saveMetadataToBackend());
+    }, 500);
   };
 
   const inputClass =
@@ -66,6 +87,14 @@ const Annotations = () => {
 
   return (
     <div className="space-y-4">
+      {/* Save Status */}
+      {lastSaved && (
+        <div className="flex items-center gap-2 rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-xs text-green-700">
+          <Check className="h-3.5 w-3.5" />
+          <span>Saved {new Date(lastSaved).toLocaleTimeString()}</span>
+        </div>
+      )}
+
       {/* Header Section */}
       <div>
         <div className="mb-3 flex flex-col items-start justify-between">
@@ -84,7 +113,7 @@ const Annotations = () => {
               className={inputClass}
               id="header-left"
               onChange={e => setLocalHeaderLeft(e.target.value)}
-              onBlur={e => dispatch(changeHeaderLeft(e.target.value))}
+              onBlur={e => handleBlur('headerLeft', e.target.value)}
               placeholder="e.g., Company Name"
               type="text"
               value={localHeaderLeft}
@@ -101,7 +130,7 @@ const Annotations = () => {
               className={inputClass}
               id="header-right"
               onChange={e => setLocalHeaderRight(e.target.value)}
-              onBlur={e => dispatch(changeHeaderRight(e.target.value))}
+              onBlur={e => handleBlur('headerRight', e.target.value)}
               placeholder="e.g., Document Version"
               type="text"
               value={localHeaderRight}
@@ -128,7 +157,7 @@ const Annotations = () => {
               className={inputClass}
               id="footer"
               onChange={e => setLocalFooter(e.target.value)}
-              onBlur={e => dispatch(changeFooter(e.target.value))}
+              onBlur={e => handleBlur('footer', e.target.value)}
               placeholder="e.g., Confidential"
               type="text"
               value={localFooter}
@@ -181,6 +210,25 @@ const Annotations = () => {
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           Reset
+        </Button>
+        <Button
+          className="flex-1"
+          disabled={isSaving}
+          onClick={handleSave}
+          size="sm"
+          variant="default"
+        >
+          {isSaving ? (
+            <>
+              <div className="mr-1.5 h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-1.5 h-3.5 w-3.5" />
+              Save
+            </>
+          )}
         </Button>
       </div>
     </div>

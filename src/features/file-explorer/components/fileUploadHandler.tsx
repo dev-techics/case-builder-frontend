@@ -27,7 +27,6 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   const [uploadedCount, setUploadedCount] = useState(0);
 
   bundleId = useParams<{ bundleId: string }>().bundleId || bundleId;
-  console.log('FileUploadHandler bundleId:', bundleId);
 
   const handleClose = () => {
     setIsUploading(false);

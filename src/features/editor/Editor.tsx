@@ -1,91 +1,64 @@
+// src/features/editor/Editor.tsx
 import { FileText, Trash2 } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import {
-  selectFile,
-  setScrollToFile,
-} from '../file-explorer/redux/fileTreeSlice';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import IndexPageWrapper from '../auto-index/components/IndexPageWrapper';
 import { TextHighlightableDocument } from './components/Document';
 import UploadFile from './components/UploadFile';
-import { useModifiedPDFs } from './hooks/PdfWithHeaderFooter';
 import { loadComments } from '../toolbar/toolbarSlice';
+import { DocumentApiService } from '@/api/axiosInstance';
+import {
+  loadMetadataFromBackend,
+  setCurrentBundleId,
+} from '../properties-panel/propertiesPanelSlice';
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
   const tree = useAppSelector(state => state.fileTree.tree);
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const fileRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const isScrollingFromEditor = useRef(false);
-
-  // Use the hook to get modified PDFs
-  const { modifiedFiles, isLoading, error } = useModifiedPDFs();
-
-  /*--------------------------------
-    Scroll Synchronization Logic
-  --------------------------------*/
-
-  const handleScroll = () => {
-    if (!containerRef.current || isScrollingFromEditor.current) return;
-
-    const container = containerRef.current;
-    const scrollTop = container.scrollTop;
-    const containerHeight = container.clientHeight;
-    const scrollCenter = scrollTop + containerHeight / 2;
-
-    let currentFileId: string | null = null;
-    let minDistance = Number.POSITIVE_INFINITY;
-
-    Object.entries(fileRefs.current).forEach(([fileId, element]) => {
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        const elementCenter =
-          rect.top +
-          rect.height / 2 -
-          container.getBoundingClientRect().top +
-          scrollTop;
-        const distance = Math.abs(elementCenter - scrollCenter);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          currentFileId = fileId;
-        }
-      }
-    });
-
-    if (currentFileId && currentFileId !== selectedFile) {
-      dispatch(selectFile(currentFileId));
-      dispatch(setScrollToFile(currentFileId));
-
-      setTimeout(() => {
-        dispatch(setScrollToFile(null));
-      }, 100);
-    }
-  };
-
-  /* Scroll to selected file when it changes */
-  useEffect(() => {
-    if (selectedFile && fileRefs.current[selectedFile]) {
-      isScrollingFromEditor.current = true;
-      fileRefs.current[selectedFile]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-
-      setTimeout(() => {
-        isScrollingFromEditor.current = false;
-      }, 1000);
-    }
-  }, [selectedFile]);
 
   /* Load comments for the current bundle */
   useEffect(() => {
     dispatch(loadComments({ bundleId: tree.id.split('-')[1] }));
   }, [dispatch, tree.id]);
+
+  // Inside your component
+  useEffect(() => {
+    const bundleId = tree.id.split('-')[1];
+    if (bundleId) {
+      dispatch(setCurrentBundleId(bundleId));
+      dispatch(loadMetadataFromBackend(bundleId));
+    }
+  }, [tree.id, dispatch]);
+
+  // Find the selected file in the tree
+  const findSelectedFile = (children: any[]): any => {
+    for (const child of children) {
+      if (child.id === selectedFile && child.type === 'file') {
+        return child;
+      }
+      if (child.children) {
+        const found = findSelectedFile(child.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const currentFile = selectedFile ? findSelectedFile(tree.children) : null;
+
+  // Memoize the file object with URL to prevent unnecessary re-renders
+  const fileWithUrl = useMemo(() => {
+    if (!currentFile) return null;
+
+    return {
+      ...currentFile,
+      url: DocumentApiService.getDocumentStreamUrl(currentFile.id),
+    };
+  }, [currentFile?.id, currentFile?.name]); // Only recreate if id or name changes
 
   /*----------------------------
       Empty State
@@ -94,85 +67,57 @@ const PDFViewer: React.FC = () => {
     return <UploadFile />;
   }
 
-  if (isLoading) {
+  // No file selected
+  if (!fileWithUrl) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center bg-gray-100">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-blue-600 border-b-2" />
-          <p className="text-gray-500">Preparing documents...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center text-red-600">
-          <p>Error: {error}</p>
+          <FileText className="mx-auto mb-4 h-16 w-16 text-gray-300" />
+          <p className="text-gray-600 text-xl font-medium">
+            Select a PDF to view
+          </p>
+          <p className="mt-2 text-gray-400 text-sm">
+            Choose a file from the sidebar to get started
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    // <div className="relative flex h-full flex-col">
-    <div className="relative grid grid-cols-4 gap-0">
-      {/* PDF Documents Container */}
-      <div
-        className="pdf-viewer-container col-span-4 flex-1 overflow-y-auto bg-gray-100 p-8"
-        onScroll={handleScroll}
-        ref={containerRef}
-      >
+    <div className="relative flex h-full flex-col">
+      {/* PDF Document Container */}
+      <div className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100 p-8">
         <div className="mx-auto max-w-4xl space-y-8">
           <IndexPageWrapper />
-          {modifiedFiles.map((file, index) => (
-            <div
-              className={`rounded-lg bg-white shadow-lg transition-all ${
-                selectedFile === file.id ? 'ring-4 ring-blue-500' : ''
-              }`}
-              data-file-id={file.id}
-              key={file.id}
-              ref={el => {
-                fileRefs.current[file.id] = el;
-              }}
-            >
-              {/* PDF Header */}
-              <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-red-500" />
-                  <span className="font-medium text-gray-700">{file.name}</span>
-                  <span className="text-gray-400 text-sm">#{index + 1}</span>
-                </div>
-
-                <button
-                  aria-label={`Delete ${file.name}`}
-                  className="rounded p-1 hover:bg-gray-200"
-                  onClick={() => console.log('Delete', file.id)}
-                  type="button"
-                >
-                  <Trash2 className="h-4 w-4 text-gray-500" />
-                </button>
+          <div
+            className="rounded-lg bg-white shadow-lg"
+            data-file-id={fileWithUrl.id}
+          >
+            {/* PDF Header */}
+            <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-red-500" />
+                <span className="font-medium text-gray-700">
+                  {fileWithUrl.name}
+                </span>
               </div>
 
-              {/* PDF Content Area */}
-              <div className="flex flex-col items-center p-4">
-                {file.url ? (
-                  <TextHighlightableDocument file={file} />
-                ) : (
-                  <div className="flex h-96 w-full items-center justify-center rounded border-2 border-gray-300 border-dashed bg-gray-50">
-                    <div className="text-center">
-                      <FileText className="mx-auto mb-2 h-12 w-12 text-gray-300" />
-                      <p className="text-gray-500">No PDF URL available</p>
-                      <p className="mt-1 text-gray-400 text-sm">
-                        Re-upload this file
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <button
+                aria-label={`Delete ${fileWithUrl.name}`}
+                className="rounded p-1 hover:bg-gray-200"
+                onClick={() => console.log('Delete', fileWithUrl.id)}
+                type="button"
+              >
+                <Trash2 className="h-4 w-4 text-gray-500" />
+              </button>
             </div>
-          ))}
+
+            {/* PDF Content Area */}
+            <div className="flex flex-col items-center p-4">
+              <TextHighlightableDocument file={fileWithUrl} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,9 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { BundleApiService } from '@/api/axiosInstance';
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit';
 
 type HeaderFooterItem = {
   text: string;
@@ -19,6 +24,9 @@ type PropertiesPanelState = {
   };
   documentInfo: Record<string, DocumentPageInfo>; // Changed from array to object
   openRightSidebar: boolean;
+  currentBundleId: string | null;
+  isSaving: boolean;
+  lastSaved: string | null;
 };
 
 const initialState: PropertiesPanelState = {
@@ -41,7 +49,43 @@ const initialState: PropertiesPanelState = {
   },
   documentInfo: {}, // Changed to empty object
   openRightSidebar: true,
+  currentBundleId: null,
+  isSaving: false,
+  lastSaved: null,
 };
+
+// Async thunk to save metadata to backend
+export const saveMetadataToBackend = createAsyncThunk(
+  'propertiesPanel/saveMetadata',
+  async (_, { getState }) => {
+    const state = getState() as any;
+    const { headersFooter, currentBundleId } = state.propertiesPanel;
+
+    if (!currentBundleId) {
+      throw new Error('No bundle ID set');
+    }
+
+    const response = await BundleApiService.updateMetadata(currentBundleId, {
+      header_left: headersFooter.headerLeft.text,
+      header_right: headersFooter.headerRight.text,
+      footer: headersFooter.footer.text,
+    });
+
+    return response;
+  }
+);
+
+// Async thunk to load metadata from backend
+export const loadMetadataFromBackend = createAsyncThunk(
+  'propertiesPanel/loadMetadata',
+  async (bundleId: string) => {
+    const response = await BundleApiService.getBundle(bundleId);
+    return {
+      bundleId,
+      metadata: response.metadata || {},
+    };
+  }
+);
 
 const propertiesPanelSlice = createSlice({
   name: 'propertiesPanel',
@@ -70,6 +114,9 @@ const propertiesPanelSlice = createSlice({
         fileName: action.payload.fileName,
       };
     },
+    setCurrentBundleId: (state, action: PayloadAction<string>) => {
+      state.currentBundleId = action.payload;
+    },
     // Clear document info when files are deleted
     removeDocumentPageCount: (state, action: PayloadAction<string>) => {
       delete state.documentInfo[action.payload];
@@ -82,6 +129,28 @@ const propertiesPanelSlice = createSlice({
       state.openRightSidebar = action.payload;
     },
   },
+  extraReducers: builder => {
+    builder
+      // Save metadata
+      .addCase(saveMetadataToBackend.pending, state => {
+        state.isSaving = true;
+      })
+      .addCase(saveMetadataToBackend.fulfilled, state => {
+        state.isSaving = false;
+        state.lastSaved = new Date().toISOString();
+      })
+      .addCase(saveMetadataToBackend.rejected, state => {
+        state.isSaving = false;
+      })
+      // Load metadata
+      .addCase(loadMetadataFromBackend.fulfilled, (state, action) => {
+        const { metadata, bundleId } = action.payload;
+        state.currentBundleId = bundleId;
+        state.headersFooter.headerLeft.text = metadata.header_left || '';
+        state.headersFooter.headerRight.text = metadata.header_right || '';
+        state.headersFooter.footer.text = metadata.footer || '';
+      });
+  },
 });
 
 export const {
@@ -89,6 +158,7 @@ export const {
   changeHeaderRight,
   changeFooter,
   setDocumentPageCount,
+  setCurrentBundleId,
   removeDocumentPageCount,
   clearDocumentInfo,
   toggleRightSidebar,

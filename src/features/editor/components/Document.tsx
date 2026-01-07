@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+// src/features/editor/components/Document.tsx
+import { useMemo, useRef, useState } from 'react';
 import { Document, Page } from 'react-pdf';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { setDocumentPageCount } from '@/features/properties-panel/propertiesPanelSlice';
@@ -8,10 +9,7 @@ import {
   setPendingHighlight,
   setToolbarPosition,
 } from '@/features/toolbar/toolbarSlice';
-import {
-  getPdfPageInfo,
-  getTextSelectionCoordinates,
-} from '@/lib/pdfCoordinateUtils';
+import { getTextSelectionCoordinates } from '@/lib/pdfCoordinateUtils';
 import CommentOverlay from '../../toolbar/components/CommentOverlay';
 import { InteractiveHighlightOverlay } from '../../toolbar/components/HighlightOverlay';
 import { ScreenToPdfCoordinates } from '../helpers';
@@ -36,6 +34,20 @@ export function TextHighlightableDocument({
     states => states.toolbar.pendingHighlight
   );
 
+  // Memoize the file configuration - ONLY depends on file.url
+  const fileConfig = useMemo(() => {
+    const token = localStorage.getItem('access_token');
+
+    return {
+      url: file.url,
+      httpHeaders: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+    };
+  }, [file.url]);
+
   /* Document page count handler */
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -50,27 +62,22 @@ export function TextHighlightableDocument({
     console.log(`✅ PDF loaded: ${file.name} - ${numPages} pages`);
   };
 
-  
-  useEffect(() => {
-    async function loadPageInfo() {
-      if (!file.url || numPages === 0) {
-        return;
-      }
+  /**
+   * Handle page load to get page dimensions
+   */
+  const onPageLoadSuccess = (pageNumber: number) => (page: any) => {
+    const viewport = page.getViewport({ scale: 1 });
 
-      const infoMap = new Map();
-      for (let i = 1; i <= numPages; i++) {
-        try {
-          const info = await getPdfPageInfo(file.url, i);
-          infoMap.set(i, info);
-        } catch (error) {
-          console.error(`Error loading page ${i} info:`, error);
-        }
-      }
-      setPageInfo(infoMap);
-    }
-
-    loadPageInfo();
-  }, [file.url, numPages]);
+    setPageInfo(prev => {
+      const newMap = new Map(prev);
+      newMap.set(pageNumber, {
+        width: viewport.width,
+        height: viewport.height,
+        pageNumber,
+      });
+      return newMap;
+    });
+  };
 
   const handleMouseUp = () => {
     const selection = window.getSelection();
@@ -92,13 +99,11 @@ export function TextHighlightableDocument({
       }
     });
 
-    // Type guard to ensure both values exist
     if (selectedPageNumber === null || pageElement === null) {
       console.warn('⚠️ Could not determine which page was selected');
       return;
     }
 
-    // At this point, TypeScript knows both are non-null
     const foundPageNumber: number = selectedPageNumber;
     const foundPageElement: HTMLDivElement = pageElement;
 
@@ -173,7 +178,7 @@ export function TextHighlightableDocument({
       {file.id === fileId ? <Toolbar /> : ''}
 
       <Document
-        file={file.url}
+        file={fileConfig}
         loading={
           <div className="flex h-96 items-center justify-center">
             <div className="text-center">
@@ -209,6 +214,7 @@ export function TextHighlightableDocument({
                 renderAnnotationLayer={true}
                 renderTextLayer={true}
                 scale={scale}
+                onLoadSuccess={onPageLoadSuccess(pageNumber)}
               />
 
               {/* Highlight Overlays */}

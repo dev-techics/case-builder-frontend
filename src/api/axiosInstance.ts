@@ -1,3 +1,4 @@
+// src/api/axiosInstance.ts
 import type { Tree } from '@/features/file-explorer/redux/fileTreeSlice';
 import axios from 'axios';
 
@@ -10,7 +11,7 @@ const axiosInstance = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // Increased timeout for PDF processing
 });
 
 // Request interceptor to add auth token
@@ -129,27 +130,39 @@ export class DocumentApiService {
   }
 
   /**
-   * Get the stream URL for a document WITH authentication
-   * This creates a blob URL that can be used in PDF viewers
+   * Get the authenticated PDF URL with headers/footers applied
+   * Returns a blob URL that can be used in PDF viewers
    */
-  static async getAuthenticatedPdfUrl(documentId: string): Promise<string> {
-    const token = localStorage.getItem('auth_token');
+  static getDocumentStreamUrl(documentId: string): string {
+    return `${API_URL}/api/documents/${documentId}/stream`;
+  }
+}
 
-    const response = await axiosInstance.get(
-      `/documents/${documentId}/stream`,
-      {
-        responseType: 'blob', // Important: tell axios to expect binary data
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+export class BundleApiService {
+  /**
+   * Update bundle metadata (headers/footers)
+   */
+  static async updateMetadata(
+    bundleId: string,
+    metadata: {
+      header_left?: string;
+      header_right?: string;
+      footer?: string;
+    }
+  ): Promise<any> {
+    const response = await axiosInstance.patch(
+      `/api/bundles/${bundleId}/metadata`,
+      metadata
     );
+    return response.data;
+  }
 
-    // Create a blob URL from the response
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-
-    return url;
+  /**
+   * Get bundle details
+   */
+  static async getBundle(bundleId: string): Promise<any> {
+    const response = await axiosInstance.get(`/api/bundles/${bundleId}`);
+    return response.data;
   }
 }
 

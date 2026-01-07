@@ -39,7 +39,7 @@ interface FileTreeState {
 
 const initialState: FileTreeState = {
   tree: {
-    id: 'proj-1',
+    id: 'root',
     projectName: 'Project name',
     type: 'folder',
     children: [],
