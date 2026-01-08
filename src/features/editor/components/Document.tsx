@@ -36,6 +36,10 @@ export function TextHighlightableDocument({
 
   // Memoize the file configuration - ONLY depends on file.url
   const fileConfig = useMemo(() => {
+    if (!file.url) {
+      return undefined;
+    }
+
     const token = localStorage.getItem('access_token');
 
     return {
@@ -44,7 +48,7 @@ export function TextHighlightableDocument({
         ? {
             Authorization: `Bearer ${token}`,
           }
-        : {},
+        : undefined,
     };
   }, [file.url]);
 
@@ -172,6 +176,17 @@ export function TextHighlightableDocument({
 
     dispatch(setToolbarPosition({ x: pickerX, y: pickerY }));
   };
+
+  // If no file URL, show error state
+  if (!fileConfig) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500">No PDF URL available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
