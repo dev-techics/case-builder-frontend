@@ -2,7 +2,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import FileUploadHandler from './fileUploadHandler';
 import { useAppDispatch } from '@/app/hooks';
 import { toggleFolder, type Tree, type Children } from '../redux/fileTreeSlice';
-import CreateNewFolder from './CreateNewFolder';
+// import CreateNewFolder from './CreateNewFolder';
 import { Folder01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 
@@ -48,7 +48,7 @@ const FileExplorerHeader = ({
       {/* Only show upload handler for root folder (level 0) */}
       {level === 0 && (
         <div className="flex items-center">
-          <CreateNewFolder />
+          {/* <CreateNewFolder /> */}
           <FileUploadHandler bundleId={folder.id} />
         </div>
       )}
