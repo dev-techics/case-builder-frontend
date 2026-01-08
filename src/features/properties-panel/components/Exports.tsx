@@ -28,8 +28,13 @@ const collectAllFiles = (children: Children[]): Children[] => {
 
 /**
  * Fetch PDF with authentication
+ * @param url - The PDF URL
+ * @param original - If true, fetches the original PDF without headers/footers
  */
-const fetchAuthenticatedPdf = async (url: string): Promise<ArrayBuffer> => {
+const fetchAuthenticatedPdf = async (
+  url: string,
+  original: boolean = true
+): Promise<ArrayBuffer> => {
   // Extract path from full URL if needed
   let fetchUrl = url;
   if (url.startsWith('http')) {
@@ -37,7 +42,17 @@ const fetchAuthenticatedPdf = async (url: string): Promise<ArrayBuffer> => {
     fetchUrl = urlObj.pathname;
   }
 
-  console.log('🔄 Fetching PDF:', fetchUrl);
+  // Add original parameter if requested
+  if (original) {
+    const separator = fetchUrl.includes('?') ? '&' : '?';
+    fetchUrl = `${fetchUrl}${separator}original=true`;
+  }
+
+  console.log(
+    '🔄 Fetching PDF:',
+    fetchUrl,
+    original ? '(ORIGINAL)' : '(MODIFIED)'
+  );
 
   try {
     const response = await axiosInstance.get(fetchUrl, {
@@ -61,7 +76,10 @@ const fetchAuthenticatedPdf = async (url: string): Promise<ArrayBuffer> => {
       throw new Error('Invalid PDF data - missing PDF header');
     }
 
-    console.log('✅ PDF fetched successfully');
+    console.log(
+      '✅ PDF fetched successfully',
+      original ? '(ORIGINAL)' : '(MODIFIED)'
+    );
     return response.data;
   } catch (error: any) {
     console.error('❌ Failed to fetch PDF:', error);

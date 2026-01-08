@@ -20,6 +20,12 @@ const PDFViewer: React.FC = () => {
   const tree = useAppSelector(state => state.fileTree.tree);
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
 
+  // Subscribe to header/footer state
+  // const headersFooter = useAppSelector(
+  //   state => state.propertiesPanel.headersFooter
+  // );
+  const lastSaved = useAppSelector(state => state.propertiesPanel.lastSaved);
+
   /* Load comments for the current bundle */
   useEffect(() => {
     dispatch(loadComments({ bundleId: tree.id.split('-')[1] }));
@@ -50,15 +56,26 @@ const PDFViewer: React.FC = () => {
 
   const currentFile = selectedFile ? findSelectedFile(tree.children) : null;
 
-  // Memoize the file object with URL to prevent unnecessary re-renders
   const fileWithUrl = useMemo(() => {
     if (!currentFile) return null;
 
+    // Create cache-busting parameter based on metadata changes
+    const cacheBuster = lastSaved || Date.now();
+    const baseUrl = DocumentApiService.getDocumentStreamUrl(currentFile.id);
+
     return {
       ...currentFile,
-      url: DocumentApiService.getDocumentStreamUrl(currentFile.id),
+      url: `${baseUrl}?v=${cacheBuster}`,
     };
-  }, [currentFile?.id, currentFile?.name]); // Only recreate if id or name changes
+  }, [
+    currentFile?.id,
+    currentFile?.name,
+    lastSaved, // This will change when metadata is saved
+    // Or use the actual metadata values:
+    // headersFooter.headerLeft.text,
+    // headersFooter.headerRight.text,
+    // headersFooter.footer.text,
+  ]);
 
   /*----------------------------
       Empty State
