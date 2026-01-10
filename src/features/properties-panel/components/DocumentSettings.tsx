@@ -1,30 +1,40 @@
 import { Calendar, FileCog, FileText, HardDrive } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
+import axiosInstance from '@/api/axiosInstance';
 
 function DocumentSettings() {
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const tree = useAppSelector(state => state.fileTree.tree);
   // const documentInfo = useAppSelector(state => state.editor.documentInfo); // If you store this
 
-  const [fileSize, setFileSize] = useState<string>('Calculating...');
+  const [fileSize, setFileSize] = useState<string | null>(null);
 
   const currentFile = selectedFile
     ? tree.children.find(file => file.id === selectedFile)
     : null;
 
+  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    Get the size of the document
+  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   useEffect(() => {
-    // Get actual file size from blob URL
-    if (currentFile?.url) {
-      fetch(currentFile.url)
-        .then(response => response.blob())
-        .then(blob => {
-          const sizeInMb = (blob.size / (1024 * 1024)).toFixed(2);
-          setFileSize(`${sizeInMb} MB`);
-        })
-        .catch(() => setFileSize('Unknown'));
+    if (selectedFile) {
+      const fetchFileSize = async () => {
+        const response = await axiosInstance.get(
+          `/api/documents/${selectedFile}/stream`,
+          {
+            method: 'HEAD',
+          }
+        );
+        const contentLength = response.headers['content-length'];
+        setFileSize(
+          `${(parseInt(contentLength) / (1024 * 1024)).toFixed(2)} MB`
+        );
+      };
+
+      fetchFileSize();
     }
-  }, [currentFile?.url]);
+  }, [selectedFile]);
 
   if (!currentFile) {
     return (
