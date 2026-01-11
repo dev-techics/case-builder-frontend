@@ -7,7 +7,7 @@ import {
 const LeftSidebar = ({ children }: { children: React.ReactNode }) => {
   return (
     <Sidebar
-      className="[--sidebar-width:260px] transition-all duration-300 ease-in-out"
+      className="[--sidebar-width:280px] transition-all duration-300 ease-in-out"
       collapsible="offcanvas"
       side="left"
       variant="sidebar"

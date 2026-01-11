@@ -18,7 +18,7 @@ const FileTree: React.FC = () => {
   }, [bundleId, dispatch]);
 
   return (
-    <div className="h-screen w-64 overflow-auto bg-white text-gray-800">
+    <div className="h-screen w-full overflow-auto bg-white text-gray-800">
       <div className="border-gray-300 border-b p-4">
         <h2 className="font-semibold text-gray-800 text-xs uppercase tracking-wider">
           Explorer
