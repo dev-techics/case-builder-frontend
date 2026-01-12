@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAppDispatch } from '../../../app/hooks';
 import { addFiles } from '../redux/fileTreeSlice';
 import type { FileNode } from '../types/types';
-import { FileImportIcon } from '@hugeicons/core-free-icons';
+import { FileImportIcon, PlusSignIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import axiosInstance from '@/api/axiosInstance';
 import { useParams } from 'react-router-dom';
@@ -11,12 +11,12 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, X } from 'lucide-react';
 
-interface FileUploadHandlerProps {
+interface ImportDocumentsProps {
   bundleId: string; // The bundle/project ID
   parentId?: string | null; // Optional: if uploading into a specific folder
 }
 
-const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
+const ImportDocuments: React.FC<ImportDocumentsProps> = ({
   bundleId,
   parentId = null,
 }) => {
@@ -99,6 +99,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       const uploadedDocuments: FileNode[] = response.data.documents.map(
         (doc: any) => ({
           id: doc.id,
+          parentId: doc.parent_id,
           name: doc.name,
           type: doc.type,
           url: doc.url,
@@ -107,7 +108,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
 
       // Add files to Redux store
       dispatch(addFiles(uploadedDocuments));
-
+      console.log(uploadedDocuments);
       setUploadedCount(uploadedDocuments.length);
       setUploadComplete(true);
     } catch (error: any) {
@@ -127,7 +128,16 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         <label
           className={`text-sm ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
-          <HugeiconsIcon icon={FileImportIcon} size={18} />
+          {parentId ? (
+            <HugeiconsIcon
+              onClick={e => e.stopPropagation()}
+              icon={PlusSignIcon}
+              className="mr-2 h-4 w-4 flex-shrink-0 text-slate-900"
+            />
+          ) : (
+            <HugeiconsIcon icon={FileImportIcon} size={18} />
+          )}
+
           <input
             accept=".pdf,application/pdf"
             className="hidden"
@@ -197,4 +207,4 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   );
 };
 
-export default FileUploadHandler;
+export default ImportDocuments;

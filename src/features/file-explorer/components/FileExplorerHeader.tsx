@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import FileUploadHandler from './fileUploadHandler';
+import ImportDocuments from './ImportDocuments';
 import { useAppDispatch } from '@/app/hooks';
 import { toggleFolder, type Tree, type Children } from '../redux/fileTreeSlice';
 import CreateNewFolder from './CreateNewFolder';
@@ -28,15 +28,20 @@ const FileExplorerHeader = ({
 
   return (
     <div
-      className="flex items-center justify-between px-2 py-1 relative"
-      onClick={handleFolderClick}
+      className="flex items-center justify-between px-2 py-1 sticky top-0 bg-white border-b border-gray-200 z-10"
       style={{ paddingLeft: `${level * 12 + 8}px` }}
     >
       <div className="flex items-center cursor-pointer ">
         {isExpanded ? (
-          <ChevronDown className="mr-1 h-4 w-4 flex-shrink-0" />
+          <ChevronDown
+            onClick={handleFolderClick}
+            className="mr-1 h-4 w-4 flex-shrink-0"
+          />
         ) : (
-          <ChevronRight className="mr-1 h-4 w-4 flex-shrink-0" />
+          <ChevronRight
+            onClick={handleFolderClick}
+            className="mr-1 h-4 w-4 flex-shrink-0"
+          />
         )}
         <HugeiconsIcon
           icon={Folder01Icon}
@@ -49,7 +54,7 @@ const FileExplorerHeader = ({
       {level === 0 && (
         <div className="flex items-center">
           <CreateNewFolder />
-          <FileUploadHandler bundleId={folder.id} />
+          <ImportDocuments bundleId={folder.id} parentId={null} />
         </div>
       )}
     </div>

@@ -9,6 +9,7 @@ import axiosInstance from '@/api/axiosInstance';
 
 export interface Children {
   id: string;
+  parentId: string | null;
   name: string;
   type: 'file' | 'folder';
   url?: string;
@@ -25,6 +26,7 @@ export interface Tree {
 interface FileTreeState {
   tree: Tree;
   expandedFolders: string[];
+  isCreatingNewFolder: boolean;
   selectedFile: string | null;
   scrollToFileId: string | null;
   loading: boolean;
@@ -45,6 +47,7 @@ const initialState: FileTreeState = {
     children: [],
   },
   expandedFolders: [],
+  isCreatingNewFolder: false,
   selectedFile: null,
   scrollToFileId: null,
   loading: false,
@@ -291,6 +294,10 @@ const fileTreeSlice = createSlice({
         state.expandedFolders.push(folderId);
       }
     },
+    // New reducer to set folder creation state
+    setIsCreatingNewFolder: (state, action: PayloadAction<boolean>) => {
+      state.isCreatingNewFolder = action.payload;
+    },
 
     selectFile: (state, action: PayloadAction<string>) => {
       state.selectedFile = action.payload;
@@ -302,9 +309,36 @@ const fileTreeSlice = createSlice({
 
     // Local-only actions (optimistic updates)
     addFiles: (state, action: PayloadAction<FileNode[]>) => {
-      state.tree.children = [...state.tree.children, ...action.payload];
-    },
+      const parentId = action.payload[0]?.parentId;
 
+      // If no parentId, add to root
+      if (!parentId) {
+        state.tree.children = [...state.tree.children, ...action.payload];
+        return;
+      }
+
+      // Find the parent folder recursively and add files there
+      const addToParent = (children: Children[]): boolean => {
+        for (const child of children) {
+          if (child.id === parentId && child.type === 'folder') {
+            child.children = [...(child.children || []), ...action.payload];
+            return true;
+          }
+          if (child.type === 'folder' && child.children) {
+            if (addToParent(child.children)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+      // Try to add to parent, if not found add to root as fallback
+      if (!addToParent(state.tree.children)) {
+        console.warn(`Parent folder ${parentId} not found, adding to root`);
+        state.tree.children = [...state.tree.children, ...action.payload];
+      }
+    },
     removeFile: (state, action: PayloadAction<string>) => {
       const rootIndex = state.tree.children.findIndex(
         f => f.id === action.payload
@@ -482,6 +516,7 @@ const fileTreeSlice = createSlice({
 
 export const {
   toggleFolder,
+  setIsCreatingNewFolder,
   selectFile,
   setScrollToFile,
   addFiles,

@@ -24,22 +24,25 @@ import ActionMenu from './FileActionMenu';
 import FileItemWrapper from './FileItemWrapper';
 import { Folder01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import ImportDocuments from './ImportDocuments';
 
 type SortableFolderItemProps = {
   folder: Children;
+  onSelect: () => void;
   level: number;
 };
 
 const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   folder,
   level,
+  onSelect,
 }) => {
   const folderRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useAppDispatch();
 
-  const expandedFolders = useAppSelector(
-    state => state.fileTree.expandedFolders
+  const { expandedFolders, selectedFile } = useAppSelector(
+    state => state.fileTree
   );
 
   const [isRenaming, setIsRenaming] = useState(false);
@@ -74,6 +77,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     if (!isRenaming) {
       dispatch(toggleFolder(folder.id));
     }
+    onSelect();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -183,7 +187,10 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
             </span>
           )}
         </div>
-
+        {/* Import file inside a folder */}
+        <div>
+          <ImportDocuments bundleId={folder.id} parentId={selectedFile} />
+        </div>
         {/* Action Menu */}
         <ActionMenu file={folder} onRenameClick={handleRenameClick} />
       </div>

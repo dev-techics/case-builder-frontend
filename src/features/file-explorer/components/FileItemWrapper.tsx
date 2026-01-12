@@ -24,6 +24,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { useParams } from 'react-router-dom';
 import { arrayMove } from '@dnd-kit/sortable';
+import CreateNewFolderInput from './CreateNewFolderInput';
 
 interface FileItemWrapperProps {
   folder: Tree | Children;
@@ -34,6 +35,9 @@ const FileItemWrapper = ({ folder, level }: FileItemWrapperProps) => {
   const dispatch = useAppDispatch();
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
+  const isCreating = useAppSelector(
+    state => state.fileTree.isCreatingNewFolder
+  );
 
   // Get bundleId from route params or folder id
   const { bundleId } = useParams<{ bundleId: string }>();
@@ -122,12 +126,14 @@ const FileItemWrapper = ({ folder, level }: FileItemWrapperProps) => {
           items={folder.children.map(c => c.id)}
           strategy={verticalListSortingStrategy}
         >
+          {isCreating && <CreateNewFolderInput parentId={selectedFile} />}
           {folder.children.map(child => {
             // Conditionally render based on type
             if (child.type === 'folder') {
               return (
                 <SortableFolderItem
                   key={child.id}
+                  onSelect={() => handleFileSelect(child.id)}
                   folder={child}
                   level={level + 1}
                 />

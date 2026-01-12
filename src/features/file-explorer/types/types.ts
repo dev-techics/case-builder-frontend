@@ -1,5 +1,6 @@
 export type FileNode = {
   id: string;
+  parentId: string | null;
   name: string;
   type: 'file';
   url: string; // Blob URL for the PDF file
