@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import IndexPageWrapper from '../auto-index/components/IndexPageWrapper';
 import { TextHighlightableDocument } from './components/Document';
 import UploadFile from './components/UploadFile';
 import { loadComments } from '../toolbar/toolbarSlice';
@@ -239,9 +238,9 @@ const PDFViewer: React.FC = () => {
     };
   }, []);
 
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     Setup Intersection Observer - STRICT SINGLE TRIGGER
-   -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   useEffect(() => {
     const sentinel = sentinelRef.current;
 
@@ -323,8 +322,6 @@ const PDFViewer: React.FC = () => {
       >
         <div className="mx-auto max-w-4xl space-y-8">
           {/* Index Page */}
-          <IndexPageWrapper />
-
           {/* Render all loaded files */}
           {filesWithUrls.map(fileWithUrl => (
             <div

@@ -354,7 +354,7 @@ const fileTreeSlice = createSlice({
         state.selectedFile = null;
       }
     },
-
+    // Rename file locally
     renameFile: (
       state,
       action: PayloadAction<{ id: string; newName: string }>

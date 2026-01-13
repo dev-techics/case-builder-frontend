@@ -9,7 +9,7 @@
  * Author: Anik Dey
  *
  */
-import { EllipsisIcon, Pencil, Trash2Icon } from 'lucide-react';
+import { EllipsisIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -30,6 +30,12 @@ import {
 import { useAppDispatch } from '@/app/hooks';
 import { deleteDocument, type Children } from '../redux/fileTreeSlice';
 import { useState } from 'react';
+import {
+  Delete03Icon,
+  Edit03Icon,
+  FolderAddIcon,
+} from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
 
 interface FileActionMenuProps {
   file: Children;
@@ -67,12 +73,18 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" sideOffset={20}>
+          {file.type === 'folder' && (
+            <DropdownMenuItem>
+              <HugeiconsIcon className="ml-1" size={16} icon={FolderAddIcon} />
+              Create new section
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onClick={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
               handleRename(e)
             }
           >
-            <Pencil className="ml-1" size={16} />
+            <HugeiconsIcon className="ml-1" size={16} icon={Edit03Icon} />
             Rename
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -80,7 +92,11 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
               handleDeleteClick(e)
             }
           >
-            <Trash2Icon className="ml-1" size={16} />
+            <HugeiconsIcon
+              className="ml-1 text-red-500"
+              size={16}
+              icon={Delete03Icon}
+            />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

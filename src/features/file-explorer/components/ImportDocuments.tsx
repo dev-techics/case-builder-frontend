@@ -127,6 +127,7 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
       <div className="p-2 cursor-pointer hover:bg-gray-200 rounded-lg">
         <label
           className={`text-sm ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          title="Import Document"
         >
           {parentId ? (
             <HugeiconsIcon

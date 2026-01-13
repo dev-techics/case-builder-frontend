@@ -16,7 +16,7 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
-  renameFile,
+  renameDocument,
   toggleFolder,
   type Children,
 } from '@/features/file-explorer/redux/fileTreeSlice';
@@ -103,7 +103,9 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const handleRenameSubmit = () => {
     const trimmedValue = renameValue.trim();
     if (trimmedValue && trimmedValue !== folder.name) {
-      dispatch(renameFile({ id: folder.id, newName: trimmedValue }));
+      dispatch(
+        renameDocument({ documentId: folder.id, newName: trimmedValue })
+      );
     }
     setIsRenaming(false);
   };
@@ -187,7 +189,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
             </span>
           )}
         </div>
-        {/* Import file inside a folder */}
+        {/* Import Documents inside a folder */}
         <div>
           <ImportDocuments bundleId={folder.id} parentId={selectedFile} />
         </div>
