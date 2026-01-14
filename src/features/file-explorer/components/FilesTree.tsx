@@ -29,7 +29,6 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     <div>
       {/* Header */}
       <FileExplorerHeader folder={tree} level={level} isExpanded={isExpanded} />
-
       {isExpanded && <FileItemWrapper folder={tree} level={level} />}
     </div>
   );

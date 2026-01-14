@@ -45,6 +45,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-error-boundary": "^6.0.3",
+    "react-intersection-observer": "^10.0.0",
     "react-pdf": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.3",

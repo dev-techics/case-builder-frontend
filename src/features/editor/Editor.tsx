@@ -17,6 +17,7 @@ import { selectFile } from '../file-explorer/redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
+import IndexDocument from './components/IndexDocument';
 
 // Component that only renders PDF when visible
 const LazyPDFRenderer: React.FC<{
@@ -81,6 +82,7 @@ const PDFViewer: React.FC = () => {
   const lastSaved = useAppSelector(state => state.propertiesPanel.lastSaved);
 
   // State for loaded files (infinite scroll) - NOW ONLY TRACKS IDS
+  const [indexUrl, setIndexUrl] = useState<string | null>(null);
   const [visibleFileIds, setVisibleFileIds] = useState<string[]>([]);
   const [isLoadingNext, setIsLoadingNext] = useState(false);
 
@@ -89,6 +91,48 @@ const PDFViewer: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const loadingTimeoutRef = useRef<number | null>(null);
   const lastLoadTimeRef = useRef<number>(0);
+
+  // Build index URL with cache buster
+  const indexUrlWithCache = useMemo(() => {
+    if (!indexUrl) return null;
+
+    const cacheBuster = lastSaved || Date.now();
+    return `${indexUrl}?v=${cacheBuster}`;
+  }, [indexUrl, lastSaved]); // Only recompute when these change
+
+  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    Fetch index URL when bundle is loaded
+  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
+  useEffect(() => {
+    const fetchIndexUrl = async () => {
+      if (!bundleId) return;
+
+      try {
+        console.log('📋 Fetching index for bundle:', bundleId);
+
+        const response = await DocumentApiService.fetchTree(bundleId);
+
+        if (response.indexUrl) {
+          // Only update if URL actually changed
+          setIndexUrl(prev => {
+            if (prev !== response.indexUrl) {
+              console.log('📋 Index URL loaded:', response.indexUrl);
+              return response.indexUrl as string;
+            }
+            return prev;
+          });
+        } else {
+          console.log('ℹ️ No index URL in response');
+          setIndexUrl(null);
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch index URL:', error);
+        setIndexUrl(null);
+      }
+    };
+
+    fetchIndexUrl();
+  }, [bundleId, lastSaved]);
 
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     set selected file to the first file in the tree on load
@@ -162,9 +206,9 @@ const PDFViewer: React.FC = () => {
     }
   }, [selectedFile, allFiles]);
 
-  /*-+-+-+-+-+-+-+-+-+-+-+-+
+  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    Load next file function - STRICT SEQUENTIAL LOADING
-  -+-+-+-+-+-+-+-+-+-+-+-+*/
+  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   const loadNextFile = useCallback(() => {
     const now = Date.now();
 
@@ -321,7 +365,34 @@ const PDFViewer: React.FC = () => {
         className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100 p-8"
       >
         <div className="mx-auto max-w-4xl space-y-8">
-          {/* Index Page */}
+          {/* INDEX PAGE - Always first */}
+          {indexUrlWithCache && (
+            <div className="rounded-lg bg-white shadow-lg">
+              {/* Index Header */}
+              <div className="flex items-center justify-between border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                  <span className="font-semibold text-gray-800">
+                    Table of Contents
+                  </span>
+                  <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                    Index
+                  </span>
+                </div>
+              </div>
+
+              {/* Index Content */}
+              <ErrorBoundary
+                FallbackComponent={Fallback}
+                resetKeys={[indexUrl]}
+              >
+                {indexUrlWithCache && (
+                  <IndexDocument indexUrl={indexUrlWithCache} />
+                )}
+              </ErrorBoundary>
+            </div>
+          )}
+
           {/* Render all loaded files */}
           {filesWithUrls.map(fileWithUrl => (
             <div

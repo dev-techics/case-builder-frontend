@@ -35,7 +35,9 @@ export class DocumentApiService {
    * Fetch the file tree for a bundle
    */
   static async fetchTree(bundleId: string): Promise<Tree> {
-    const response = await axiosInstance.get(`/bundles/${bundleId}/documents`);
+    const response = await axiosInstance.get(
+      `/api/bundles/${bundleId}/documents`
+    );
     return response.data;
   }
 
@@ -109,7 +111,7 @@ export class DocumentApiService {
    * Delete a file or folder
    */
   static async deleteDocument(documentId: string): Promise<any> {
-    const response = await axiosInstance.delete(`/documents/${documentId}`);
+    const response = await axiosInstance.delete(`/api/documents/${documentId}`);
     return response.data;
   }
 
@@ -135,6 +137,31 @@ export class DocumentApiService {
    */
   static getDocumentStreamUrl(documentId: string): string {
     return `${API_URL}/api/documents/${documentId}/stream`;
+  }
+
+  /**
+   * Get index stream URL
+   */
+  static getIndexStreamUrl(bundleId: string): string {
+    return `${API_URL}/api/bundles/${bundleId}/index-stream`;
+  }
+  /**
+   *
+   * @param documentId
+   * @param newParentId
+   * @returns
+   */
+  static async moveDocument(
+    documentId: string,
+    newParentId: string | null
+  ): Promise<any> {
+    const response = await axiosInstance.patch(
+      `/api/documents/${documentId}/move`,
+      {
+        parent_id: newParentId,
+      }
+    );
+    return response.data;
   }
 }
 

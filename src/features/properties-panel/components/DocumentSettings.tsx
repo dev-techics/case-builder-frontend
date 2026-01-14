@@ -20,16 +20,21 @@ function DocumentSettings() {
   useEffect(() => {
     if (selectedFile) {
       const fetchFileSize = async () => {
-        const response = await axiosInstance.get(
-          `/api/documents/${selectedFile}/stream`,
-          {
-            method: 'HEAD',
-          }
-        );
-        const contentLength = response.headers['content-length'];
-        setFileSize(
-          `${(parseInt(contentLength) / (1024 * 1024)).toFixed(2)} MB`
-        );
+        try {
+          const response = await axiosInstance.get(
+            `/api/documents/${selectedFile}/stream`,
+            {
+              method: 'HEAD',
+            }
+          );
+          const contentLength = response.headers['content-length'];
+          setFileSize(
+            `${(parseInt(contentLength) / (1024 * 1024)).toFixed(2)} MB`
+          );
+        } catch (error) {
+          setFileSize('N/A');
+          console.log('Error fetching file size:', error);
+        }
       };
 
       fetchFileSize();

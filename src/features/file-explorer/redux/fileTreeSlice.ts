@@ -5,7 +5,7 @@ import {
   type PayloadAction,
 } from '@reduxjs/toolkit';
 import type { FileNode } from '../types/types';
-import axiosInstance from '@/api/axiosInstance';
+import axiosInstance, { DocumentApiService } from '@/api/axiosInstance';
 
 export interface Children {
   id: string;
@@ -21,6 +21,7 @@ export interface Tree {
   projectName: string;
   type: 'folder';
   children: Children[];
+  indexUrl?: string;
 }
 
 interface FileTreeState {
@@ -276,6 +277,50 @@ export const reorderDocuments = createAsyncThunk<
   }
 );
 
+/**
+ * Move a document to a different parent folder (or root)
+ */
+export const moveDocument = createAsyncThunk(
+  'fileTree/moveDocument',
+  async (
+    {
+      bundleId,
+      documentId,
+      newParentId,
+    }: {
+      bundleId: string;
+      documentId: string;
+      newParentId: string | null; // null means move to root
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      console.log('📦 Moving document:', {
+        documentId,
+        newParentId: newParentId || 'root',
+      });
+
+      const response = await DocumentApiService.moveDocument(
+        documentId,
+        newParentId
+      );
+
+      // After moving, reload the entire tree to get correct order
+      const treeResponse = await DocumentApiService.fetchTree(bundleId);
+
+      return {
+        success: true,
+        tree: treeResponse,
+      };
+    } catch (error: any) {
+      console.error('❌ Error moving document:', error);
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to move document'
+      );
+    }
+  }
+);
+
 /*=============================================
 =            Redux Slice                      =
 =============================================*/
@@ -511,6 +556,28 @@ const fileTreeSlice = createSlice({
     builder.addCase(reorderDocuments.rejected, (state, action) => {
       state.error = action.payload || 'Failed to reorder documents';
     });
+
+    // Handle moveDocument
+    builder
+      .addCase(moveDocument.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(moveDocument.fulfilled, (state, action) => {
+        state.loading = false;
+
+        // Update the entire tree with fresh data from server
+        if (action.payload.tree) {
+          state.tree = action.payload.tree;
+        }
+
+        console.log('✅ Document moved successfully');
+      })
+      .addCase(moveDocument.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        console.error('❌ Move failed:', action.payload);
+      });
   },
 });
 

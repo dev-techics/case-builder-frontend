@@ -195,7 +195,7 @@ export function TextHighlightableDocument({
       <Document
         file={fileConfig}
         loading={
-          <div className="flex h-96 items-center justify-center">
+          <div className="flex h-200 items-center justify-center">
             <div className="text-center">
               <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-blue-600 border-b-2" />
               <p className="text-gray-500">Loading PDF...</p>
