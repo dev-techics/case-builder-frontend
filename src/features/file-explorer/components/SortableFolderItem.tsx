@@ -1,5 +1,5 @@
 /**
- * Sortable Folder Item Component - Enhanced with Drop Zone
+ * Sortable Folder Item Component
  */
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -22,14 +22,20 @@ type SortableFolderItemProps = {
   folder: Children;
   onSelect: () => void;
   level: number;
-  isDropTarget?: boolean; // NEW: Indicates if this folder is being hovered over
+  isDropTarget?: boolean;
+  activeId: string | null;
+  overId?: string | null;
+  activeItem: Children | null;
 };
 
 const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   folder,
   level,
   onSelect,
-  isDropTarget = false, // NEW
+  isDropTarget = false,
+  activeId,
+  overId,
+  activeItem,
 }) => {
   const folderRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,11 +57,11 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     transform,
     transition,
     isDragging,
-    isOver, // NEW: Built-in hover detection
+    isOver,
   } = useSortable({
     id: folder.id,
     data: {
-      type: 'folder', // Metadata for drag detection
+      type: 'folder',
       folder: folder,
     },
   });
@@ -134,8 +140,8 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     e.stopPropagation();
   };
 
-  // NEW: Determine if this folder should show drop indicator
-  const showDropIndicator = isDropTarget || isOver;
+  // Show drop indicator when hovering
+  const showDropIndicator = overId === folder.id && !isDragging;
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -145,7 +151,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
         className={`
           flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left 
           hover:bg-gray-200 transition-colors
-          ${showDropIndicator ? 'bg-blue-100 border-2 border-blue-500 border-dashed rounded' : ''}
+          ${showDropIndicator ? 'bg-blue-100 border-l-4 border-blue-500' : ''}
         `}
         onClick={handleFolderClick}
         onKeyDown={handleKeyDown}
@@ -173,7 +179,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
             <ChevronRight className="mr-1 h-4 w-4 flex-shrink-0 text-gray-600" />
           )}
 
-          {/* Folder Icon - Changes color when drop target */}
+          {/* Folder Icon */}
           <HugeiconsIcon
             icon={Folder01Icon}
             className={`mr-2 h-4 w-4 flex-shrink-0 transition-colors ${
@@ -198,13 +204,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
               {folder.name}
             </span>
           )}
-
-          {/* NEW: Drop indicator text */}
-          {showDropIndicator && (
-            <span className="ml-2 text-xs text-blue-600 font-medium">
-              Drop here
-            </span>
-          )}
         </div>
 
         {/* Import Documents inside a folder */}
@@ -219,7 +218,13 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
       {/* Nested Children */}
       {isExpanded && folder.children && folder.children.length > 0 && (
         <div style={{ paddingLeft: `${12}px` }}>
-          <FileItemWrapper folder={folder} level={level} />
+          <FileItemWrapper
+            folder={folder}
+            level={level}
+            activeItem={activeItem}
+            overId={overId}
+            activeId={activeId}
+          />
         </div>
       )}
     </div>

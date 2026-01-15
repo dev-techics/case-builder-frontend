@@ -7,6 +7,7 @@ const CreateNewFolder = () => {
   const dispatch = useAppDispatch();
 
   const handleCreateClick = () => {
+    console.log('create folder clicked');
     dispatch(setIsCreatingNewFolder(true));
   };
 

@@ -1,4 +1,3 @@
-import { arrayMove } from '@dnd-kit/sortable';
 import {
   createAsyncThunk,
   createSlice,
@@ -255,17 +254,30 @@ export const createFolder = createAsyncThunk<
 /**
  * Reorder documents
  */
+
 export const reorderDocuments = createAsyncThunk<
-  void,
+  { bundleId: string; tree: Tree },
   { bundleId: string; items: Array<{ id: string; order: number }> },
   { rejectValue: string }
 >(
   'fileTree/reorderDocuments',
   async ({ bundleId, items }, { rejectWithValue }) => {
     try {
+      console.log('🔄 Reordering documents:', items);
+
       await axiosInstance.post(`/api/bundles/${bundleId}/documents/reorder`, {
         items,
       });
+
+      // Reload tree after reordering
+      const treeResponse = await DocumentApiService.fetchTree(bundleId);
+
+      console.log('✅ Reorder successful, tree reloaded');
+
+      return {
+        bundleId,
+        tree: treeResponse,
+      };
     } catch (err: any) {
       console.error('Failed to reorder documents:', err);
       const errorMessage =
@@ -290,7 +302,7 @@ export const moveDocument = createAsyncThunk(
     }: {
       bundleId: string;
       documentId: string;
-      newParentId: string | null; // null means move to root
+      newParentId: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -300,13 +312,13 @@ export const moveDocument = createAsyncThunk(
         newParentId: newParentId || 'root',
       });
 
-      const response = await DocumentApiService.moveDocument(
-        documentId,
-        newParentId
-      );
+      // Move the document
+      await DocumentApiService.moveDocument(documentId, newParentId);
 
-      // After moving, reload the entire tree to get correct order
+      // Reload the entire tree to get correct structure and order
       const treeResponse = await DocumentApiService.fetchTree(bundleId);
+
+      console.log('✅ Move successful, tree reloaded');
 
       return {
         success: true,
@@ -421,7 +433,10 @@ const fileTreeSlice = createSlice({
       action: PayloadAction<{ oldIndex: number; newIndex: number }>
     ) => {
       const { oldIndex, newIndex } = action.payload;
-      state.tree.children = arrayMove(state.tree.children, oldIndex, newIndex);
+      // state.tree.children = arrayMove(state.tree.children, oldIndex, newIndex);
+      // This is just for optimistic UI update
+      // The real order comes from the backend
+      console.log('🔄 Optimistic reorder:', { oldIndex, newIndex });
     },
 
     setTree: (state, action: PayloadAction<Tree>) => {
@@ -553,11 +568,28 @@ const fileTreeSlice = createSlice({
     /*-------------------
       Reorder Documents
     -------------------*/
-    builder.addCase(reorderDocuments.rejected, (state, action) => {
-      state.error = action.payload || 'Failed to reorder documents';
-    });
+    builder
+      // Reorder Documents
+      .addCase(reorderDocuments.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(reorderDocuments.fulfilled, (state, action) => {
+        console.log('✅ reorderDocuments.fulfilled - updating tree');
+        state.loading = false;
+        state.tree = action.payload.tree;
+        state.error = null;
+      })
+      .addCase(reorderDocuments.rejected, (state, action) => {
+        console.error('❌ reorderDocuments.rejected:', action.payload);
+        state.loading = false;
+        state.error = action.payload as string;
+        // Reload tree to recover from failed reorder
+      });
 
-    // Handle moveDocument
+    /*-------------------
+      Move Documents
+    -------------------*/
     builder
       .addCase(moveDocument.pending, state => {
         state.loading = true;
