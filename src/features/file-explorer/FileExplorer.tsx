@@ -24,7 +24,7 @@ const FileTree: React.FC = () => {
           Explorer
         </h2>
       </div>
-      <div className="py-1">
+      <div className="py-1 h-full">
         <FilesTree tree={tree} level={0} />
       </div>
     </div>

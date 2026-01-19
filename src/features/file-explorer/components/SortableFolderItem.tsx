@@ -17,6 +17,7 @@ import FileItemWrapper from './FileItemWrapper';
 import { Folder01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import ImportDocuments from './ImportDocuments';
+import { useDroppable } from '@dnd-kit/core';
 
 type SortableFolderItemProps = {
   folder: Children;
@@ -32,7 +33,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   folder,
   level,
   onSelect,
-  isDropTarget = false,
   activeId,
   overId,
   activeItem,
@@ -57,12 +57,19 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     transform,
     transition,
     isDragging,
-    isOver,
   } = useSortable({
     id: folder.id,
     data: {
       type: 'folder',
       folder: folder,
+    },
+  });
+
+  const { setNodeRef: setDropRef, isOver: isOverDroppable } = useDroppable({
+    id: folder.id,
+    data: {
+      type: 'folder',
+      accepts: ['file', 'folder'],
     },
   });
 
@@ -141,10 +148,18 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   };
 
   // Show drop indicator when hovering
-  const showDropIndicator = overId === folder.id && !isDragging;
+  const showDropIndicator =
+    isOverDroppable && activeItem?.id !== folder.id && !isDragging;
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div
+      ref={node => {
+        setNodeRef(node); // sortable
+        setDropRef(node); // droppable
+      }}
+      style={style}
+    >
+      {' '}
       {/* Folder Header */}
       <div
         ref={folderRef}
@@ -214,7 +229,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
         {/* Action Menu */}
         <ActionMenu file={folder} onRenameClick={handleRenameClick} />
       </div>
-
       {/* Nested Children */}
       {isExpanded && folder.children && folder.children.length > 0 && (
         <div style={{ paddingLeft: `${12}px` }}>

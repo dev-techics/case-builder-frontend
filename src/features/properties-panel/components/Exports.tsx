@@ -4,7 +4,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
-import { useGenerateIndexPDF } from '@/features/auto-index/hooks/useGenerateIndexPDF';
+// import { useGenerateIndexPDF } from '@/features/auto-index/hooks/useGenerateIndexPDF';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
 
@@ -104,8 +104,8 @@ function Exports() {
   const { headerLeft, headerRight, footer } = useAppSelector(
     states => states.propertiesPanel.headersFooter
   );
-  const indexEntries = useAppSelector(state => state.indexGenerator.entries);
-  const { generatePDF: generateIndexPDF } = useGenerateIndexPDF();
+  // const indexEntries = useAppSelector(state => state.indexGenerator.entries);
+  // const { generatePDF: generateIndexPDF } = useGenerateIndexPDF();
 
   // Get highlights from toolbar slice
   const highlights = useAppSelector(state => state.toolbar.highlights);
@@ -135,13 +135,12 @@ function Exports() {
     try {
       const pdfDoc = await PDFDocument.create();
 
-      // Add index as first page if enabled
-      if (includeIndex && indexEntries.length > 0) {
+      // Add index as first page if enabled and URL exists
+      if (includeIndex && tree.indexUrl) {
         try {
-          setExportMessage('Generating index page...');
-          const indexBlob = await generateIndexPDF(indexEntries);
-          const indexBytes = await indexBlob.arrayBuffer();
-          const indexPdf = await PDFDocument.load(indexBytes);
+          setExportMessage('Adding index page...');
+          const indexPdfBytes = await fetchAuthenticatedPdf(tree.indexUrl);
+          const indexPdf = await PDFDocument.load(indexPdfBytes);
           const indexPages = await pdfDoc.copyPages(
             indexPdf,
             indexPdf.getPageIndices()
@@ -149,9 +148,9 @@ function Exports() {
           indexPages.forEach(page => {
             pdfDoc.addPage(page);
           });
-          console.log('✅ Index page added');
+          console.log('✅ Index page added from URL');
         } catch (error) {
-          console.error('Error adding index:', error);
+          console.error('Error adding index from URL:', error);
           // Continue without index if there's an error
         }
       }
@@ -200,7 +199,7 @@ function Exports() {
       } = {};
 
       // Calculate page mapping for each file
-      if (includeIndex && indexEntries.length > 0) {
+      if (includeIndex && tree.indexUrl) {
         globalPageIndex = 1; // Index takes page 0
       }
 
@@ -343,7 +342,7 @@ function Exports() {
       setExportStatus('success');
       setExportMessage(
         `Successfully exported ${pages.length} pages from ${pdfFiles.length} files${
-          includeIndex && indexEntries.length > 0 ? ' (including index)' : ''
+          includeIndex && tree.indexUrl ? ' (including index)' : ''
         }`
       );
 

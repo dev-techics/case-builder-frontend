@@ -428,16 +428,15 @@ const fileTreeSlice = createSlice({
       }
     },
 
-    reorderFiles: (
-      state,
-      action: PayloadAction<{ oldIndex: number; newIndex: number }>
-    ) => {
-      const { oldIndex, newIndex } = action.payload;
-      // state.tree.children = arrayMove(state.tree.children, oldIndex, newIndex);
-      // This is just for optimistic UI update
-      // The real order comes from the backend
-      console.log('🔄 Optimistic reorder:', { oldIndex, newIndex });
-    },
+    // reorderFiles: (
+    //   action: PayloadAction<{ oldIndex: number; newIndex: number }>
+    // ) => {
+    //   const { oldIndex, newIndex } = action.payload;
+    //   // state.tree.children = arrayMove(state.tree.children, oldIndex, newIndex);
+    //   // This is just for optimistic UI update
+    //   // The real order comes from the backend
+    //   console.log('🔄 Optimistic reorder:', { oldIndex, newIndex });
+    // },
 
     setTree: (state, action: PayloadAction<Tree>) => {
       state.tree = action.payload;
@@ -621,7 +620,7 @@ export const {
   addFiles,
   removeFile,
   renameFile,
-  reorderFiles,
+  // reorderFiles,
   setTree,
   clearError,
 } = fileTreeSlice.actions;

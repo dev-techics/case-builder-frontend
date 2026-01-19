@@ -6,6 +6,7 @@
  *
  * Author: Anik Dey
  */
+
 import type React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/hooks';
 import type { Tree, Children } from '../redux/fileTreeSlice';
@@ -81,7 +82,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-
+    console.log('active- ', active, '|| over- ', over);
     setActiveId(null);
     setOverId(null);
 
@@ -214,7 +215,10 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       return;
     }
 
-    // CASE 2: Dropping onto a folder at a different level (move INTO folder)
+    /*
+     * CASE 2: Dropping onto a folder at a different level (move INTO folder)
+     */
+
     if (targetItem.type === 'folder' && !isSameParent) {
       // Prevent dropping a folder into itself or its descendants
       if (
@@ -245,7 +249,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       return;
     }
 
-    // CASE 3: Different parents - move to target's parent level
+    // * CASE 3: Different parents - move to target's parent level
     if (!isSameParent) {
       console.log(
         `📂 Moving ${draggedItem.name} (${draggedItem.type}) to same level as ${targetItem.name}`
@@ -271,7 +275,11 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={args => {
+        return (
+          pointerWithin(args) ?? rectIntersection(args) ?? closestCenter(args)
+        );
+      }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -279,7 +287,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       <div
         ref={setRootRef}
         className={`
-          min-h-[200px] transition-colors
+          h-full transition-colors
           ${isOverRoot ? 'bg-blue-50 border-2 border-dashed border-blue-400 rounded p-2' : ''}
         `}
       >
