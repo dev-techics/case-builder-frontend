@@ -9,14 +9,13 @@ interface IndexDocumentProps {
 
 const IndexDocument = memo(({ indexUrl }: IndexDocumentProps) => {
   const [numPages, setNumPages] = useState<number>(0);
-  const [pageInfo, setPageInfo] = useState<Map<number, any>>(new Map());
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const scale = useAppSelector(state => state.editor.scale);
 
   // Get authentication token
   const token = localStorage.getItem('access_token');
 
-  // ✅ ADD THIS:
+  // Memoized file configuration
   const fileConfig = useMemo(
     () => ({
       url: indexUrl,
@@ -28,25 +27,11 @@ const IndexDocument = memo(({ indexUrl }: IndexDocumentProps) => {
       withCredentials: true,
     }),
     [indexUrl, token]
-  ); // Only recreate when these change
+  );
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     console.log(`📋 Index loaded - ${numPages} page(s)`);
-  };
-
-  const onPageLoadSuccess = (pageNumber: number) => (page: any) => {
-    const viewport = page.getViewport({ scale: 1 });
-
-    setPageInfo(prev => {
-      const newMap = new Map(prev);
-      newMap.set(pageNumber, {
-        width: viewport.width,
-        height: viewport.height,
-        pageNumber,
-      });
-      return newMap;
-    });
   };
 
   // Handle index link clicks
@@ -62,7 +47,6 @@ const IndexDocument = memo(({ indexUrl }: IndexDocumentProps) => {
         console.log('🔗 Index link clicked - navigating to page:', pageNumber);
 
         // Find the target page in the main viewer
-        // This assumes your pages have data-page-number attributes
         const targetPage = document.querySelector(
           `[data-page-number="${pageNumber}"]`
         );
@@ -121,7 +105,6 @@ const IndexDocument = memo(({ indexUrl }: IndexDocumentProps) => {
                 renderAnnotationLayer={true}
                 renderTextLayer={true}
                 scale={scale}
-                onLoadSuccess={onPageLoadSuccess(pageNumber)}
               />
             </div>
           );
