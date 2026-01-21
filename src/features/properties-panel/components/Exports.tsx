@@ -4,7 +4,6 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
-// import { useGenerateIndexPDF } from '@/features/auto-index/hooks/useGenerateIndexPDF';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
 
@@ -104,8 +103,6 @@ function Exports() {
   const { headerLeft, headerRight, footer } = useAppSelector(
     states => states.propertiesPanel.headersFooter
   );
-  // const indexEntries = useAppSelector(state => state.indexGenerator.entries);
-  // const { generatePDF: generateIndexPDF } = useGenerateIndexPDF();
 
   // Get highlights from toolbar slice
   const highlights = useAppSelector(state => state.toolbar.highlights);

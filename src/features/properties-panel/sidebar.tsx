@@ -3,7 +3,7 @@ import { useState } from 'react';
 import RightSidebar from '@/components/sidebars/RightSidebar';
 import Annotations from './components/Annotations';
 import DocumentSettings from './components/DocumentSettings';
-import Exports from './components/Exports';
+import ExportFromServer from './components/ExportFromServer';
 // import Exports from '@/components/ExportButton';
 
 type TabType = 'properties' | 'annotations' | 'export';
@@ -27,7 +27,7 @@ function PropertiesSidebar() {
       id: 'export' as TabType,
       label: 'Export',
       icon: Download,
-      component: Exports,
+      component: ExportFromServer,
     },
   ];
 
