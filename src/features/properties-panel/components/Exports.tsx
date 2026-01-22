@@ -237,7 +237,9 @@ function Exports() {
           }
         }
 
-        // Draw highlights for this page
+        /*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+           Draw highlights for this page 
+          -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
         if (currentFileId) {
           const pageHighlights = highlights.filter(
             h =>
