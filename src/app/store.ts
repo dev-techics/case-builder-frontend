@@ -6,6 +6,7 @@ import toolbarReducer from '@/features/toolbar/toolbarSlice';
 import fileTreeReducer from '../features/file-explorer/redux/fileTreeSlice';
 import bundlesListReducer from '@/features/bundles-list/redux/bundlesListSlice';
 import authReducer from '@/features/auth/redux/authSlice';
+import CoverPageReducer from '@/features/cover-page/redux/coverPageSlice';
 
 const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ const store = configureStore({
     toolbar: toolbarReducer,
     indexGenerator: indexGeneratorReducer,
     bundleList: bundlesListReducer,
+    coverPage: CoverPageReducer,
   },
 });
 

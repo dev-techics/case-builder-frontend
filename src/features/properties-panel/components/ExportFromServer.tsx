@@ -150,7 +150,14 @@ function Exports() {
 
   return (
     <div className="space-y-4">
-      {/* Export Summary */}
+      <div>
+        {/* ------- Select Cover Page ----------- */}
+        <Button variant="default" className="text-sm">
+          Select Cover Page
+        </Button>
+      </div>
+
+      {/*--------- Export Summary -----------*/}
       <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
         <div className="mb-2 flex items-center gap-2">
           <FileStack className="h-4 w-4 text-gray-600" />
@@ -177,7 +184,7 @@ function Exports() {
         </div>
       </div>
 
-      {/* Export Options */}
+      {/*---------------- Export Options-------------- */}
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
         <p className="mb-2 font-semibold text-blue-900 text-xs">
           Export Options
@@ -273,7 +280,7 @@ function Exports() {
         </div>
       )}
 
-      {/* Export Button */}
+      {/* ----------Export Button---------- */}
       <Button
         className="w-full"
         disabled={!hasFiles || isExporting}
