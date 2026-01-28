@@ -6,10 +6,6 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
-import {
-  loadCoverPageData,
-  setBundleId,
-} from '@/features/cover-page/redux/coverPageSlice';
 
 /**
  * Recursively collects all PDF files from the tree structure
@@ -109,7 +105,6 @@ function Exports() {
   );
   const dispatch = useAppDispatch();
   // Get cover page state
-  const coverPageEnabled = useAppSelector(state => state.coverPage.enabled);
 
   // Get highlights from toolbar slice
   const highlights = useAppSelector(state => state.toolbar.highlights);
@@ -120,22 +115,10 @@ function Exports() {
   >('idle');
   const [exportMessage, setExportMessage] = useState('');
   const [includeIndex, setIncludeIndex] = useState(true);
-  const [includeCover, setIncludeCover] = useState(true);
 
   // Recursively collect all PDF files from the entire tree
   const pdfFiles = collectAllFiles(tree.children);
   const hasFiles = pdfFiles.length > 0;
-
-  // Get bundle ID from tree
-  const bundleId = tree.id.split('-')[1];
-
-  // Load cover page data when component mounts
-  useEffect(() => {
-    if (bundleId) {
-      dispatch(setBundleId(bundleId));
-      dispatch(loadCoverPageData(bundleId));
-    }
-  }, [bundleId, dispatch]);
 
   const handleExport = async () => {
     if (!hasFiles) {

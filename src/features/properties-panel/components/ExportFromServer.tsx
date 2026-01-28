@@ -1,10 +1,15 @@
 // features/properties-panel/components/Exports.tsx
 import { AlertCircle, CheckCircle, Download, FileStack } from 'lucide-react';
-import { useState } from 'react';
-import { useAppSelector } from '@/app/hooks';
+import { useState, useEffect } from 'react';
+import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
+import CoverPageManager from '../../cover-page/components/CoverPageManager';
+import {
+  loadCoverPageData,
+  setBundleId,
+} from '../../cover-page/redux/coverPageSlice';
 
 /**
  * Recursively collects all PDF files from the tree structure
@@ -25,10 +30,14 @@ const collectAllFiles = (children: Children[]): Children[] => {
 };
 
 function Exports() {
+  const dispatch = useAppDispatch();
   const tree = useAppSelector(states => states.fileTree.tree);
   const { headerLeft, headerRight, footer } = useAppSelector(
     states => states.propertiesPanel.headersFooter
   );
+
+  // Get cover page state
+  const coverPageEnabled = useAppSelector(state => state.coverPage.enabled);
 
   // Get highlights from toolbar slice
   const highlights = useAppSelector(state => state.toolbar.highlights);
@@ -39,10 +48,22 @@ function Exports() {
   >('idle');
   const [exportMessage, setExportMessage] = useState('');
   const [includeIndex, setIncludeIndex] = useState(true);
+  const [includeCover, setIncludeCover] = useState(true);
 
   // Recursively collect all PDF files from the entire tree
   const pdfFiles = collectAllFiles(tree.children);
   const hasFiles = pdfFiles.length > 0;
+
+  // Get bundle ID from tree
+  const bundleId = tree.id.split('-')[1];
+
+  // Load cover page data when component mounts
+  useEffect(() => {
+    if (bundleId) {
+      dispatch(setBundleId(bundleId));
+      dispatch(loadCoverPageData(bundleId));
+    }
+  }, [bundleId, dispatch]);
 
   const handleExport = async () => {
     if (!hasFiles) {
@@ -50,9 +71,6 @@ function Exports() {
       setExportMessage('No PDF files to export');
       return;
     }
-
-    // Get bundle ID from tree (adjust based on your data structure)
-    const bundleId = tree.id.split('-')[1];
 
     if (!bundleId) {
       setExportStatus('error');
@@ -70,6 +88,7 @@ function Exports() {
         `/api/bundles/${bundleId}/export`,
         {
           include_index: includeIndex,
+          include_cover: includeCover,
         },
         {
           responseType: 'blob', // Important: receive as blob for file download
@@ -111,12 +130,19 @@ function Exports() {
       // Clean up the blob URL
       setTimeout(() => URL.revokeObjectURL(url), 100);
 
+      // Build success message
+      let successParts = [];
+      if (includeCover && coverPageEnabled) successParts.push('cover page');
+      if (includeIndex && tree.indexUrl) successParts.push('index');
+      successParts.push(`${pdfFiles.length} files`);
+
+      const successAddons =
+        successParts.length > 1
+          ? ` (including ${successParts.slice(0, -1).join(', ')})`
+          : '';
+
       setExportStatus('success');
-      setExportMessage(
-        `Successfully exported ${pdfFiles.length} files${
-          includeIndex && tree.indexUrl ? ' (including index)' : ''
-        }`
-      );
+      setExportMessage(`Successfully exported${successAddons}`);
 
       setTimeout(() => {
         setExportStatus('idle');
@@ -150,14 +176,10 @@ function Exports() {
 
   return (
     <div className="space-y-4">
-      <div>
-        {/* ------- Select Cover Page ----------- */}
-        <Button variant="default" className="text-sm">
-          Select Cover Page
-        </Button>
-      </div>
+      {/* Cover Page Manager */}
+      <CoverPageManager />
 
-      {/*--------- Export Summary -----------*/}
+      {/* Export Summary */}
       <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
         <div className="mb-2 flex items-center gap-2">
           <FileStack className="h-4 w-4 text-gray-600" />
@@ -184,12 +206,24 @@ function Exports() {
         </div>
       </div>
 
-      {/*---------------- Export Options-------------- */}
+      {/* Export Options */}
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
         <p className="mb-2 font-semibold text-blue-900 text-xs">
           Export Options
         </p>
         <div className="space-y-2 text-blue-800 text-xs">
+          {coverPageEnabled && (
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                checked={includeCover}
+                className="rounded"
+                onChange={e => setIncludeCover(e.target.checked)}
+                type="checkbox"
+                disabled={isExporting}
+              />
+              <span>Include cover page</span>
+            </label>
+          )}
           <label className="flex cursor-pointer items-center gap-2">
             <input
               checked={includeIndex}
@@ -198,7 +232,7 @@ function Exports() {
               type="checkbox"
               disabled={isExporting}
             />
-            <span>Include index as first page</span>
+            <span>Include table of contents</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
             <input
@@ -280,7 +314,7 @@ function Exports() {
         </div>
       )}
 
-      {/* ----------Export Button---------- */}
+      {/* Export Button */}
       <Button
         className="w-full"
         disabled={!hasFiles || isExporting}

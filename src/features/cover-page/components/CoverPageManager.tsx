@@ -16,6 +16,7 @@ import {
 } from '../redux/coverPageSlice';
 import { COVER_TEMPLATES } from '../constants/coverTemplates';
 import CoverPageEditor from './CoverPageEditor';
+import TemplateSelectionDialog from './TemplateSelectionDialog';
 
 export default function CoverPageManager() {
   const dispatch = useAppDispatch();
@@ -123,41 +124,11 @@ export default function CoverPageManager() {
       </div>
 
       {/* Template Selection Dialog */}
-      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Choose Cover Page Template</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4 sm:grid-cols-2">
-            {COVER_TEMPLATES.map(template => (
-              <button
-                key={template.key}
-                className={`group rounded-lg border-2 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 ${
-                  template.key === templateKey
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200'
-                }`}
-                onClick={() => handleSelectTemplate(template.key)}
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 text-sm">
-                    {template.name}
-                  </h3>
-                  {template.key === templateKey && (
-                    <div className="rounded-full bg-blue-500 px-2 py-1 font-medium text-white text-xs">
-                      Active
-                    </div>
-                  )}
-                </div>
-                <p className="text-gray-600 text-xs">{template.description}</p>
-                <div className="mt-3 text-gray-500 text-xs">
-                  {template.fields.length} customizable fields
-                </div>
-              </button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TemplateSelectionDialog
+        open={showTemplateDialog}
+        onOpen={setShowTemplateDialog}
+        onSelect={handleSelectTemplate}
+      />
 
       {/* Cover Page Editor Dialog */}
       <Dialog open={showEditor} onOpenChange={setShowEditor}>
@@ -165,7 +136,7 @@ export default function CoverPageManager() {
           <DialogHeader className="border-b p-6 pb-4">
             <div className="flex items-center justify-between">
               <DialogTitle>Edit Cover Page</DialogTitle>
-              <div className="flex gap-2">
+              <div className="flex gap-2 pr-4">
                 <Button variant="outline" onClick={handleCloseEditor}>
                   <X className="mr-2 h-4 w-4" />
                   Cancel
