@@ -1,8 +1,8 @@
 // features/properties-panel/components/Exports.tsx
 import { AlertCircle, CheckCircle, Download, FileStack } from 'lucide-react';
 import { PDFDocument, rgb } from 'pdf-lib';
-import { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useState } from 'react';
+import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
@@ -103,7 +103,6 @@ function Exports() {
   const { headerLeft, headerRight, footer } = useAppSelector(
     states => states.propertiesPanel.headersFooter
   );
-  const dispatch = useAppDispatch();
   // Get cover page state
 
   // Get highlights from toolbar slice
