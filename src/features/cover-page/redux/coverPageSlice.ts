@@ -4,12 +4,36 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from '@reduxjs/toolkit';
-import { BundleApiService } from '@/api/axiosInstance';
-import type { CoverPageData } from '../types';
 import { DEFAULT_COVER_VALUES } from '../constants/coverTemplates';
+import { CoverPageApi } from '../api';
+
+interface fields {
+  name: string;
+  x: number;
+  y: number;
+  font: string;
+  size: number;
+  align: 'left' | 'center' | 'right';
+  bold: boolean;
+}
+
+interface Template {
+  template_key: string;
+  name: string;
+  description: string;
+  values: {
+    page: {
+      size: string;
+      margin: number;
+      orientation: string;
+    };
+    fields: fields[];
+  };
+}
 
 interface CoverPageState {
   enabled: boolean;
+  templates: Template[];
   templateKey: string;
   values: Record<string, string>;
   isEditing: boolean;
@@ -19,47 +43,39 @@ interface CoverPageState {
 
 const initialState: CoverPageState = {
   enabled: false,
+  templates: [],
   templateKey: 'legal_cover_v1',
-  values: DEFAULT_COVER_VALUES.legal_cover_v1,
+  values: {},
   isEditing: false,
   isSaving: false,
   currentBundleId: null,
 };
 
 // Load cover page data from backend
-export const loadCoverPageData = createAsyncThunk(
-  'coverPage/load',
-  async (bundleId: string) => {
-    const response = await BundleApiService.getBundle(bundleId);
-    return {
-      bundleId,
-      coverPage: response.metadata?.cover_page || null,
-    };
+export const loadCoverPageTemplates = createAsyncThunk(
+  'coverPage/loadCoverPageTemplates',
+  async () => {
+    const response = await CoverPageApi.getCoverPages();
+    return response;
   }
 );
 
 // Save cover page data to backend
-export const saveCoverPageData = createAsyncThunk(
-  'coverPage/save',
-  async (_, { getState }) => {
+export const saveCoverPageIdInMetadata = createAsyncThunk(
+  'coverPage/saveId',
+  async (coverPageId: string, { getState }) => {
     const state = getState() as any;
-    const { enabled, templateKey, values, currentBundleId } = state.coverPage;
+    const { currentBundleId } = state.coverPage;
 
     if (!currentBundleId) {
       throw new Error('No bundle ID set');
     }
 
-    const coverPageData: CoverPageData = {
-      template_key: templateKey,
-      enabled,
-      values,
-    };
-
-    await BundleApiService.updateMetadata(currentBundleId, {
-      cover_page: coverPageData,
+    const response = await CoverPageApi.updateMetadata(currentBundleId, {
+      front_cover_page_id: coverPageId,
     });
 
-    return coverPageData;
+    return response;
   }
 );
 
@@ -98,24 +114,17 @@ const coverPageSlice = createSlice({
   extraReducers: builder => {
     builder
       // Load
-      .addCase(loadCoverPageData.fulfilled, (state, action) => {
-        const { coverPage, bundleId } = action.payload;
-        state.currentBundleId = bundleId;
-
-        if (coverPage) {
-          state.enabled = coverPage.enabled;
-          state.templateKey = coverPage.template_key;
-          state.values = coverPage.values;
-        }
+      .addCase(loadCoverPageTemplates.fulfilled, (state, action) => {
+        state.templates = action.payload;
       })
-      // Save
-      .addCase(saveCoverPageData.pending, state => {
+      // Save cover page ID
+      .addCase(saveCoverPageIdInMetadata.pending, state => {
         state.isSaving = true;
       })
-      .addCase(saveCoverPageData.fulfilled, state => {
+      .addCase(saveCoverPageIdInMetadata.fulfilled, state => {
         state.isSaving = false;
       })
-      .addCase(saveCoverPageData.rejected, state => {
+      .addCase(saveCoverPageIdInMetadata.rejected, state => {
         state.isSaving = false;
       });
   },

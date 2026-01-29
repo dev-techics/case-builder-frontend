@@ -4,7 +4,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { COVER_TEMPLATES } from '../constants/coverTemplates';
 import { useAppSelector } from '@/app/hooks';
 
 interface TemplateSelectionDialogProps {
@@ -19,6 +18,7 @@ const TemplateSelectionDialog = ({
   onSelect,
 }: TemplateSelectionDialogProps) => {
   const { templateKey } = useAppSelector(state => state.coverPage);
+  const templates = useAppSelector(state => state.coverPage.templates);
 
   const handleSelectTemplate = (key: string) => {
     onSelect(key);
@@ -30,21 +30,21 @@ const TemplateSelectionDialog = ({
           <DialogTitle>Choose Cover Page Template</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4 md:grid-cols-3 sm:grid-cols-2">
-          {COVER_TEMPLATES.map(template => (
+          {templates.map(template => (
             <button
-              key={template.key}
+              key={template.template_key}
               className={`group rounded-lg border-2 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 ${
-                template.key === templateKey
+                template.template_key === templateKey
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200'
               }`}
-              onClick={() => handleSelectTemplate(template.key)}
+              onClick={() => handleSelectTemplate(template.template_key)}
             >
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 text-sm">
                   {template.name}
                 </h3>
-                {template.key === templateKey && (
+                {template.template_key === templateKey && (
                   <div className="rounded-full bg-blue-500 px-2 py-1 font-medium text-white text-xs">
                     Active
                   </div>
@@ -52,7 +52,7 @@ const TemplateSelectionDialog = ({
               </div>
               <p className="text-gray-600 text-xs">{template.description}</p>
               <div className="mt-3 text-gray-500 text-xs">
-                {template.fields.length} customizable fields
+                {template.values.fields.length} customizable fields
               </div>
             </button>
           ))}

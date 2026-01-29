@@ -1,11 +1,10 @@
 import { useAppSelector } from '@/app/hooks';
-import { COVER_TEMPLATES } from '../constants/coverTemplates';
 import type { CoverPageField } from '../types';
 
 export default function CoverPagePreview() {
-  const { templateKey, values } = useAppSelector(state => state.coverPage);
+  const { templateKey, templates } = useAppSelector(state => state.coverPage);
 
-  const template = COVER_TEMPLATES.find(t => t.key === templateKey);
+  const template = templates.find(t => t.template_key === templateKey);
 
   if (!template) {
     return null;
@@ -18,7 +17,7 @@ export default function CoverPagePreview() {
   const scale = 0.6; // Scale down for preview
 
   const renderField = (field: CoverPageField) => {
-    const value = values[field.name] || '';
+    const value = field.name || '';
     if (!value) return null;
 
     // Convert PDF coordinates to CSS
@@ -77,7 +76,7 @@ export default function CoverPagePreview() {
         }}
       >
         {/* Render all fields */}
-        {template.fields.map(renderField)}
+        {template.values.fields.map(renderField)}
       </div>
     </div>
   );

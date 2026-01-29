@@ -7,7 +7,7 @@ import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
 import CoverPageManager from '../../cover-page/components/CoverPageManager';
 import {
-  loadCoverPageData,
+  loadCoverPageTemplates,
   setBundleId,
 } from '../../cover-page/redux/coverPageSlice';
 
@@ -61,7 +61,7 @@ function Exports() {
   useEffect(() => {
     if (bundleId) {
       dispatch(setBundleId(bundleId));
-      dispatch(loadCoverPageData(bundleId));
+      dispatch(loadCoverPageTemplates());
     }
   }, [bundleId, dispatch]);
 

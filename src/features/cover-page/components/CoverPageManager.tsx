@@ -12,13 +12,13 @@ import {
   setEnabled,
   setTemplate,
   setIsEditing,
-  saveCoverPageData,
+  saveCoverPageIdInMetadata,
 } from '../redux/coverPageSlice';
 import { COVER_TEMPLATES } from '../constants/coverTemplates';
 import CoverPageEditor from './CoverPageEditor';
 import TemplateSelectionDialog from './TemplateSelectionDialog';
 
-export default function CoverPageManager() {
+const CoverPageManager = () => {
   const dispatch = useAppDispatch();
   const { enabled, templateKey, isSaving } = useAppSelector(
     state => state.coverPage
@@ -32,14 +32,14 @@ export default function CoverPageManager() {
   const handleEnableToggle = () => {
     dispatch(setEnabled(!enabled));
     if (!enabled) {
-      dispatch(saveCoverPageData());
+      dispatch(saveCoverPageIdInMetadata(templateKey));
     }
   };
 
   const handleSelectTemplate = (key: string) => {
     dispatch(setTemplate(key));
     setShowTemplateDialog(false);
-    dispatch(saveCoverPageData());
+    dispatch(saveCoverPageIdInMetadata(templateKey));
   };
 
   const handleOpenEditor = () => {
@@ -53,7 +53,7 @@ export default function CoverPageManager() {
   };
 
   const handleSave = async () => {
-    await dispatch(saveCoverPageData());
+    await dispatch(saveCoverPageIdInMetadata(templateKey));
     handleCloseEditor();
   };
 
@@ -132,7 +132,7 @@ export default function CoverPageManager() {
 
       {/* Cover Page Editor Dialog */}
       <Dialog open={showEditor} onOpenChange={setShowEditor}>
-        <DialogContent className="max-h-[90vh] max-w-5xl overflow-hidden p-0">
+        <DialogContent className="flex flex-col max-h-[90vh] max-w-5xl p-0 overflow-hidden">
           <DialogHeader className="border-b p-6 pb-4">
             <div className="flex items-center justify-between">
               <DialogTitle>Edit Cover Page</DialogTitle>
@@ -148,11 +148,13 @@ export default function CoverPageManager() {
               </div>
             </div>
           </DialogHeader>
-          <div className="overflow-y-auto p-6">
+          <div className="flex-1 min-h-0 overflow-hidden px-4 py-2">
             <CoverPageEditor />
           </div>
         </DialogContent>
       </Dialog>
     </div>
   );
-}
+};
+
+export default CoverPageManager;

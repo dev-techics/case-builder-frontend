@@ -1,3 +1,5 @@
+import type { CoverPageTemplate } from '../types';
+
 // constants/coverTemplates.ts
 export const COVER_TEMPLATES: CoverPageTemplate[] = [
   {
