@@ -52,7 +52,7 @@ const TemplateSelectionDialog = ({
               </div>
               <p className="text-gray-600 text-xs">{template.description}</p>
               <div className="mt-3 text-gray-500 text-xs">
-                {template.values.fields.length} customizable fields
+                {/* {template.values.fields.length} customizable fields */}
               </div>
             </button>
           ))}

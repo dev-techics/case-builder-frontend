@@ -13,25 +13,26 @@ import {
   setTemplate,
   setIsEditing,
   saveCoverPageIdInMetadata,
+  saveCoverPageData,
 } from '../redux/coverPageSlice';
-import { COVER_TEMPLATES } from '../constants/coverTemplates';
 import CoverPageEditor from './CoverPageEditor';
 import TemplateSelectionDialog from './TemplateSelectionDialog';
 
 const CoverPageManager = () => {
   const dispatch = useAppDispatch();
-  const { enabled, templateKey, isSaving } = useAppSelector(
+  const { enabled, templateKey, isSaving, templates } = useAppSelector(
     state => state.coverPage
   );
 
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
 
-  const selectedTemplate = COVER_TEMPLATES.find(t => t.key === templateKey);
+  const selectedTemplate = templates.find(t => t.template_key === templateKey);
 
   const handleEnableToggle = () => {
-    dispatch(setEnabled(!enabled));
-    if (!enabled) {
+    const newEnabledState = !enabled;
+    dispatch(setEnabled(newEnabledState));
+    if (newEnabledState) {
       dispatch(saveCoverPageIdInMetadata(templateKey));
     }
   };
@@ -39,7 +40,7 @@ const CoverPageManager = () => {
   const handleSelectTemplate = (key: string) => {
     dispatch(setTemplate(key));
     setShowTemplateDialog(false);
-    dispatch(saveCoverPageIdInMetadata(templateKey));
+    dispatch(saveCoverPageIdInMetadata(key));
   };
 
   const handleOpenEditor = () => {
@@ -53,10 +54,21 @@ const CoverPageManager = () => {
   };
 
   const handleSave = async () => {
-    await dispatch(saveCoverPageIdInMetadata(templateKey));
-    handleCloseEditor();
-  };
+    try {
+      // First save the cover page data (creates/updates the cover page)
+      const result = await dispatch(saveCoverPageData()).unwrap();
 
+      // Then save the cover page ID in the bundle metadata
+      if (result?.id) {
+        await dispatch(saveCoverPageIdInMetadata(result.id)).unwrap();
+      }
+
+      handleCloseEditor();
+    } catch (error) {
+      console.error('Failed to save cover page:', error);
+      // You could add toast notification here
+    }
+  };
   return (
     <div className="space-y-4">
       {/* Cover Page Toggle */}

@@ -1,8 +1,10 @@
 import { useAppSelector } from '@/app/hooks';
 import type { CoverPageField } from '../types';
 
-export default function CoverPagePreview() {
-  const { templateKey, templates } = useAppSelector(state => state.coverPage);
+const CoverPagePreview = () => {
+  const { templateKey, templates, values } = useAppSelector(
+    state => state.coverPage
+  );
 
   const template = templates.find(t => t.template_key === templateKey);
 
@@ -16,9 +18,43 @@ export default function CoverPagePreview() {
   const pageHeight = 1122;
   const scale = 0.6; // Scale down for preview
 
+  // Helper function to get the value for a field
+  const getFieldValue = (fieldName: string): string => {
+    const field = values.find((f: any) => f.name === fieldName);
+    return field?.value || '';
+  };
+
+  // Helper function to get placeholder text for empty fields
+  const getPlaceholderText = (fieldName: string): string => {
+    const placeholders: Record<string, string> = {
+      case_title: 'Case Title',
+      case_number: 'Case No. 12345',
+      court_name: 'Superior Court Name',
+      county: 'County Name',
+      attorney_name: 'Attorney Name',
+      bar_number: 'Bar No. 123456',
+      firm_name: 'Law Firm Name',
+      address: '123 Main Street',
+      city_state_zip: 'City, State ZIP',
+      phone: '(555) 123-4567',
+      email: 'email@example.com',
+      party_name: 'Party Name',
+      document_title: 'Document Title',
+      date: new Date().toLocaleDateString(),
+    };
+
+    return (
+      placeholders[fieldName] ||
+      fieldName
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+    );
+  };
+
   const renderField = (field: CoverPageField) => {
-    const value = field.name || '';
-    if (!value) return null;
+    const value = getFieldValue(field.name);
+    const displayValue = value || getPlaceholderText(field.name);
 
     // Convert PDF coordinates to CSS
     // PDF uses bottom-left origin, CSS uses top-left
@@ -32,7 +68,7 @@ export default function CoverPagePreview() {
       fontSize: `${field.size}px`,
       fontWeight: field.bold ? 'bold' : 'normal',
       textAlign: field.align,
-      color: field.color || '#000',
+      color: value ? field.color || '#000' : '#9ca3af', // Gray color for placeholders
       fontFamily: field.font.includes('Times')
         ? 'Georgia, "Times New Roman", serif'
         : field.font.includes('Helvetica')
@@ -41,6 +77,7 @@ export default function CoverPagePreview() {
       maxWidth: field.maxWidth ? `${field.maxWidth}px` : 'auto',
       whiteSpace: 'pre-wrap',
       wordBreak: 'break-word',
+      fontStyle: value ? 'normal' : 'italic', // Italic for placeholders
     };
 
     // Adjust for alignment
@@ -52,7 +89,7 @@ export default function CoverPagePreview() {
 
     return (
       <div key={field.name} style={style}>
-        {value}
+        {displayValue}
       </div>
     );
   };
@@ -80,4 +117,6 @@ export default function CoverPagePreview() {
       </div>
     </div>
   );
-}
+};
+
+export default CoverPagePreview;

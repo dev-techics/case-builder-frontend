@@ -2,22 +2,28 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { setFieldValue } from '../redux/coverPageSlice';
+import { setCoverPageId, setFieldValue } from '../redux/coverPageSlice';
 import CoverPagePreview from './CoverPagePreview';
+import { useEffect } from 'react';
 
 const CoverPageEditor = () => {
   const dispatch = useAppDispatch();
-  const { templates, templateKey } = useAppSelector(state => state.coverPage);
+  const { templates, templateKey, values } = useAppSelector(
+    state => state.coverPage
+  );
 
   const template = templates.find(t => t.template_key === templateKey);
-  console.log(template);
+
+  useEffect(() => {
+    dispatch(setCoverPageId(template?.id));
+  }, [dispatch]);
 
   if (!template) {
     return <div>Template not found</div>;
   }
 
-  const handleFieldChange = (field: string, value: string) => {
-    dispatch(setFieldValue({ field, value }));
+  const handleFieldChange = (fieldName: string, value: string) => {
+    dispatch(setFieldValue({ field: fieldName, value }));
   };
 
   // Group fields by their semantic purpose
@@ -28,8 +34,14 @@ const CoverPageEditor = () => {
       .join(' ');
   };
 
-  const isMultiline = (field: any): boolean => {
-    return field.name.includes('title') || field.name.includes('case_title');
+  const isMultiline = (fieldName: string): boolean => {
+    return fieldName.includes('title') || fieldName.includes('case_title');
+  };
+
+  // Get the current value for a field
+  const getFieldValue = (fieldName: string): string => {
+    const field = values.find((f: any) => f.name === fieldName);
+    return field?.value || '';
   };
 
   return (
@@ -63,10 +75,10 @@ const CoverPageEditor = () => {
               >
                 {getFieldLabel(field.name)}
               </Label>
-              {isMultiline(field) ? (
+              {isMultiline(field.name) ? (
                 <Textarea
                   id={field.name}
-                  value={field.name || ''}
+                  value={getFieldValue(field.name)}
                   onChange={e => handleFieldChange(field.name, e.target.value)}
                   className="min-h-[80px] resize-none"
                   placeholder={`Enter ${getFieldLabel(field.name).toLowerCase()}`}
@@ -75,7 +87,7 @@ const CoverPageEditor = () => {
                 <Input
                   id={field.name}
                   type="text"
-                  value={field.name || ''}
+                  value={getFieldValue(field.name)}
                   onChange={e => handleFieldChange(field.name, e.target.value)}
                   placeholder={`Enter ${getFieldLabel(field.name).toLowerCase()}`}
                 />
