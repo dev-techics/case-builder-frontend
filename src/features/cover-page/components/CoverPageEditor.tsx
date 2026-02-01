@@ -6,24 +6,41 @@ import { setCoverPageId, setFieldValue } from '../redux/coverPageSlice';
 import CoverPagePreview from './CoverPagePreview';
 import { useEffect } from 'react';
 
-const CoverPageEditor = () => {
-  const dispatch = useAppDispatch();
-  const { templates, templateKey, values } = useAppSelector(
-    state => state.coverPage
-  );
+interface CoverPageEditorProps {
+  type: 'front' | 'back';
+}
 
+const CoverPageEditor = ({ type }: CoverPageEditorProps) => {
+  const dispatch = useAppDispatch();
+  const {
+    templates,
+    frontTemplateKey,
+    backTemplateKey,
+    frontValues,
+    backValues,
+  } = useAppSelector(state => state.coverPage);
+
+  // Get the correct template and values based on type
+  const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
+  const values = type === 'front' ? frontValues : backValues;
   const template = templates.find(t => t.template_key === templateKey);
 
   useEffect(() => {
-    dispatch(setCoverPageId(template?.id));
-  }, [dispatch]);
+    if (template?.id) {
+      dispatch(setCoverPageId({ type, id: template.id }));
+    }
+  }, [dispatch, template?.id, type]);
 
   if (!template) {
-    return <div>Template not found</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-gray-500">Template not found</p>
+      </div>
+    );
   }
 
   const handleFieldChange = (fieldName: string, value: string) => {
-    dispatch(setFieldValue({ field: fieldName, value }));
+    dispatch(setFieldValue({ type, field: fieldName, value }));
   };
 
   // Group fields by their semantic purpose
@@ -53,10 +70,11 @@ const CoverPageEditor = () => {
             Live Preview
           </h3>
           <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-            <CoverPagePreview />
+            <CoverPagePreview type={type} />
           </div>
           <p className="mt-2 text-gray-500 text-xs">
-            This preview shows how your cover page will appear in the final PDF
+            This preview shows how your {type} cover page will appear in the
+            final PDF
           </p>
         </div>
       </div>

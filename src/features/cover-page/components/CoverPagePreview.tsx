@@ -1,15 +1,30 @@
 import { useAppSelector } from '@/app/hooks';
 import type { CoverPageField } from '../types';
 
-const CoverPagePreview = () => {
-  const { templateKey, templates, values } = useAppSelector(
-    state => state.coverPage
-  );
+interface CoverPagePreviewProps {
+  type: 'front' | 'back';
+}
 
+const CoverPagePreview = ({ type }: CoverPagePreviewProps) => {
+  const {
+    frontTemplateKey,
+    backTemplateKey,
+    templates,
+    frontValues,
+    backValues,
+  } = useAppSelector(state => state.coverPage);
+
+  // Get the correct template and values based on type
+  const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
+  const values = type === 'front' ? frontValues : backValues;
   const template = templates.find(t => t.template_key === templateKey);
 
   if (!template) {
-    return null;
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-400">
+        <p>No template selected</p>
+      </div>
+    );
   }
 
   // A4 dimensions in pixels at 96 DPI (standard screen resolution)

@@ -5,7 +5,7 @@ import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
-import CoverPageManager from '../../cover-page/components/CoverPageManager';
+import CoverPage from '../../cover-page';
 import {
   loadCoverPageTemplates,
   setBundleId,
@@ -37,7 +37,9 @@ function Exports() {
   );
 
   // Get cover page state
-  const coverPageEnabled = useAppSelector(state => state.coverPage.enabled);
+  const { frontEnabled, backEnabled } = useAppSelector(
+    state => state.coverPage
+  );
 
   // Get highlights from toolbar slice
   const highlights = useAppSelector(state => state.toolbar.highlights);
@@ -48,7 +50,8 @@ function Exports() {
   >('idle');
   const [exportMessage, setExportMessage] = useState('');
   const [includeIndex, setIncludeIndex] = useState(true);
-  const [includeCover, setIncludeCover] = useState(true);
+  const [includeFrontCover, setIncludeFrontCover] = useState(true);
+  const [includeBackCover, setIncludeBackCover] = useState(true);
 
   // Recursively collect all PDF files from the entire tree
   const pdfFiles = collectAllFiles(tree.children);
@@ -88,7 +91,8 @@ function Exports() {
         `/api/bundles/${bundleId}/export`,
         {
           include_index: includeIndex,
-          include_cover: includeCover,
+          include_front_cover: includeFrontCover && frontEnabled,
+          include_back_cover: includeBackCover && backEnabled,
         },
         {
           responseType: 'blob', // Important: receive as blob for file download
@@ -132,7 +136,8 @@ function Exports() {
 
       // Build success message
       let successParts = [];
-      if (includeCover && coverPageEnabled) successParts.push('cover page');
+      if (includeFrontCover && frontEnabled) successParts.push('front cover');
+      if (includeBackCover && backEnabled) successParts.push('back cover');
       if (includeIndex && tree.indexUrl) successParts.push('index');
       successParts.push(`${pdfFiles.length} files`);
 
@@ -176,8 +181,8 @@ function Exports() {
 
   return (
     <div className="space-y-4">
-      {/* Cover Page Manager */}
-      <CoverPageManager />
+      {/* Front Cover Page Manager */}
+      <CoverPage type="Front" />
 
       {/* Export Summary */}
       <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
@@ -206,22 +211,37 @@ function Exports() {
         </div>
       </div>
 
+      {/* Back Cover Page Manager */}
+      <CoverPage type="Back" />
+
       {/* Export Options */}
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
         <p className="mb-2 font-semibold text-blue-900 text-xs">
           Export Options
         </p>
         <div className="space-y-2 text-blue-800 text-xs">
-          {coverPageEnabled && (
+          {frontEnabled && (
             <label className="flex cursor-pointer items-center gap-2">
               <input
-                checked={includeCover}
+                checked={includeFrontCover}
                 className="rounded"
-                onChange={e => setIncludeCover(e.target.checked)}
+                onChange={e => setIncludeFrontCover(e.target.checked)}
                 type="checkbox"
                 disabled={isExporting}
               />
-              <span>Include cover page</span>
+              <span>Include front cover page</span>
+            </label>
+          )}
+          {backEnabled && (
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                checked={includeBackCover}
+                className="rounded"
+                onChange={e => setIncludeBackCover(e.target.checked)}
+                type="checkbox"
+                disabled={isExporting}
+              />
+              <span>Include back cover page</span>
             </label>
           )}
           <label className="flex cursor-pointer items-center gap-2">

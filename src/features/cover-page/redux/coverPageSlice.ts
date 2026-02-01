@@ -8,7 +8,7 @@ import { CoverPageApi } from '../api';
 
 interface fields {
   name: string;
-  value?: string; // Added value property
+  value?: string;
   x: number;
   y: number;
   font: string;
@@ -18,9 +18,11 @@ interface fields {
 }
 
 interface Template {
+  id: string;
   template_key: string;
   name: string;
   description: string;
+  type: 'front' | 'back'; // Add type to template
   values: {
     page: {
       size: string;
@@ -32,25 +34,33 @@ interface Template {
 }
 
 interface CoverPageState {
-  enabled: boolean;
+  frontEnabled: boolean;
+  backEnabled: boolean;
   templates: Template[];
-  templateKey: string;
-  values: fields[]; // Changed from Record<string, any> to fields[]
+  frontTemplateKey: string;
+  backTemplateKey: string;
+  frontValues: fields[];
+  backValues: fields[];
   isEditing: boolean;
   isSaving: boolean;
   currentBundleId: string | null;
-  currentCoverPageId: string | null; // Track current cover page being edited
+  frontCoverPageId: string | null;
+  backCoverPageId: string | null;
 }
 
 const initialState: CoverPageState = {
-  enabled: false,
+  frontEnabled: false,
+  backEnabled: false,
   templates: [],
-  templateKey: 'legal_cover_v1', // default selected template
-  values: [],
+  frontTemplateKey: 'legal_cover_v1',
+  backTemplateKey: 'legal_back_cover_v1',
+  frontValues: [],
+  backValues: [],
   isEditing: false,
   isSaving: false,
   currentBundleId: null,
-  currentCoverPageId: null,
+  frontCoverPageId: null,
+  backCoverPageId: null,
 };
 
 // Load cover page data from backend
@@ -62,10 +72,13 @@ export const loadCoverPageTemplates = createAsyncThunk(
   }
 );
 
-// Save cover page id in bundle meta data
+// Save cover page id in bundle metadata
 export const saveCoverPageIdInMetadata = createAsyncThunk(
   'coverPage/saveId',
-  async (coverPageId: string, { getState }) => {
+  async (
+    { type, coverPageId }: { type: 'front' | 'back'; coverPageId: string },
+    { getState }
+  ) => {
     const state = getState() as any;
     const { currentBundleId } = state.coverPage;
 
@@ -73,21 +86,58 @@ export const saveCoverPageIdInMetadata = createAsyncThunk(
       throw new Error('No bundle ID set');
     }
 
+    const metadataKey =
+      type === 'front' ? 'front_cover_page_id' : 'back_cover_page_id';
+
     const response = await CoverPageApi.updateMetadata(currentBundleId, {
-      front_cover_page_id: coverPageId,
+      [metadataKey]: coverPageId.toString(),
     });
 
-    return response;
+    return { type, response };
+  }
+);
+
+// Remove cover page id from bundle metadata
+export const removeCoverPageIdFromMetadata = createAsyncThunk(
+  'coverPage/removeId',
+  async (type: 'front' | 'back', { getState }) => {
+    const state = getState() as any;
+    const { currentBundleId } = state.coverPage;
+
+    if (!currentBundleId) {
+      throw new Error('No bundle ID set');
+    }
+
+    const metadataKey =
+      type === 'front' ? 'front_cover_page_id' : 'back_cover_page_id';
+
+    const response = await CoverPageApi.updateMetadata(currentBundleId, {
+      [metadataKey]: null,
+    });
+
+    return { type, response };
   }
 );
 
 // Save/update cover page data
 export const saveCoverPageData = createAsyncThunk(
   'coverPage/saveData',
-  async (_, { getState }) => {
+  async (type: 'front' | 'back', { getState }) => {
     const state = getState() as any;
-    const { values, templateKey, currentCoverPageId, templates } =
-      state.coverPage;
+    const {
+      frontValues,
+      backValues,
+      frontTemplateKey,
+      backTemplateKey,
+      frontCoverPageId,
+      backCoverPageId,
+      templates,
+    } = state.coverPage;
+
+    const values = type === 'front' ? frontValues : backValues;
+    const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
+    const currentCoverPageId =
+      type === 'front' ? frontCoverPageId : backCoverPageId;
 
     // Get the template structure
     const selectedTemplate = templates.find(
@@ -105,8 +155,8 @@ export const saveCoverPageData = createAsyncThunk(
           (v: any) => v.name === templateField.name
         );
         return {
-          ...templateField, // Keep all original properties (x, y, font, size, align, bold)
-          value: userField?.value || '', // Add/update only the value property
+          ...templateField,
+          value: userField?.value || '',
         };
       }
     );
@@ -117,7 +167,7 @@ export const saveCoverPageData = createAsyncThunk(
         page: selectedTemplate.values.page,
         fields: updatedFields,
       },
-      type: 'front', // or 'back' depending on your use case
+      type: type,
     };
 
     let response;
@@ -132,7 +182,7 @@ export const saveCoverPageData = createAsyncThunk(
       response = await CoverPageApi.createCoverPage(payload);
     }
 
-    return response;
+    return { type, response };
   }
 );
 
@@ -140,39 +190,80 @@ const coverPageSlice = createSlice({
   name: 'coverPage',
   initialState,
   reducers: {
-    setEnabled: (state, action: PayloadAction<boolean>) => {
-      state.enabled = action.payload;
+    setEnabled: (
+      state,
+      action: PayloadAction<{ type: 'front' | 'back'; enabled: boolean }>
+    ) => {
+      const { type, enabled } = action.payload;
+      if (type === 'front') {
+        state.frontEnabled = enabled;
+      } else {
+        state.backEnabled = enabled;
+      }
     },
-    setTemplate: (state, action: PayloadAction<string>) => {
-      state.templateKey = action.payload;
+
+    setTemplate: (
+      state,
+      action: PayloadAction<{ type: 'front' | 'back'; templateKey: string }>
+    ) => {
+      const { type, templateKey } = action.payload;
+
+      if (type === 'front') {
+        state.frontTemplateKey = templateKey;
+      } else {
+        state.backTemplateKey = templateKey;
+      }
 
       const selectedTemplate = state.templates.find(
-        template => template.template_key === action.payload
+        template => template.template_key === templateKey
       );
 
       // Initialize values array with field structure and empty values
-      state.values =
+      const initialValues =
         selectedTemplate?.values?.fields.map(field => ({
           ...field,
-          value: '', // Initialize with empty string
+          value: '',
         })) ?? [];
+
+      if (type === 'front') {
+        state.frontValues = initialValues;
+      } else {
+        state.backValues = initialValues;
+      }
     },
 
     setFieldValue: (
       state,
-      action: PayloadAction<{ field: string; value: string }>
+      action: PayloadAction<{
+        type: 'front' | 'back';
+        field: string;
+        value: string;
+      }>
     ) => {
-      const fieldIndex = state.values.findIndex(
-        field => field.name === action.payload.field
-      );
+      const { type, field, value } = action.payload;
+      const values = type === 'front' ? state.frontValues : state.backValues;
+
+      const fieldIndex = values.findIndex(f => f.name === field);
 
       if (fieldIndex !== -1) {
-        state.values[fieldIndex].value = action.payload.value;
+        if (type === 'front') {
+          state.frontValues[fieldIndex].value = value;
+        } else {
+          state.backValues[fieldIndex].value = value;
+        }
       }
     },
 
-    setAllValues: (state, action: PayloadAction<fields[]>) => {
-      state.values = action.payload;
+    setAllValues: (
+      state,
+      action: PayloadAction<{ type: 'front' | 'back'; values: fields[] }>
+    ) => {
+      const { type, values } = action.payload;
+      if (type === 'front') {
+        state.frontValues = values;
+      } else {
+        state.backValues = values;
+      }
     },
 
     setIsEditing: (state, action: PayloadAction<boolean>) => {
@@ -183,13 +274,22 @@ const coverPageSlice = createSlice({
       state.currentBundleId = action.payload;
     },
 
-    setCoverPageId: (state, action: PayloadAction<string | null>) => {
-      state.currentCoverPageId = action.payload;
+    setCoverPageId: (
+      state,
+      action: PayloadAction<{ type: 'front' | 'back'; id: string | null }>
+    ) => {
+      const { type, id } = action.payload;
+      if (type === 'front') {
+        state.frontCoverPageId = id;
+      } else {
+        state.backCoverPageId = id;
+      }
     },
 
     loadExistingCoverPageData: (
       state,
       action: PayloadAction<{
+        type: 'front' | 'back';
         id: string;
         values: {
           page: {
@@ -201,24 +301,46 @@ const coverPageSlice = createSlice({
         };
       }>
     ) => {
-      state.currentCoverPageId = action.payload.id;
+      const { type, id, values } = action.payload;
 
-      // Use the fields from the loaded cover page directly
-      // They already have the full structure with values
-      state.values = action.payload.values.fields || [];
+      if (type === 'front') {
+        state.frontCoverPageId = id;
+        state.frontValues = values.fields || [];
+      } else {
+        state.backCoverPageId = id;
+        state.backValues = values.fields || [];
+      }
     },
 
-    resetCoverPage: state => {
-      state.enabled = false;
-      state.currentCoverPageId = null;
-      const selectedTemplate = state.templates.find(
-        template => template.template_key === state.templateKey
-      );
-      state.values =
-        selectedTemplate?.values?.fields.map(field => ({
-          ...field,
-          value: '',
-        })) ?? [];
+    resetCoverPage: (
+      state,
+      action: PayloadAction<{ type: 'front' | 'back' }>
+    ) => {
+      const { type } = action.payload;
+
+      if (type === 'front') {
+        state.frontEnabled = false;
+        state.frontCoverPageId = null;
+        const selectedTemplate = state.templates.find(
+          template => template.template_key === state.frontTemplateKey
+        );
+        state.frontValues =
+          selectedTemplate?.values?.fields.map(field => ({
+            ...field,
+            value: '',
+          })) ?? [];
+      } else {
+        state.backEnabled = false;
+        state.backCoverPageId = null;
+        const selectedTemplate = state.templates.find(
+          template => template.template_key === state.backTemplateKey
+        );
+        state.backValues =
+          selectedTemplate?.values?.fields.map(field => ({
+            ...field,
+            value: '',
+          })) ?? [];
+      }
     },
   },
   extraReducers: builder => {
@@ -229,15 +351,35 @@ const coverPageSlice = createSlice({
 
         // Initialize values when templates are loaded
         if (action.payload.length > 0) {
-          const defaultTemplate =
+          // Initialize front cover values
+          const frontTemplate =
             action.payload.find(
-              (t: any) => t.template_key === state.templateKey
-            ) || action.payload[0];
+              (t: any) =>
+                t.template_key === state.frontTemplateKey && t.type === 'front'
+            ) || action.payload.find((t: any) => t.type === 'front');
 
-          state.values = defaultTemplate.values.fields.map((field: any) => ({
-            ...field,
-            value: '',
-          }));
+          if (frontTemplate) {
+            state.frontValues = frontTemplate.values.fields.map(
+              (field: any) => ({
+                ...field,
+                value: '',
+              })
+            );
+          }
+
+          // Initialize back cover values
+          const backTemplate =
+            action.payload.find(
+              (t: any) =>
+                t.template_key === state.backTemplateKey && t.type === 'back'
+            ) || action.payload.find((t: any) => t.type === 'back');
+
+          if (backTemplate) {
+            state.backValues = backTemplate.values.fields.map((field: any) => ({
+              ...field,
+              value: '',
+            }));
+          }
         }
       })
       // Save cover page ID in metadata
@@ -250,15 +392,36 @@ const coverPageSlice = createSlice({
       .addCase(saveCoverPageIdInMetadata.rejected, state => {
         state.isSaving = false;
       })
+      // Remove cover page ID from metadata
+      .addCase(removeCoverPageIdFromMetadata.pending, state => {
+        state.isSaving = true;
+      })
+      .addCase(removeCoverPageIdFromMetadata.fulfilled, (state, action) => {
+        state.isSaving = false;
+        const { type } = action.payload;
+        if (type === 'front') {
+          state.frontCoverPageId = null;
+        } else {
+          state.backCoverPageId = null;
+        }
+      })
+      .addCase(removeCoverPageIdFromMetadata.rejected, state => {
+        state.isSaving = false;
+      })
       // Save/update cover page data
       .addCase(saveCoverPageData.pending, state => {
         state.isSaving = true;
       })
       .addCase(saveCoverPageData.fulfilled, (state, action) => {
         state.isSaving = false;
+        const { type, response } = action.payload;
         // Update the current cover page ID if it was newly created
-        if (action.payload?.id) {
-          state.currentCoverPageId = action.payload.id;
+        if (response?.id) {
+          if (type === 'front') {
+            state.frontCoverPageId = response.id;
+          } else {
+            state.backCoverPageId = response.id;
+          }
         }
       })
       .addCase(saveCoverPageData.rejected, state => {
