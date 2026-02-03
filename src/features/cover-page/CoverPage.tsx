@@ -22,7 +22,7 @@ import {
   removeCoverPageIdFromMetadata,
   saveCoverPageData,
 } from './redux/coverPageSlice';
-import CoverPageEditor from './components/CoverPageEditor';
+import LexicalCoverPageEditor from './components/LexicalCoverPageEditor';
 import TemplateSelectionDialog from './components/TemplateSelectionDialog';
 
 interface CoverPageProps {
@@ -178,7 +178,7 @@ const CoverPage = ({ type }: CoverPageProps) => {
 
       {/* Cover Page Editor Dialog */}
       <Dialog open={showEditor} onOpenChange={setShowEditor}>
-        <DialogContent className="flex flex-col max-h-[90vh] max-w-5xl p-0 overflow-hidden">
+        <DialogContent className="flex flex-col max-h-[90vh] max-w-9xl h-screen p-0 overflow-hidden">
           <DialogHeader className="border-b p-6 pb-4">
             <div className="flex items-center justify-between">
               <DialogTitle>Edit {type} Cover Page</DialogTitle>
@@ -193,7 +193,9 @@ const CoverPage = ({ type }: CoverPageProps) => {
             </div>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-hidden px-4 py-2">
-            <CoverPageEditor type={type.toLowerCase() as 'front' | 'back'} />
+            <LexicalCoverPageEditor
+              type={type.toLowerCase() as 'front' | 'back'}
+            />
           </div>
         </DialogContent>
       </Dialog>

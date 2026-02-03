@@ -1,4 +1,4 @@
-// redux/coverPageSlice.ts
+// redux/coverPageSlice.ts - Updated for HTML content
 import {
   createSlice,
   createAsyncThunk,
@@ -6,41 +6,16 @@ import {
 } from '@reduxjs/toolkit';
 import { CoverPageApi } from '../api';
 
-interface fields {
-  name: string;
-  value?: string;
-  x: number;
-  y: number;
-  font: string;
-  size: number;
-  align: 'left' | 'center' | 'right';
-  bold: boolean;
-}
-
-interface Template {
-  id: string;
-  template_key: string;
-  name: string;
-  description: string;
-  type: 'front' | 'back'; // Add type to template
-  values: {
-    page: {
-      size: string;
-      margin: number;
-      orientation: string;
-    };
-    fields: fields[];
-  };
-}
-
 interface CoverPageState {
   frontEnabled: boolean;
   backEnabled: boolean;
-  templates: Template[];
+  templates: any[];
   frontTemplateKey: string;
   backTemplateKey: string;
-  frontValues: fields[];
-  backValues: fields[];
+  frontHtml: string;
+  backHtml: string;
+  frontLexicalJson: string | null;
+  backLexicalJson: string | null;
   isEditing: boolean;
   isSaving: boolean;
   currentBundleId: string | null;
@@ -54,8 +29,10 @@ const initialState: CoverPageState = {
   templates: [],
   frontTemplateKey: 'legal_cover_v1',
   backTemplateKey: 'legal_back_cover_v1',
-  frontValues: [],
-  backValues: [],
+  frontHtml: '',
+  backHtml: '',
+  frontLexicalJson: null,
+  backLexicalJson: null,
   isEditing: false,
   isSaving: false,
   currentBundleId: null,
@@ -63,7 +40,7 @@ const initialState: CoverPageState = {
   backCoverPageId: null,
 };
 
-// Load cover page data from backend
+// Load cover page templates
 export const loadCoverPageTemplates = createAsyncThunk(
   'coverPage/loadCoverPageTemplates',
   async () => {
@@ -119,14 +96,16 @@ export const removeCoverPageIdFromMetadata = createAsyncThunk(
   }
 );
 
-// Save/update cover page data
+// Save/update cover page data with HTML
 export const saveCoverPageData = createAsyncThunk(
   'coverPage/saveData',
   async (type: 'front' | 'back', { getState }) => {
     const state = getState() as any;
     const {
-      frontValues,
-      backValues,
+      frontHtml,
+      backHtml,
+      frontLexicalJson,
+      backLexicalJson,
       frontTemplateKey,
       backTemplateKey,
       frontCoverPageId,
@@ -134,40 +113,25 @@ export const saveCoverPageData = createAsyncThunk(
       templates,
     } = state.coverPage;
 
-    const values = type === 'front' ? frontValues : backValues;
+    const html = type === 'front' ? frontHtml : backHtml;
+    const lexicalJson =
+      type === 'front' ? frontLexicalJson : backLexicalJson;
     const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
     const currentCoverPageId =
       type === 'front' ? frontCoverPageId : backCoverPageId;
-
-    // Get the template structure
     const selectedTemplate = templates.find(
       (template: any) => template.template_key === templateKey
     );
-
-    if (!selectedTemplate) {
-      throw new Error('Template not found');
-    }
-
-    // Preserve the full field structure and merge with user values
-    const updatedFields = selectedTemplate.values.fields.map(
-      (templateField: any) => {
-        const userField = values.find(
-          (v: any) => v.name === templateField.name
-        );
-        return {
-          ...templateField,
-          value: userField?.value || '',
-        };
-      }
-    );
+    const fallbackName =
+      type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
 
     const payload = {
       template_key: templateKey,
-      values: {
-        page: selectedTemplate.values.page,
-        fields: updatedFields,
-      },
+      html_content: html,
+      lexical_json: lexicalJson || undefined,
       type: type,
+      name: selectedTemplate?.name || fallbackName,
+      description: selectedTemplate?.description,
     };
 
     let response;
@@ -214,55 +178,61 @@ const coverPageSlice = createSlice({
         state.backTemplateKey = templateKey;
       }
 
+      // Find template and load default HTML if available
       const selectedTemplate = state.templates.find(
         template => template.template_key === templateKey
       );
 
-      // Initialize values array with field structure and empty values
-      const initialValues =
-        selectedTemplate?.values?.fields.map(field => ({
-          ...field,
-          value: '',
-        })) ?? [];
+      const templateHtml =
+        selectedTemplate?.html_content ||
+        selectedTemplate?.html ||
+        selectedTemplate?.default_html ||
+        '';
+      const rawLexical =
+        selectedTemplate?.lexical_json || selectedTemplate?.lexicalJson || null;
+      const normalizedLexical =
+        rawLexical && typeof rawLexical !== 'string'
+          ? JSON.stringify(rawLexical)
+          : rawLexical;
 
       if (type === 'front') {
-        state.frontValues = initialValues;
+        state.frontHtml = templateHtml;
+        state.frontLexicalJson = normalizedLexical;
+        state.frontCoverPageId = selectedTemplate?.id || null;
       } else {
-        state.backValues = initialValues;
+        state.backHtml = templateHtml;
+        state.backLexicalJson = normalizedLexical;
+        state.backCoverPageId = selectedTemplate?.id || null;
       }
     },
 
-    setFieldValue: (
+    setCoverPageHtml: (
       state,
       action: PayloadAction<{
         type: 'front' | 'back';
-        field: string;
-        value: string;
+        html: string;
       }>
     ) => {
-      const { type, field, value } = action.payload;
-      const values = type === 'front' ? state.frontValues : state.backValues;
-
-      const fieldIndex = values.findIndex(f => f.name === field);
-
-      if (fieldIndex !== -1) {
-        if (type === 'front') {
-          state.frontValues[fieldIndex].value = value;
-        } else {
-          state.backValues[fieldIndex].value = value;
-        }
+      const { type, html } = action.payload;
+      if (type === 'front') {
+        state.frontHtml = html;
+      } else {
+        state.backHtml = html;
       }
     },
 
-    setAllValues: (
+    setCoverPageLexicalJson: (
       state,
-      action: PayloadAction<{ type: 'front' | 'back'; values: fields[] }>
+      action: PayloadAction<{
+        type: 'front' | 'back';
+        lexicalJson: string;
+      }>
     ) => {
-      const { type, values } = action.payload;
+      const { type, lexicalJson } = action.payload;
       if (type === 'front') {
-        state.frontValues = values;
+        state.frontLexicalJson = lexicalJson;
       } else {
-        state.backValues = values;
+        state.backLexicalJson = lexicalJson;
       }
     },
 
@@ -291,24 +261,20 @@ const coverPageSlice = createSlice({
       action: PayloadAction<{
         type: 'front' | 'back';
         id: string;
-        values: {
-          page: {
-            size: string;
-            margin: number;
-            orientation: string;
-          };
-          fields: fields[];
-        };
+        html: string;
+        lexicalJson?: string | null;
       }>
     ) => {
-      const { type, id, values } = action.payload;
+      const { type, id, html, lexicalJson } = action.payload;
 
       if (type === 'front') {
         state.frontCoverPageId = id;
-        state.frontValues = values.fields || [];
+        state.frontHtml = html || '';
+        state.frontLexicalJson = lexicalJson || null;
       } else {
         state.backCoverPageId = id;
-        state.backValues = values.fields || [];
+        state.backHtml = html || '';
+        state.backLexicalJson = lexicalJson || null;
       }
     },
 
@@ -321,25 +287,13 @@ const coverPageSlice = createSlice({
       if (type === 'front') {
         state.frontEnabled = false;
         state.frontCoverPageId = null;
-        const selectedTemplate = state.templates.find(
-          template => template.template_key === state.frontTemplateKey
-        );
-        state.frontValues =
-          selectedTemplate?.values?.fields.map(field => ({
-            ...field,
-            value: '',
-          })) ?? [];
+        state.frontHtml = '';
+        state.frontLexicalJson = null;
       } else {
         state.backEnabled = false;
         state.backCoverPageId = null;
-        const selectedTemplate = state.templates.find(
-          template => template.template_key === state.backTemplateKey
-        );
-        state.backValues =
-          selectedTemplate?.values?.fields.map(field => ({
-            ...field,
-            value: '',
-          })) ?? [];
+        state.backHtml = '';
+        state.backLexicalJson = null;
       }
     },
   },
@@ -349,36 +303,28 @@ const coverPageSlice = createSlice({
       .addCase(loadCoverPageTemplates.fulfilled, (state, action) => {
         state.templates = action.payload;
 
-        // Initialize values when templates are loaded
+        // Initialize HTML when templates are loaded
         if (action.payload.length > 0) {
-          // Initialize front cover values
+          // Initialize front cover HTML
           const frontTemplate =
             action.payload.find(
               (t: any) =>
                 t.template_key === state.frontTemplateKey && t.type === 'front'
             ) || action.payload.find((t: any) => t.type === 'front');
 
-          if (frontTemplate) {
-            state.frontValues = frontTemplate.values.fields.map(
-              (field: any) => ({
-                ...field,
-                value: '',
-              })
-            );
+          if (frontTemplate?.default_html && !state.frontHtml) {
+            state.frontHtml = frontTemplate.default_html;
           }
 
-          // Initialize back cover values
+          // Initialize back cover HTML
           const backTemplate =
             action.payload.find(
               (t: any) =>
                 t.template_key === state.backTemplateKey && t.type === 'back'
             ) || action.payload.find((t: any) => t.type === 'back');
 
-          if (backTemplate) {
-            state.backValues = backTemplate.values.fields.map((field: any) => ({
-              ...field,
-              value: '',
-            }));
+          if (backTemplate?.default_html && !state.backHtml) {
+            state.backHtml = backTemplate.default_html;
           }
         }
       })
@@ -433,8 +379,8 @@ const coverPageSlice = createSlice({
 export const {
   setEnabled,
   setTemplate,
-  setFieldValue,
-  setAllValues,
+  setCoverPageHtml,
+  setCoverPageLexicalJson,
   setIsEditing,
   setBundleId,
   setCoverPageId,

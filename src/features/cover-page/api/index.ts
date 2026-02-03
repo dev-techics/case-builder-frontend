@@ -6,7 +6,9 @@ export class CoverPageApi {
    */
   static async createCoverPage(data: {
     template_key: string;
-    values: Record<string, any>;
+    values?: Record<string, any>;
+    html_content?: string;
+    lexical_json?: string;
     type: string;
     name?: string;
     description?: string;
@@ -48,6 +50,8 @@ export class CoverPageApi {
     data: {
       template_key?: any;
       values?: Record<string, any>;
+      html_content?: string;
+      lexical_json?: string;
       type?: string;
       name?: string;
       description?: string;
