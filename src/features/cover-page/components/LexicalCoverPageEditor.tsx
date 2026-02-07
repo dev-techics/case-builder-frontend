@@ -136,6 +136,57 @@ const mergeInlineStyles = (existing: string | null, next: string) => {
   return trimmed.endsWith(';') ? `${trimmed} ${next}` : `${trimmed}; ${next}`;
 };
 
+const isImageOnlyContainer = (element: Element) => {
+  const nodes = Array.from(element.childNodes);
+  let hasImage = false;
+
+  for (const node of nodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent && node.textContent.trim().length > 0) {
+        return false;
+      }
+      continue;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tag = (node as Element).tagName.toLowerCase();
+      if (tag === 'img') {
+        hasImage = true;
+        continue;
+      }
+      if (tag === 'br') {
+        continue;
+      }
+      return false;
+    }
+
+    return false;
+  }
+
+  return hasImage;
+};
+
+const applyMpdfImageAlignment = (dom: Document) => {
+  dom.body.querySelectorAll('img').forEach(image => {
+    const alignment = image.getAttribute('data-lexical-align');
+    if (alignment !== 'center' && alignment !== 'right') {
+      return;
+    }
+
+    const parent = image.parentElement;
+    if (parent && isImageOnlyContainer(parent)) {
+      parent.setAttribute(
+        'style',
+        mergeInlineStyles(parent.getAttribute('style'), `text-align:${alignment}`)
+      );
+      image.setAttribute(
+        'style',
+        mergeInlineStyles(image.getAttribute('style'), 'display:inline-block')
+      );
+    }
+  });
+};
+
 const inlineCoverPageHtml = (html: string) => {
   const parser = new DOMParser();
   const dom = parser.parseFromString(html || '', 'text/html');
@@ -148,6 +199,7 @@ const inlineCoverPageHtml = (html: string) => {
       );
     }
   });
+  applyMpdfImageAlignment(dom);
 
   const wrapper = dom.createElement('div');
   wrapper.setAttribute(COVER_PAGE_WRAPPER_ATTR, COVER_PAGE_WRAPPER_VALUE);

@@ -296,6 +296,22 @@ const coverPageSlice = createSlice({
         state.backLexicalJson = null;
       }
     },
+
+    upsertTemplate: (state, action: PayloadAction<any>) => {
+      const incoming = action.payload;
+      const index = state.templates.findIndex(
+        template => template.template_key === incoming.template_key
+      );
+
+      if (index >= 0) {
+        state.templates[index] = {
+          ...state.templates[index],
+          ...incoming,
+        };
+      } else {
+        state.templates.push(incoming);
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -386,6 +402,7 @@ export const {
   setCoverPageId,
   loadExistingCoverPageData,
   resetCoverPage,
+  upsertTemplate,
 } = coverPageSlice.actions;
 
 export default coverPageSlice.reducer;

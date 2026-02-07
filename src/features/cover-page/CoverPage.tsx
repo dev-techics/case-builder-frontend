@@ -18,6 +18,7 @@ import {
   setEnabled,
   setTemplate,
   setIsEditing,
+  upsertTemplate,
   saveCoverPageIdInMetadata,
   removeCoverPageIdFromMetadata,
   saveCoverPageData,
@@ -62,6 +63,28 @@ const CoverPage = ({ type }: CoverPageProps) => {
     const coverType = type.toLowerCase() as 'front' | 'back';
     dispatch(setTemplate({ type: coverType, templateKey: key }));
     setShowTemplateDialog(false);
+  };
+
+  const handleCreateTemplate = () => {
+    const coverType = type.toLowerCase() as 'front' | 'back';
+    const templateKey = `custom_${coverType}_${Date.now()}`;
+
+    dispatch(
+      upsertTemplate({
+        template_key: templateKey,
+        name: `Custom ${type} Cover Page`,
+        description: 'Custom template',
+        type: coverType,
+        default_html: '',
+        html_content: '',
+        lexical_json: null,
+      })
+    );
+
+    dispatch(setTemplate({ type: coverType, templateKey }));
+    setShowTemplateDialog(false);
+    setShowEditor(true);
+    dispatch(setIsEditing(true));
   };
 
   const handleOpenEditor = () => {
@@ -173,6 +196,7 @@ const CoverPage = ({ type }: CoverPageProps) => {
         open={showTemplateDialog}
         onOpen={setShowTemplateDialog}
         onSelect={handleSelectTemplate}
+        onCreate={handleCreateTemplate}
         type={type}
       />
 

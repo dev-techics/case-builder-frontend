@@ -10,6 +10,7 @@ interface TemplateSelectionDialogProps {
   open: boolean;
   onOpen: (open: boolean) => void;
   onSelect: (key: string) => void;
+  onCreate: () => void;
   type: 'Front' | 'Back';
 }
 
@@ -17,6 +18,7 @@ const TemplateSelectionDialog = ({
   open,
   onOpen,
   onSelect,
+  onCreate,
   type,
 }: TemplateSelectionDialogProps) => {
   const { frontTemplateKey, backTemplateKey } = useAppSelector(
@@ -45,6 +47,23 @@ const TemplateSelectionDialog = ({
           <DialogTitle>Choose {type} Cover Page Template</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4 md:grid-cols-3 sm:grid-cols-2">
+          <button
+            className="group rounded-lg border-2 border-dashed border-gray-300 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50"
+            onClick={onCreate}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 text-sm">
+                Create New
+              </h3>
+              <div className="rounded-full bg-blue-500 px-2 py-1 font-medium text-white text-xs">
+                New
+              </div>
+            </div>
+            <p className="text-gray-600 text-xs">
+              Start from a blank {type.toLowerCase()} cover page.
+            </p>
+          </button>
+
           {filteredTemplates.length > 0 ? (
             filteredTemplates.map(template => (
               <button
