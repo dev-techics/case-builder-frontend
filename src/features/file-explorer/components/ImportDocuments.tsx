@@ -5,11 +5,11 @@ import { addFiles } from '../redux/fileTreeSlice';
 import type { FileNode } from '../types/types';
 import { FileImportIcon, PlusSignIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import axiosInstance from '@/api/axiosInstance';
 import { useParams } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, X, AlertCircle } from 'lucide-react';
+import { UploadFile } from '../api';
 
 interface ImportDocumentsProps {
   bundleId: string;
@@ -97,24 +97,7 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
       }
 
       // Upload to server with conversion support
-      const response = await axiosInstance.post(
-        `/api/bundles/${bundleId}/documents/upload`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          onUploadProgress: progressEvent => {
-            if (!progressEvent.total) return;
-
-            const percent = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-
-            setUploadProgress(percent);
-          },
-        }
-      );
+      const response = await UploadFile(bundleId, formData, setUploadProgress);
 
       console.log('✅ Upload successful:', response.data);
 
