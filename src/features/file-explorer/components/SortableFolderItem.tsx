@@ -41,9 +41,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useAppDispatch();
 
-  const { expandedFolders, selectedFile } = useAppSelector(
-    state => state.fileTree
-  );
+  const { expandedFolders } = useAppSelector(state => state.fileTree);
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(folder.name);
@@ -72,6 +70,17 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
       accepts: ['file', 'folder'],
     },
   });
+
+  const contentDropId = `${folder.id}::content`;
+  const { setNodeRef: setContentDropRef, isOver: isOverContent } = useDroppable(
+    {
+      id: contentDropId,
+      data: {
+        type: 'folder-content',
+        folderId: folder.id,
+      },
+    }
+  );
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -151,6 +160,20 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const showDropIndicator =
     isOverDroppable && activeItem?.id !== folder.id && !isDragging;
 
+  useEffect(() => {
+    if (!activeId || isExpanded || !isOverDroppable) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      dispatch(toggleFolder(folder.id));
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [activeId, dispatch, folder.id, isExpanded, isOverDroppable]);
+
+  const isEmpty = !folder.children || folder.children.length === 0;
+
   return (
     <div
       ref={node => {
@@ -223,22 +246,39 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
 
         {/* Import Documents inside a folder */}
         <div>
-          <ImportDocuments bundleId={folder.id} parentId={selectedFile} />
+          <ImportDocuments bundleId={folder.id} parentId={folder.id} />
         </div>
 
         {/* Action Menu */}
         <ActionMenu file={folder} onRenameClick={handleRenameClick} />
       </div>
       {/* Nested Children */}
-      {isExpanded && folder.children && folder.children.length > 0 && (
+      {isExpanded && (
         <div style={{ paddingLeft: `${12}px` }}>
-          <FileItemWrapper
-            folder={folder}
-            level={level}
-            activeItem={activeItem}
-            overId={overId}
-            activeId={activeId}
-          />
+          {isEmpty ? (
+            <div
+              ref={setContentDropRef}
+              className={`rounded ${
+                isOverContent ? 'bg-blue-100 border-l-4 border-blue-500' : ''
+              }`}
+            >
+              <FileItemWrapper
+                folder={folder}
+                level={level}
+                activeItem={activeItem}
+                overId={overId}
+                activeId={activeId}
+              />
+            </div>
+          ) : (
+            <FileItemWrapper
+              folder={folder}
+              level={level}
+              activeItem={activeItem}
+              overId={overId}
+              activeId={activeId}
+            />
+          )}
         </div>
       )}
     </div>

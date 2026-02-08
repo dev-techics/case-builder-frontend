@@ -6,7 +6,12 @@ import {
 } from '@dnd-kit/sortable';
 import SortableFileItem from './SortableFileItem';
 import SortableFolderItem from './SortableFolderItem';
-import { selectFile, type Tree, type Children } from '../redux/fileTreeSlice';
+import {
+  selectFile,
+  selectFileById,
+  type Tree,
+  type Children,
+} from '../redux/fileTreeSlice';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import CreateNewFolderInput from './CreateNewFolderInput';
 import { GripVertical } from 'lucide-react';
@@ -28,6 +33,9 @@ const FileItemWrapper = ({
 }: FileItemWrapperProps) => {
   const dispatch = useAppDispatch();
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
+  const selectedNode = useAppSelector(state =>
+    selectedFile ? selectFileById(state, selectedFile) : null
+  );
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
   const isCreating = useAppSelector(
     state => state.fileTree.isCreatingNewFolder
@@ -37,15 +45,11 @@ const FileItemWrapper = ({
     dispatch(selectFile(fileId));
   };
 
-  // Safety check for children
   const children = folder.children || [];
-
-  if (children.length === 0) {
-    return null;
-  }
-
-  // Filter out any undefined/null children
   const validChildren = children.filter(Boolean);
+  const isSelectedFolder = selectedNode?.type === 'folder';
+  const shouldShowCreateInput =
+    isCreating && (isSelectedFolder ? selectedFile === folder.id : level === 0);
 
   return (
     <>
@@ -53,36 +57,45 @@ const FileItemWrapper = ({
         items={validChildren.map(c => c.id)}
         strategy={verticalListSortingStrategy}
       >
-        {isCreating && <CreateNewFolderInput parentId={selectedFile} />}
-        {validChildren.map(child => {
-          const isOver = overId === child.id;
+        {/* ---- create new folder input ------ */}
+        {shouldShowCreateInput && (
+          <CreateNewFolderInput parentId={selectedFile} />
+        )}
+        {validChildren.length === 0 ? (
+          <div className="px-2 py-1 text-xs text-gray-400">
+            No items yet
+          </div>
+        ) : (
+          validChildren.map(child => {
+            const isOver = overId === child.id;
 
-          if (child.type === 'folder') {
+            if (child.type === 'folder') {
+              return (
+                <SortableFolderItem
+                  key={child.id}
+                  onSelect={() => handleFileSelect(child.id)}
+                  folder={child}
+                  level={level + 1}
+                  isDropTarget={isOver && activeItem?.type === 'file'}
+                  activeId={activeId}
+                  overId={overId}
+                  activeItem={activeItem}
+                />
+              );
+            }
+
             return (
-              <SortableFolderItem
+              <SortableFileItem
                 key={child.id}
-                onSelect={() => handleFileSelect(child.id)}
-                folder={child}
+                file={child}
+                isSelected={selectedFile === child.id}
                 level={level + 1}
-                isDropTarget={isOver && activeItem?.type === 'file'}
-                activeId={activeId}
-                overId={overId}
-                activeItem={activeItem}
+                onSelect={() => handleFileSelect(child.id)}
+                shouldScrollIntoView={scrollToFileId === child.id}
               />
             );
-          }
-
-          return (
-            <SortableFileItem
-              key={child.id}
-              file={child}
-              isSelected={selectedFile === child.id}
-              level={level + 1}
-              onSelect={() => handleFileSelect(child.id)}
-              shouldScrollIntoView={scrollToFileId === child.id}
-            />
-          );
-        })}
+          })
+        )}
       </SortableContext>
 
       {/* Drag Overlay */}

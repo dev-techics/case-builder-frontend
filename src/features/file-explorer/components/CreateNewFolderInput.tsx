@@ -17,9 +17,26 @@ const CreateNewFolderInput = ({ parentId = null }: CreateNewFolderProps) => {
     state => state.fileTree.isCreatingNewFolder
   );
 
-  const result = tree.children.find(child => child.id === parentId);
-  console.log(result);
-  const isRoot = !parentId || result?.id === parentId;
+  const findNodeById = (
+    children: typeof tree.children,
+    id: string
+  ): (typeof tree.children)[number] | null => {
+    for (const child of children) {
+      if (child.id === id) {
+        return child;
+      }
+      if (child.type === 'folder' && child.children) {
+        const found = findNodeById(child.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const parentNode =
+    parentId && tree.children ? findNodeById(tree.children, parentId) : null;
+  const resolvedParentId =
+    parentNode?.type === 'folder' ? parentNode.id : null;
   useEffect(() => {
     if (isCreating && inputRef.current) {
       inputRef.current.focus();
@@ -34,7 +51,7 @@ const CreateNewFolderInput = ({ parentId = null }: CreateNewFolderProps) => {
           createFolder({
             bundleId,
             name: trimmedName,
-            parentId: isRoot ? null : parentId || null,
+            parentId: resolvedParentId,
           })
         ).unwrap();
         setFolderName('');
