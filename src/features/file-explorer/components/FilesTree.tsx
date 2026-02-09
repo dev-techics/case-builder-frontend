@@ -14,6 +14,7 @@ import FileExplorerHeader from './FileExplorerHeader';
 import FileItemWrapper from './FileItemWrapper';
 import {
   closestCenter,
+  DragOverlay,
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
@@ -27,6 +28,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useState } from 'react';
+import { GripVertical } from 'lucide-react';
 import {
   moveDocument,
   reorderDocuments,
@@ -109,36 +111,6 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       draggedType: draggedItem.type,
       overId: over.id,
     });
-
-    // CASE: Dropping into ROOT
-    if (over.id === 'ROOT') {
-      const draggedParentId = findParentId(tree, draggedItem.id, tree.id);
-
-      // Already in root, no action needed
-      if (!draggedParentId) {
-        console.log('⏭️ Already in root, skipping');
-        return;
-      }
-
-      console.log(
-        `📤 Moving ${draggedItem.name} (${draggedItem.type}) to ROOT`
-      );
-
-      try {
-        await dispatch(
-          moveDocument({
-            bundleId: extractedBundleId,
-            documentId: draggedItem.id,
-            newParentId: null,
-          })
-        ).unwrap();
-        console.log('✅ Moved to root successfully');
-      } catch (error) {
-        console.error('❌ Error moving to root:', error);
-      }
-
-      return;
-    }
 
     // Find target item
     const overId = String(over.id);
@@ -376,7 +348,10 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
         onDragEnd={handleDragEnd}
       >
         {isExpanded && (
-          <>
+          <div
+            ref={setRootDropRef}
+            className={`min-h-[16px] ${isRootOver ? 'bg-blue-50' : ''}`}
+          >
             <FileItemWrapper //root
               folder={tree}
               level={level}
@@ -384,14 +359,24 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
               overId={overId}
               activeId={activeId}
             />
-            <div
-              ref={setRootDropRef}
-              className={`min-h-[16px] ${
-                isRootOver ? 'bg-blue-50' : ''
-              }`}
-            />
-          </>
+          </div>
         )}
+
+        <DragOverlay>
+          {activeId && activeItem ? (
+            <div className="flex items-center bg-white shadow-xl rounded px-3 py-2 opacity-90 truncate">
+              <button
+                className="mr-1 w-4 flex-shrink-0 cursor-grab border-0 bg-transparent p-0 active:cursor-grabbing"
+                type="button"
+              >
+                <GripVertical className="h-4 w-4 text-gray-500" />
+              </button>
+              <span className="truncate text-gray-800 text-sm">
+                {activeItem.name}
+              </span>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </>
   );

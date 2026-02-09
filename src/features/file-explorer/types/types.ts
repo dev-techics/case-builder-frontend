@@ -19,5 +19,6 @@ export type FileTreeState = {
   tree: FolderNode;
   expandedFolders: string[];
   selectedFile: string | null;
+  selectedFolderId: string | null;
   scrollToFileId: string | null; // Track which file to scroll to in sidebar
 };

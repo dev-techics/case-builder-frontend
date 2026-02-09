@@ -1,5 +1,4 @@
 // src/features/file-explorer/components/FileItemWrapper.tsx
-import { DragOverlay } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -8,13 +7,12 @@ import SortableFileItem from './SortableFileItem';
 import SortableFolderItem from './SortableFolderItem';
 import {
   selectFile,
-  selectFileById,
+  selectFolder,
   type Tree,
   type Children,
 } from '../redux/fileTreeSlice';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import CreateNewFolderInput from './CreateNewFolderInput';
-import { GripVertical } from 'lucide-react';
 
 interface FileItemWrapperProps {
   folder: Tree | Children;
@@ -33,8 +31,8 @@ const FileItemWrapper = ({
 }: FileItemWrapperProps) => {
   const dispatch = useAppDispatch();
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
-  const selectedNode = useAppSelector(state =>
-    selectedFile ? selectFileById(state, selectedFile) : null
+  const selectedFolderId = useAppSelector(
+    state => state.fileTree.selectedFolderId
   );
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
   const isCreating = useAppSelector(
@@ -45,11 +43,15 @@ const FileItemWrapper = ({
     dispatch(selectFile(fileId));
   };
 
+  const handleFolderSelect = (folderId: string) => {
+    dispatch(selectFolder(folderId));
+  };
+
   const children = folder.children || [];
   const validChildren = children.filter(Boolean);
-  const isSelectedFolder = selectedNode?.type === 'folder';
   const shouldShowCreateInput =
-    isCreating && (isSelectedFolder ? selectedFile === folder.id : level === 0);
+    isCreating &&
+    (selectedFolderId ? selectedFolderId === folder.id : level === 0);
 
   return (
     <>
@@ -59,12 +61,10 @@ const FileItemWrapper = ({
       >
         {/* ---- create new folder input ------ */}
         {shouldShowCreateInput && (
-          <CreateNewFolderInput parentId={selectedFile} />
+          <CreateNewFolderInput parentId={selectedFolderId} />
         )}
         {validChildren.length === 0 ? (
-          <div className="px-2 py-1 text-xs text-gray-400">
-            No items yet
-          </div>
+          <div className="px-2 py-1 text-xs text-gray-400">No items yet</div>
         ) : (
           validChildren.map(child => {
             const isOver = overId === child.id;
@@ -73,7 +73,7 @@ const FileItemWrapper = ({
               return (
                 <SortableFolderItem
                   key={child.id}
-                  onSelect={() => handleFileSelect(child.id)}
+                  onSelect={() => handleFolderSelect(child.id)}
                   folder={child}
                   level={level + 1}
                   isDropTarget={isOver && activeItem?.type === 'file'}
@@ -98,22 +98,6 @@ const FileItemWrapper = ({
         )}
       </SortableContext>
 
-      {/* Drag Overlay */}
-      <DragOverlay>
-        {activeId && activeItem ? (
-          <div className="flex items-center bg-white shadow-xl rounded px-3 py-2 opacity-90 truncate">
-            <button
-              className="mr-1 w-4 flex-shrink-0 cursor-grab border-0 bg-transparent p-0 active:cursor-grabbing"
-              type="button"
-            >
-              <GripVertical className="h-4 w-4 text-gray-500" />
-            </button>
-            <span className="truncate text-gray-800 text-sm">
-              {activeItem.name}
-            </span>
-          </div>
-        ) : null}
-      </DragOverlay>
     </>
   );
 };

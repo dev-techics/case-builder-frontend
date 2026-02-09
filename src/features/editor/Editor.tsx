@@ -134,15 +134,6 @@ const PDFViewer: React.FC = () => {
     fetchIndexUrl();
   }, [bundleId, lastSaved]);
 
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    set selected file to the first file in the tree on load
-  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-  useEffect(() => {
-    if (tree.children[0]?.id) {
-      dispatch(selectFile(tree.children[0].id));
-    }
-  }, [tree.children, dispatch]);
-
   /* Load comments for the current bundle */
   useEffect(() => {
     if (bundleId) {
@@ -182,28 +173,59 @@ const PDFViewer: React.FC = () => {
     [tree.children, getAllFiles]
   );
 
+  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    Ensure selected file is a valid file (not a folder)
+  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
+  useEffect(() => {
+    if (allFiles.length === 0) {
+      if (selectedFile !== null) {
+        dispatch(selectFile(null));
+      }
+      return;
+    }
+
+    const selectedIsFile = selectedFile
+      ? allFiles.some(file => file.id === selectedFile)
+      : false;
+
+    if (!selectedIsFile) {
+      dispatch(selectFile(allFiles[0].id));
+    }
+  }, [allFiles, selectedFile, dispatch]);
+
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     Initialize with selected file AND reset when selection changes
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   useEffect(() => {
-    if (selectedFile && allFiles.length > 0) {
-      // Reset to show only the selected file
-      setVisibleFileIds([selectedFile]);
-      setIsLoadingNext(false);
-
-      // Clear any pending loads
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
+    if (!selectedFile) {
+      if (allFiles.length === 0) {
+        setVisibleFileIds([]);
+        setIsLoadingNext(false);
       }
-
-      // Reset last load time
-      lastLoadTimeRef.current = 0;
-
-      console.log(
-        `🎯 Selected file changed to: ${allFiles.find(f => f.id === selectedFile)?.name}`
-      );
+      return;
     }
+
+    const selectedIsFile = allFiles.some(file => file.id === selectedFile);
+    if (!selectedIsFile) {
+      return;
+    }
+
+    // Reset to show only the selected file
+    setVisibleFileIds([selectedFile]);
+    setIsLoadingNext(false);
+
+    // Clear any pending loads
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+
+    // Reset last load time
+    lastLoadTimeRef.current = 0;
+
+    console.log(
+      `🎯 Selected file changed to: ${allFiles.find(f => f.id === selectedFile)?.name}`
+    );
   }, [selectedFile, allFiles]);
 
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -331,15 +353,18 @@ const PDFViewer: React.FC = () => {
     }));
   }, [visibleFiles, lastSaved]);
 
+  const hasFiles = allFiles.length > 0;
+  const hasIndex = Boolean(indexUrlWithCache);
+
   /*----------------------------
       Empty State
   ------------------------------*/
-  if (tree.children.length === 0) {
+  if (!hasFiles && !hasIndex) {
     return <UploadFile />;
   }
 
   // No file selected
-  if (filesWithUrls.length === 0) {
+  if (hasFiles && filesWithUrls.length === 0) {
     return (
       <div className="flex h-full items-center justify-center bg-gray-100">
         <div className="text-center">

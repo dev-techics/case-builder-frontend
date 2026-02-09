@@ -28,6 +28,7 @@ interface FileTreeState {
   expandedFolders: string[];
   isCreatingNewFolder: boolean;
   selectedFile: string | null;
+  selectedFolderId: string | null;
   scrollToFileId: string | null;
   loading: boolean;
   error: string | null;
@@ -49,6 +50,7 @@ const initialState: FileTreeState = {
   expandedFolders: [],
   isCreatingNewFolder: false,
   selectedFile: null,
+  selectedFolderId: null,
   scrollToFileId: null,
   loading: false,
   error: null,
@@ -356,8 +358,15 @@ const fileTreeSlice = createSlice({
       state.isCreatingNewFolder = action.payload;
     },
 
-    selectFile: (state, action: PayloadAction<string>) => {
+    selectFile: (state, action: PayloadAction<string | null>) => {
       state.selectedFile = action.payload;
+      if (action.payload) {
+        state.selectedFolderId = null;
+      }
+    },
+
+    selectFolder: (state, action: PayloadAction<string | null>) => {
+      state.selectedFolderId = action.payload;
     },
 
     setScrollToFile: (state, action: PayloadAction<string | null>) => {
@@ -409,6 +418,9 @@ const fileTreeSlice = createSlice({
 
       if (state.selectedFile === action.payload) {
         state.selectedFile = null;
+      }
+      if (state.selectedFolderId === action.payload) {
+        state.selectedFolderId = null;
       }
     },
     // Rename file locally
@@ -484,6 +496,9 @@ const fileTreeSlice = createSlice({
         // Clear selection if deleted
         if (state.selectedFile === documentId) {
           state.selectedFile = null;
+        }
+        if (state.selectedFolderId === documentId) {
+          state.selectedFolderId = null;
         }
 
         // Remove from operations
@@ -616,6 +631,7 @@ export const {
   toggleFolder,
   setIsCreatingNewFolder,
   selectFile,
+  selectFolder,
   setScrollToFile,
   addFiles,
   removeFile,

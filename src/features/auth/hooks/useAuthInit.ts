@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/app/hooks';
 import { fetchUser } from '../redux/authSlice';
-import { authApi } from '../redux/authApi';
+import { authApi } from '../api/authApi';
 
 const useAuthInit = () => {
   const dispatch = useAppDispatch();

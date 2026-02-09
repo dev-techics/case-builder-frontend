@@ -9,6 +9,7 @@ import EditorPage from '../pages/editor/EditorPage';
 import NotFound from '@/components/NotFound';
 import SignInPage from '@/pages/auth/SignInPage';
 import SignUpPage from '@/pages/auth/SignUpPage';
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ProtectedRoute from './ProtectedRoutes';
 import useAuthInit from '@/features/auth/hooks/useAuthInit';
 
@@ -24,6 +25,7 @@ export default function AppRoutes() {
       {/* Auth routes - Redirect to dashboard if already logged in */}
       <Route path="/login" element={<SignInPage />} />
       <Route path="/register" element={<SignUpPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
         {/* Protected routes - Editor layout */}

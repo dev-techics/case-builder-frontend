@@ -13,7 +13,7 @@ import type {
   User,
   ErrorResponse,
 } from '../types/types';
-import { authApi } from './authApi';
+import { authApi } from '../api/authApi';
 
 const initialState: AuthState = {
   user: null,

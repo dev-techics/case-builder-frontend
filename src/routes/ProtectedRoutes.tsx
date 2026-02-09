@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { selectIsAuthenticated } from '@/features/auth/redux/authSlice';
-import { authApi } from '@/features/auth/redux/authApi';
+import { authApi } from '@/features/auth/api/authApi';
 import { useAppSelector } from '@/app/hooks';
 
 const ProtectedRoute = () => {

@@ -48,6 +48,10 @@ export const authApi = {
     return data;
   },
 
+  async requestPasswordReset(email: string): Promise<void> {
+    await axiosInstance.post('/api/forgot-password', { email });
+  },
+
   // Helper to check if user is authenticated
   isAuthenticated(): boolean {
     return !!localStorage.getItem('access_token');
