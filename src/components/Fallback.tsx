@@ -6,9 +6,7 @@ const Fallback = ({ error, resetErrorBoundary }: FallbackProps) => {
     <div>
       <h2>Something went wrong</h2>
       <pre>{error.message}</pre>
-      <button onClick={resetErrorBoundary}>
-        <Button variant="default">Try again</Button>
-      </button>
+      <Button onClick={resetErrorBoundary}>Try again</Button>
     </div>
   );
 };

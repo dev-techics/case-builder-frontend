@@ -1,6 +1,6 @@
-import type { Children } from '../file-explorer/redux/fileTreeSlice';
-import type { FileNode } from '../file-explorer/types/types';
-import type { HighlightColor } from '../toolbar/types/types';
+import type { Children } from '../../file-explorer/redux/fileTreeSlice';
+import type { FileNode } from '../../file-explorer/types/types';
+import type { HighlightColor } from '../../toolbar/types/types';
 
 export type PdfDocumentInfo = {
   fileId: string;

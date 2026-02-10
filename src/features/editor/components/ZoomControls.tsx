@@ -1,6 +1,6 @@
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { zoomIn, zoomOut } from '../editorSlice';
+import { zoomIn, zoomOut } from '../redux/editorSlice';
 
 function ZoomControls() {
   const disPatch = useDispatch();
