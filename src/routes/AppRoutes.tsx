@@ -12,6 +12,7 @@ import SignUpPage from '@/pages/auth/SignUpPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ProtectedRoute from './ProtectedRoutes';
 import useAuthInit from '@/features/auth/hooks/useAuthInit';
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 
 export default function AppRoutes() {
   useAuthInit();
@@ -26,6 +27,7 @@ export default function AppRoutes() {
       <Route path="/login" element={<SignInPage />} />
       <Route path="/register" element={<SignUpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
         {/* Protected routes - Editor layout */}

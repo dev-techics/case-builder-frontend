@@ -52,6 +52,22 @@ export const authApi = {
     await axiosInstance.post('/api/forgot-password', { email });
   },
 
+  async resetPassword(
+    email: string,
+    token: string,
+    password: string,
+    password_confirmation: string
+  ): Promise<{ message: string }> {
+    const response = await axiosInstance.post('/api/reset-password', {
+      token,
+      email,
+      password,
+      password_confirmation,
+    });
+
+    return response.data;
+  },
+
   // Helper to check if user is authenticated
   isAuthenticated(): boolean {
     return !!localStorage.getItem('access_token');

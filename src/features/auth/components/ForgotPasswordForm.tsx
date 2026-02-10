@@ -88,10 +88,10 @@ const ForgotPasswordForm = () => {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Sending reset link...
+              Sending Email...
             </>
           ) : (
-            'Send reset link'
+            'Send Email'
           )}
         </Button>
       </form>
