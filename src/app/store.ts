@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import indexGeneratorReducer from '@/features/auto-index/autoIndexSlice';
-import editorReducer from '@/features/editor/editorSlice';
+import editorReducer from '@/features/editor/redux/editorSlice';
 import propertiesPanelReducer from '@/features/properties-panel/redux/propertiesPanelSlice';
 import toolbarReducer from '@/features/toolbar/toolbarSlice';
 import fileTreeReducer from '../features/file-explorer/redux/fileTreeSlice';

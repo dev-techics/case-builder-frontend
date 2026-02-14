@@ -1,5 +1,5 @@
 // src/features/editor/Editor.tsx
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
@@ -18,6 +18,7 @@ import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
 import IndexDocument from './components/IndexDocument';
+import PdfHeader from './components/PdfHeader';
 
 // Component that only renders PDF when visible
 const LazyPDFRenderer: React.FC<{
@@ -418,7 +419,7 @@ const PDFViewer: React.FC = () => {
             </div>
           )}
 
-          {/* Render all loaded files */}
+          {/*----------- Render all loaded files-------- */}
           {filesWithUrls.map(fileWithUrl => (
             <div
               key={fileWithUrl.id}
@@ -426,23 +427,9 @@ const PDFViewer: React.FC = () => {
               data-file-id={fileWithUrl.id}
             >
               {/* PDF Header */}
-              <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-red-500" />
-                  <span className="font-medium text-gray-700">
-                    {fileWithUrl.name}
-                  </span>
-                </div>
-
-                <button
-                  aria-label={`Delete ${fileWithUrl.name}`}
-                  className="rounded p-1 hover:bg-gray-200"
-                  onClick={() => console.log('Delete', fileWithUrl.id)}
-                  type="button"
-                >
-                  <Trash2 className="h-4 w-4 text-gray-500" />
-                </button>
-              </div>
+              <ErrorBoundary FallbackComponent={Fallback}>
+                <PdfHeader file={fileWithUrl} />
+              </ErrorBoundary>
 
               {/* PDF Content Area - LAZY LOADED */}
               <LazyPDFRenderer file={fileWithUrl} />

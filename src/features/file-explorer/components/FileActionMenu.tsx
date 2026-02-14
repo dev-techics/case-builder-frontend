@@ -17,16 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { useAppDispatch } from '@/app/hooks';
 import { deleteDocument, type Children } from '../redux/fileTreeSlice';
 import { useState } from 'react';
@@ -36,6 +26,7 @@ import {
   FolderAddIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import DeleteAlertDialog from './DeleteAlertDialog';
 
 interface FileActionMenuProps {
   file: Children;
@@ -101,24 +92,13 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete File</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{file.name}"? This action cannot
-              be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* -------- Confirmation Dialog for deleting file --------- */}
+      <DeleteAlertDialog
+        open={showDeleteDialog}
+        onOpen={setShowDeleteDialog}
+        onDelete={handleConfirmDelete}
+        file={file}
+      />
     </>
   );
 };

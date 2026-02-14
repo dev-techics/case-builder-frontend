@@ -1,7 +1,7 @@
 import { CircleX } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { deleteHighlight } from '@/features/toolbar/toolbarSlice';
-import type { HighlightOverlayProps } from '../../editor/types';
+import type { HighlightOverlayProps } from '../../editor/types/types';
 import type { Highlight } from '@/features/toolbar/types/types';
 
 /**

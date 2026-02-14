@@ -13,7 +13,7 @@ import { getTextSelectionCoordinates } from '@/lib/pdfCoordinateUtils';
 import CommentOverlay from '../../toolbar/components/CommentOverlay';
 import { InteractiveHighlightOverlay } from '../../toolbar/components/HighlightOverlay';
 import { ScreenToPdfCoordinates } from '../helpers';
-import type { TextHighlightableDocumentProps } from '../types';
+import type { TextHighlightableDocumentProps } from '../types/types';
 
 export function TextHighlightableDocument({
   file,
