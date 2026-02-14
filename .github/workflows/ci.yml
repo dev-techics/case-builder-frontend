@@ -49,5 +49,5 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: 'dist/*'
+          source: 'dist/**'
           target: ${{ secrets.SERVER_PATH }}
