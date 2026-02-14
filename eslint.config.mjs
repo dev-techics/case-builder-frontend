@@ -75,6 +75,13 @@ export default defineConfig([
           varsIgnorePattern: '^_',
         },
       ],
+      '@typescript-eslint/no-explicit-any': ['off'],
+      // Enforce single quotes, but allow double quotes if it avoids the need for escaping.
+      quotes: [
+        'error',
+        'single',
+        { avoidEscape: true, allowTemplateLiterals: true },
+      ],
     },
   },
   globalIgnores(['**/dist', '**/.eslintrc.cjs', '**/node_modules']),

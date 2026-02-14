@@ -2,7 +2,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Document, Page } from 'react-pdf';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { setDocumentPageCount } from '@/features/properties-panel/propertiesPanelSlice';
+import { setDocumentPageCount } from '@/features/properties-panel/redux/propertiesPanelSlice';
 import InputComment from '@/features/toolbar/components/InputComment';
 import { Toolbar } from '@/features/toolbar/Toolbar';
 import {

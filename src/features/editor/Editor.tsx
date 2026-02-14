@@ -12,7 +12,7 @@ import { DocumentApiService } from '@/api/axiosInstance';
 import {
   loadMetadataFromBackend,
   setCurrentBundleId,
-} from '../properties-panel/propertiesPanelSlice';
+} from '../properties-panel/redux/propertiesPanelSlice';
 import { selectFile } from '../file-explorer/redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';

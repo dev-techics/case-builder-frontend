@@ -8,7 +8,7 @@ import {
   changeHeaderLeft,
   changeHeaderRight,
   saveMetadataToBackend,
-} from '../propertiesPanelSlice';
+} from '../redux/propertiesPanelSlice';
 
 const Annotations = () => {
   const dispatch = useAppDispatch();

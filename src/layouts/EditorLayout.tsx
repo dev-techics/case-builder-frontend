@@ -1,8 +1,8 @@
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import IndexInitializer from '@/features/auto-index/components/IndexInitializer';
-import PropertiesSidebar from '@/features/properties-panel/sidebar';
-import EditorSidebar from '../features/sidebar/EditorSidebar';
+import PropertiesSidebar from '@/features/properties-panel';
+import EditorSidebar from '@/features/sidebar';
 import { SidebarStateProvider } from '@/context/SidebarContext';
 import Header from '@/features/editor/components/Header';
 
