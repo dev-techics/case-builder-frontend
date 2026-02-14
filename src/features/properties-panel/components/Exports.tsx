@@ -1,4 +1,5 @@
 // features/properties-panel/components/Exports.tsx
+//!This file is deprecated
 import { AlertCircle, CheckCircle, Download, FileStack } from 'lucide-react';
 import { PDFDocument, rgb } from 'pdf-lib';
 import { useState } from 'react';

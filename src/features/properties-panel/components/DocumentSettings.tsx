@@ -1,44 +1,76 @@
 import { Calendar, FileCog, FileText, HardDrive } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import axiosInstance from '@/api/axiosInstance';
+import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 
 function DocumentSettings() {
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const tree = useAppSelector(state => state.fileTree.tree);
-  // const documentInfo = useAppSelector(state => state.editor.documentInfo); // If you store this
+  const documentInfo = useAppSelector(
+    state => state.propertiesPanel.documentInfo
+  );
 
   const [fileSize, setFileSize] = useState<string | null>(null);
 
-  const currentFile = selectedFile
-    ? tree.children.find(file => file.id === selectedFile)
-    : null;
+  const currentFile = useMemo(() => {
+    if (!selectedFile) return null;
+
+    const findFileById = (
+      nodes: Children[],
+      id: string
+    ): Children | null => {
+      for (const node of nodes) {
+        if (node.id === id) return node;
+        if (node.type === 'folder' && node.children) {
+          const found = findFileById(node.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return findFileById(tree.children, selectedFile);
+  }, [selectedFile, tree.children]);
 
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     Get the size of the document
   -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   useEffect(() => {
-    if (selectedFile) {
-      const fetchFileSize = async () => {
-        try {
-          const response = await axiosInstance.get(
-            `/api/documents/${selectedFile}/stream`,
-            {
-              method: 'HEAD',
-            }
-          );
-          const contentLength = response.headers['content-length'];
-          setFileSize(
-            `${(parseInt(contentLength) / (1024 * 1024)).toFixed(2)} MB`
-          );
-        } catch (error) {
-          setFileSize('N/A');
-          console.log('Error fetching file size:', error);
-        }
-      };
-
-      fetchFileSize();
+    if (!selectedFile) {
+      setFileSize(null);
+      return;
     }
+
+    let isActive = true;
+
+    const fetchFileSize = async () => {
+      try {
+        const response = await axiosInstance.head(
+          `/api/documents/${selectedFile}/stream?original=true`
+        );
+        const contentLength = response.headers['content-length'];
+        const bytes = Number.parseInt(contentLength, 10);
+
+        if (!Number.isFinite(bytes)) {
+          if (isActive) setFileSize('N/A');
+          return;
+        }
+
+        if (isActive) {
+          setFileSize(`${(bytes / (1024 * 1024)).toFixed(2)} MB`);
+        }
+      } catch (error) {
+        if (isActive) setFileSize('N/A');
+        console.log('Error fetching file size:', error);
+      }
+    };
+
+    fetchFileSize();
+
+    return () => {
+      isActive = false;
+    };
   }, [selectedFile]);
 
   if (!currentFile) {
@@ -53,9 +85,12 @@ function DocumentSettings() {
     );
   }
 
-  // TODO: fix it
-  // const totalPages = documentInfo?.[currentFile.id]?.numPages || 'Loading...';
-  const totalPages = 'Loading...';
+  const totalPages =
+    currentFile && documentInfo?.[currentFile.id]?.numPages
+      ? documentInfo[currentFile.id].numPages
+      : 'Loading...';
+
+  const displayFileSize = fileSize ?? 'Loading...';
 
   return (
     <div className="mx-2 space-y-1">
@@ -93,7 +128,7 @@ function DocumentSettings() {
             <span className="text-gray-600 text-sm">File Size</span>
           </div>
           <span className="font-semibold text-gray-900 text-sm">
-            {fileSize}
+            {displayFileSize}
           </span>
         </div>
 
