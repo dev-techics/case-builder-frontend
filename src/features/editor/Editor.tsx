@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { TextHighlightableDocument } from './components/Document';
+import PDFDocument from './components/Document';
 import UploadFile from './components/UploadFile';
-import { loadComments } from '../toolbar/toolbarSlice';
+import { loadComments } from '../toolbar/redux';
 import { DocumentApiService } from '@/api/axiosInstance';
 import {
   loadMetadataFromBackend,
@@ -19,6 +19,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
 import IndexDocument from './components/IndexDocument';
 import PdfHeader from './components/PdfHeader';
+import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
 
 // Component that only renders PDF when visible
 const LazyPDFRenderer: React.FC<{
@@ -61,7 +62,7 @@ const LazyPDFRenderer: React.FC<{
     >
       {isVisible ? (
         <ErrorBoundary FallbackComponent={Fallback} resetKeys={[file.url]}>
-          <TextHighlightableDocument file={file} />
+          <PDFDocument file={file} />
         </ErrorBoundary>
       ) : (
         <div className="flex h-96 w-full items-center justify-center">
@@ -388,9 +389,13 @@ const PDFViewer: React.FC = () => {
       {/* PDF Document Viewer Container */}
       <div
         ref={containerRef}
-        className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100 p-8"
+        className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100"
       >
-        <div className="mx-auto max-w-4xl space-y-8">
+        <div className="sticky top-0 z-30">
+          <AnnotationToolbar />
+        </div>
+
+        <div className="mx-auto max-w-4xl space-y-8 p-8">
           {/* INDEX PAGE - Always first */}
           {indexUrlWithCache && (
             <div className="rounded-lg bg-white shadow-lg">

@@ -1,8 +1,5 @@
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  cancelHighlight,
-  createHighlight,
-} from '@/features/toolbar/toolbarSlice';
+import { cancelHighlight, createHighlight } from '@/features/toolbar/redux';
 import type {
   HighlightColor,
   CreateHighlightRequest,

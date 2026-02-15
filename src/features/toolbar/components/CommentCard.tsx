@@ -6,7 +6,7 @@ import {
   deleteCommentThunk,
   toggleCommentResolvedThunk,
   updateCommentThunk,
-} from '../toolbarSlice';
+} from '../redux';
 
 type CommentCardProps = {
   comment: any;

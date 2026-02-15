@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import FilesTree from './components/FilesTree';
 import { loadTreeFromBackend } from './redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
-import { loadHighlights } from '../toolbar/toolbarSlice';
+import { loadHighlights, loadRedactions } from '../toolbar/redux';
 
 const FileTree: React.FC = () => {
   const tree = useAppSelector(state => state.fileTree.tree);
@@ -15,6 +15,7 @@ const FileTree: React.FC = () => {
     if (!bundleId) return;
     dispatch(loadTreeFromBackend(Number(bundleId)));
     dispatch(loadHighlights({ bundleId: bundleId }));
+    dispatch(loadRedactions({ bundleId: bundleId }));
   }, [bundleId, dispatch]);
 
   return (
