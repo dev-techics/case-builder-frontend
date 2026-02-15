@@ -6,10 +6,14 @@ import {
   cancelCommentCreation,
   cancelHighlight,
   createComment,
-} from '@/features/toolbar/toolbarSlice';
+} from '@/features/toolbar/redux';
 import type { CreateCommentRequest } from '../types/types';
 
-function InputComment() {
+type InputCommentProps = {
+  variant?: 'toolbar' | 'floating';
+};
+
+function InputComment({ variant = 'toolbar' }: InputCommentProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [commentText, setCommentText] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -29,11 +33,14 @@ function InputComment() {
 
   // Show/hide based on position
   useEffect(() => {
-    if (
-      CommentPosition &&
-      CommentPosition.x !== null &&
-      CommentPosition.y !== null
-    ) {
+    const shouldShow =
+      variant === 'floating'
+        ? CommentPosition &&
+          CommentPosition.x !== null &&
+          CommentPosition.y !== null
+        : Boolean(pendingComment);
+
+    if (shouldShow) {
       setIsVisible(true);
       justOpenedRef.current = true; // Mark as just opened
 
@@ -49,7 +56,7 @@ function InputComment() {
       setIsVisible(false);
       setCommentText('');
     }
-  }, [CommentPosition]);
+  }, [CommentPosition, pendingComment, variant]);
 
   // Handle click outside to close
   useEffect(() => {
@@ -67,7 +74,10 @@ function InputComment() {
       }
 
       // Don't close if clicking on the toolbar
-      if (target.closest('.highlight-color-picker')) {
+      if (
+        target.closest('.annotation-toolbar') ||
+        target.closest('.highlight-color-picker')
+      ) {
         return;
       }
 
@@ -130,23 +140,67 @@ function InputComment() {
     // User might want to try highlighting instead
   };
 
-  // Don't render if no position or not visible
-  if (
-    !(CommentPosition && isVisible) ||
-    CommentPosition.x === null ||
-    CommentPosition.y === null
-  ) {
+  // Don't render if not visible
+  if (!isVisible) {
     return null;
   }
 
+  if (variant === 'floating') {
+    if (
+      !(CommentPosition && isVisible) ||
+      CommentPosition.x === null ||
+      CommentPosition.y === null
+    ) {
+      return null;
+    }
+
+    return (
+      <div
+        className="comment-input absolute z-50 w-80 rounded-lg border border-gray-200 bg-white shadow-xl"
+        style={{
+          right: `${-350}px`,
+          top: `${CommentPosition.y}px`,
+        }}
+      >
+        <form
+          className="relative flex items-start gap-2 p-3"
+          onSubmit={handleSubmit}
+        >
+          <textarea
+            className="min-h-[40px] flex-1 resize-none overflow-hidden rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            onChange={e => setCommentText(e.target.value)}
+            placeholder="Add a comment..."
+            ref={inputRef}
+            value={commentText}
+          />
+          <div className="flex flex-col gap-2">
+            <Button
+              className="h-6 w-6 rounded-full"
+              disabled={!commentText.trim()}
+              size="icon"
+              title="Submit comment"
+              type="submit"
+            >
+              <ArrowUp size={16} />
+            </Button>
+            <Button
+              className="h-6 w-6 rounded-full"
+              onClick={handleCancel}
+              size="icon"
+              title="Cancel"
+              type="button"
+              variant="outline"
+            >
+              <X size={16} />
+            </Button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="comment-input absolute z-50 w-80 rounded-lg border border-gray-200 bg-white shadow-xl"
-      style={{
-        right: `${-350}px`,
-        top: `${CommentPosition.y}px`,
-      }}
-    >
+    <div className="comment-input w-full border-gray-200 border-t bg-white px-4 py-3">
       {/* Show selected text preview */}
       {/* {pendingComment?.selectedText && (
                 <div className="border-gray-200 border-b bg-gray-50 p-3">
@@ -158,10 +212,7 @@ function InputComment() {
             )} */}
 
       {/* Comment form */}
-      <form
-        className="relative flex items-start gap-2 p-3"
-        onSubmit={handleSubmit}
-      >
+      <form className="flex items-start gap-2" onSubmit={handleSubmit}>
         <textarea
           className="min-h-[40px] flex-1 resize-none overflow-hidden rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           onChange={e => setCommentText(e.target.value)}

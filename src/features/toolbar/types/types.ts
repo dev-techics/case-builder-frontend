@@ -24,6 +24,21 @@ export type Highlight = {
   createdAt?: string | number; // Optional: timestamp
 };
 
+export type AnnotationTool =
+  | 'select'
+  | 'highlight'
+  | 'comment'
+  | 'redact'
+  | 'draw';
+
+export type RedactionStyle = {
+  name: string;
+  fillHex: string | null;
+  opacity: number;
+  borderHex: string;
+  borderWidth: number;
+};
+
 export type PendingHighlight = {
   fileId: string;
   pageNumber: number;
@@ -34,6 +49,20 @@ export type PendingHighlight = {
     height: number;
   };
   text: string;
+};
+
+export type Redaction = {
+  id: string;
+  fileId: string;
+  pageNumber: number;
+  coordinates: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  style: RedactionStyle;
+  createdAt?: string | number;
 };
 
 // Comment object
@@ -66,17 +95,22 @@ export type PendingComment = {
 };
 
 export type EditorState = {
+  activeTool: AnnotationTool;
+  redactionStyle: RedactionStyle;
   ToolbarPosition: { x: number | null; y: number | null };
   CommentPosition: { x: number | null; y: number | null };
   pendingHighlight: PendingHighlight | null;
   pendingComment: PendingComment | null;
   highlights: Highlight[]; // Array to store multiple highlights
+  redactions: Redaction[];
   comments: Comment[];
   isCommentExpended: boolean;
 
   // Loading states for async operations
   loadingHighlights?: boolean;
   highlightError?: string | null;
+  loadingRedactions?: boolean;
+  redactionError?: string | null;
 
   // Comments loading states
   loadingComments?: boolean;
@@ -132,6 +166,39 @@ export interface CreateCommentRequest {
   x: number;
   y: number;
   page_y: number;
+}
+
+export interface CreateRedactionRequest {
+  document_id: string;
+  page_number: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  name: string;
+  fill_hex: string;
+  opacity: number;
+  border_hex: string;
+  border_width: number;
+}
+
+export interface RedactionApiResponse {
+  id: number;
+  bundle_id: number;
+  document_id: number;
+  user_id: number;
+  page_number: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  name: string;
+  fill_hex: string;
+  opacity: number;
+  border_hex: string;
+  border_width: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CommentApiResponse {

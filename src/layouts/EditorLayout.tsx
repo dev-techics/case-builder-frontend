@@ -22,7 +22,7 @@ export default function EditorLayout() {
           {/* Topbar */}
           <Header />
           {/* Canvas / Workspace */}
-          <main className="relative flex-1 overflow-auto bg-gray-50 p-4">
+          <main className="relative flex-1 min-h-0 overflow-hidden bg-gray-50 p-4">
             <Outlet />
           </main>
         </div>

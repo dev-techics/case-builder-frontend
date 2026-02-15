@@ -11,7 +11,7 @@ import {
   setCommentPosition,
   setPendingComment,
   setToolbarPosition,
-} from '../toolbarSlice';
+} from '../redux';
 
 function Comment() {
   const dispatch = useAppDispatch();

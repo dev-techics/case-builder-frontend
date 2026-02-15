@@ -1,38 +1,22 @@
 // src/features/editor/components/Document.tsx
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Document, Page } from 'react-pdf';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { setDocumentPageCount } from '@/features/properties-panel/redux/propertiesPanelSlice';
-import InputComment from '@/features/toolbar/components/InputComment';
-import { Toolbar } from '@/features/toolbar/Toolbar';
-import {
-  setPendingHighlight,
-  setToolbarPosition,
-} from '@/features/toolbar/toolbarSlice';
+import { setPendingComment, setPendingHighlight } from '@/features/toolbar/redux';
 import { getTextSelectionCoordinates } from '@/lib/pdfCoordinateUtils';
-import CommentOverlay from '../../toolbar/components/CommentOverlay';
-import { InteractiveHighlightOverlay } from '../../toolbar/components/HighlightOverlay';
 import { ScreenToPdfCoordinates } from '../helpers';
+import AnnotationLayer from './AnnotationLayer';
 import type { TextHighlightableDocumentProps } from '../types/types';
 
-export function TextHighlightableDocument({
-  file,
-}: TextHighlightableDocumentProps) {
+const PDFDocument = ({ file }: TextHighlightableDocumentProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageInfo, setPageInfo] = useState<Map<number, any>>(new Map());
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
   const scale = useAppSelector(states => states.editor.scale);
-  const fileId = useAppSelector(
-    states => states.toolbar.pendingHighlight?.fileId
-  );
-  const CommentPosition = useAppSelector(
-    states => states.toolbar.CommentPosition
-  );
-  const pendingHighlight = useAppSelector(
-    states => states.toolbar.pendingHighlight
-  );
+  const activeTool = useAppSelector(states => states.toolbar.activeTool);
 
   // Memoize the file configuration - ONLY depends on file.url
   const fileConfig = useMemo(() => {
@@ -83,7 +67,19 @@ export function TextHighlightableDocument({
     });
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.comment-input') ||
+      target.closest('.annotation-toolbar')
+    ) {
+      return;
+    }
+
+    if (activeTool !== 'highlight' && activeTool !== 'comment') {
+      return;
+    }
+
     const selection = window.getSelection();
     if (!selection || selection.toString().trim() === '') {
       return;
@@ -152,29 +148,39 @@ export function TextHighlightableDocument({
       return;
     }
 
-    const pickerX =
-      pageRect.left -
-      containerRect.left +
-      selectionCoords.left +
-      selectionCoords.width / 2;
-
     const pickerY = pageRect.top - containerRect.top + selectionCoords.top;
 
-    dispatch(
-      setPendingHighlight({
-        fileId: file.id,
-        pageNumber: foundPageNumber,
-        coordinates: {
-          x: pdfCoords.x,
-          y: pdfCoords.y,
-          width: pdfCoords.width,
-          height: pdfCoords.height,
-        },
-        text: selectionCoords.selectedText,
-      })
-    );
+    if (activeTool === 'highlight') {
+      dispatch(
+        setPendingHighlight({
+          fileId: file.id,
+          pageNumber: foundPageNumber,
+          coordinates: {
+            x: pdfCoords.x,
+            y: pdfCoords.y,
+            width: pdfCoords.width,
+            height: pdfCoords.height,
+          },
+          text: selectionCoords.selectedText,
+        })
+      );
+    }
 
-    dispatch(setToolbarPosition({ x: pickerX, y: pickerY }));
+    if (activeTool === 'comment') {
+      dispatch(
+        setPendingComment({
+          fileId: file.id,
+          pageNumber: foundPageNumber,
+          selectedText: selectionCoords.selectedText,
+          position: {
+            x: 0,
+            y: pickerY,
+            pageY: pickerY,
+          },
+        })
+      );
+
+    }
   };
 
   // If no file URL, show error state
@@ -190,8 +196,6 @@ export function TextHighlightableDocument({
 
   return (
     <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
-      {file.id === fileId ? <Toolbar /> : ''}
-
       <Document
         file={fileConfig}
         loading={
@@ -232,34 +236,19 @@ export function TextHighlightableDocument({
                 onLoadSuccess={onPageLoadSuccess(pageNumber)}
               />
 
-              {/* Highlight Overlays */}
-              {pageData && (
-                <InteractiveHighlightOverlay
-                  fileId={file.id}
-                  pageHeight={pageData.height}
-                  pageNumber={pageNumber}
-                  scale={scale}
-                />
-              )}
-
-              {/* Comment Overlays */}
-              {pageData && (
-                <CommentOverlay
-                  fileId={file.id}
-                  pageHeight={pageData.height}
-                  pageNumber={pageNumber}
-                  scale={scale}
-                />
-              )}
+              <AnnotationLayer
+                fileId={file.id}
+                pageInfo={pageData}
+                pageNumber={pageNumber}
+                scale={scale}
+              />
             </div>
           );
         })}
       </Document>
 
-      {/* Comment Input */}
-      {CommentPosition.x !== null &&
-        CommentPosition.y !== null &&
-        pendingHighlight?.fileId === file.id && <InputComment />}
     </div>
   );
-}
+};
+
+export default PDFDocument;

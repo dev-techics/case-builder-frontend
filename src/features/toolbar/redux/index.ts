@@ -4,6 +4,7 @@ import {
   type PayloadAction,
 } from '@reduxjs/toolkit';
 import type {
+  AnnotationTool,
   Comment,
   CreateCommentRequest,
   CommentApiResponse,
@@ -13,20 +14,37 @@ import type {
   HighlightApiResponse,
   PendingComment,
   PendingHighlight,
-} from './types/types';
+  Redaction,
+  RedactionStyle,
+  CreateRedactionRequest,
+  RedactionApiResponse,
+} from '@/features/toolbar/types/types';
 import axiosInstance from '@/api/axiosInstance';
+import { redactionsApi } from '@/features/toolbar/api/redactionsApi';
 
 const initialState: EditorState = {
+  activeTool: 'select',
+  redactionStyle: {
+    name: 'Black',
+    fillHex: '#000000',
+    opacity: 1,
+    borderHex: '#000000',
+    borderWidth: 2,
+  },
   ToolbarPosition: { x: null, y: null },
   CommentPosition: { x: null, y: null },
   pendingHighlight: null,
   pendingComment: null,
   highlights: [],
+  redactions: [],
   comments: [],
   isCommentExpended: false,
   // Highlights loading states
   loadingHighlights: false,
   highlightError: null,
+  // Redactions loading states
+  loadingRedactions: false,
+  redactionError: null,
   // Comments loading states
   loadingComments: false,
   commentError: null,
@@ -336,6 +354,96 @@ export const loadHighlights = createAsyncThunk<
   }
 });
 
+const mapRedactionFromApi = (r: RedactionApiResponse): Redaction => ({
+  id: String(r.id),
+  fileId: String(r.document_id),
+  pageNumber: r.page_number,
+  coordinates: {
+    x: r.x,
+    y: r.y,
+    width: r.width,
+    height: r.height,
+  },
+  style: {
+    name: r.name || 'Custom',
+    fillHex: r.opacity === 0 ? null : r.fill_hex,
+    opacity: r.opacity ?? 1,
+    borderHex: r.border_hex || '#000000',
+    borderWidth: r.border_width ?? 2,
+  },
+  createdAt: r.created_at,
+});
+
+/*=============================================
+=            Async Thunks - Redactions        =
+=============================================*/
+
+/**
+ * Load all redactions for a bundle
+ */
+export const loadRedactions = createAsyncThunk<
+  Redaction[],
+  { bundleId: string },
+  { rejectValue: string }
+>('toolbar/loadRedactions', async ({ bundleId }, { rejectWithValue }) => {
+  try {
+    const redactions = await redactionsApi.fetchRedactions(bundleId);
+    return redactions.map(mapRedactionFromApi);
+  } catch (err: any) {
+    console.error('Failed to load redactions:', err);
+    const errorMessage =
+      err.response?.data?.message ||
+      err.message ||
+      'Failed to load redactions';
+    return rejectWithValue(errorMessage);
+  }
+});
+
+/**
+ * Create a new redaction
+ */
+export const createRedaction = createAsyncThunk<
+  Redaction,
+  { bundleId: string; data: CreateRedactionRequest },
+  { rejectValue: string }
+>('toolbar/createRedaction', async ({ bundleId, data }, { rejectWithValue }) => {
+  try {
+    const redaction = await redactionsApi.createRedaction(bundleId, data);
+    return mapRedactionFromApi(redaction);
+  } catch (err: any) {
+    console.error('Failed to create redaction:', err);
+    const errorMessage =
+      err.response?.data?.message ||
+      err.message ||
+      'Failed to create redaction';
+    return rejectWithValue(errorMessage);
+  }
+});
+
+/**
+ * Delete a redaction
+ */
+export const deleteRedaction = createAsyncThunk<
+  string,
+  { redactionId: string },
+  { rejectValue: string }
+>(
+  'toolbar/deleteRedaction',
+  async ({ redactionId }, { rejectWithValue }) => {
+    try {
+      await redactionsApi.deleteRedaction(redactionId);
+      return redactionId;
+    } catch (err: any) {
+      console.error('Failed to delete redaction:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to delete redaction';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 /**
  * Create a new highlight
  */
@@ -532,6 +640,15 @@ const toolbarSlice = createSlice({
   name: 'toolbar',
   initialState,
   reducers: {
+    // Active annotation tool
+    setActiveTool: (state, action: PayloadAction<AnnotationTool>) => {
+      state.activeTool = action.payload;
+    },
+
+    setRedactionStyle: (state, action: PayloadAction<RedactionStyle>) => {
+      state.redactionStyle = action.payload;
+    },
+
     // Toolbar position
     setToolbarPosition: (
       state,
@@ -586,6 +703,38 @@ const toolbarSlice = createSlice({
     cancelHighlight: state => {
       state.ToolbarPosition = { x: null, y: null };
       state.pendingHighlight = null;
+    },
+
+    // Redactions
+    addRedaction: (state, action: PayloadAction<Redaction>) => {
+      state.redactions.push(action.payload);
+    },
+
+    removeRedaction: (state, action: PayloadAction<string>) => {
+      state.redactions = state.redactions.filter(
+        r => r.id !== action.payload
+      );
+    },
+
+    clearRedactions: state => {
+      state.redactions = [];
+    },
+
+    clearFileRedactions: (state, action: PayloadAction<string>) => {
+      state.redactions = state.redactions.filter(
+        r => r.fileId !== action.payload
+      );
+    },
+
+    clearPageRedactions: (
+      state,
+      action: PayloadAction<{ fileId: string; pageNumber: number }>
+    ) => {
+      state.redactions = state.redactions.filter(
+        r =>
+          r.fileId !== action.payload.fileId ||
+          r.pageNumber !== action.payload.pageNumber
+      );
     },
 
     // Clear error
@@ -741,6 +890,53 @@ const toolbarSlice = createSlice({
       });
 
     /*-------------------
+      Load Redactions
+    -------------------*/
+    builder
+      .addCase(loadRedactions.pending, state => {
+        state.loadingRedactions = true;
+        state.redactionError = null;
+      })
+      .addCase(loadRedactions.fulfilled, (state, action) => {
+        state.loadingRedactions = false;
+        state.redactions = action.payload;
+      })
+      .addCase(loadRedactions.rejected, (state, action) => {
+        state.loadingRedactions = false;
+        state.redactionError = action.payload || 'Failed to load redactions';
+      });
+
+    /*-------------------
+      Create Redaction
+    -------------------*/
+    builder
+      .addCase(createRedaction.pending, state => {
+        state.redactionError = null;
+      })
+      .addCase(createRedaction.fulfilled, (state, action) => {
+        state.redactions.push(action.payload);
+      })
+      .addCase(createRedaction.rejected, (state, action) => {
+        state.redactionError = action.payload || 'Failed to create redaction';
+      });
+
+    /*-------------------
+      Delete Redaction
+    -------------------*/
+    builder
+      .addCase(deleteRedaction.pending, state => {
+        state.redactionError = null;
+      })
+      .addCase(deleteRedaction.fulfilled, (state, action) => {
+        state.redactions = state.redactions.filter(
+          r => r.id !== action.payload
+        );
+      })
+      .addCase(deleteRedaction.rejected, (state, action) => {
+        state.redactionError = action.payload || 'Failed to delete redaction';
+      });
+
+    /*-------------------
       Bulk Delete Highlights
     -------------------*/
     builder
@@ -877,6 +1073,8 @@ const toolbarSlice = createSlice({
 export default toolbarSlice.reducer;
 
 export const {
+  setActiveTool,
+  setRedactionStyle,
   setToolbarPosition,
   setPendingHighlight,
   addHighlight,
@@ -885,6 +1083,11 @@ export const {
   clearFileHighlights,
   clearPageHighlights,
   cancelHighlight,
+  addRedaction,
+  removeRedaction,
+  clearRedactions,
+  clearFileRedactions,
+  clearPageRedactions,
   clearHighlightError,
   setCommentPosition,
   setPendingComment,

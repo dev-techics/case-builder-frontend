@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import ColorPicker from './components/ColorPicker';
 import Comment from './components/Comment';
-import { cancelHighlight } from './toolbarSlice';
+import { cancelHighlight } from './redux';
 /**
  * This component:
  * 1. Reads the pending highlight from Redux
