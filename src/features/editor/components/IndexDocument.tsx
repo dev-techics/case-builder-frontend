@@ -5,11 +5,14 @@ import { useAppSelector } from '@/app/hooks';
 
 interface IndexDocumentProps {
   indexUrl: string;
+  onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
 }
 
-const IndexDocument = memo(({ indexUrl }: IndexDocumentProps) => {
+const IndexDocument = memo(
+  ({ indexUrl, onPageMetrics }: IndexDocumentProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const maxWidthReportedRef = useRef<number>(0);
   const scale = useAppSelector(state => state.editor.scale);
 
   // Get authentication token
@@ -32,6 +35,18 @@ const IndexDocument = memo(({ indexUrl }: IndexDocumentProps) => {
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     console.log(`📋 Index loaded - ${numPages} page(s)`);
+  };
+
+  const handlePageLoadSuccess = (page: any) => {
+    if (!onPageMetrics) {
+      return;
+    }
+
+    const viewport = page.getViewport({ scale: 1 });
+    if (viewport.width > maxWidthReportedRef.current) {
+      maxWidthReportedRef.current = viewport.width;
+      onPageMetrics({ fileId: 'index', width: viewport.width });
+    }
   };
 
   // Handle index link clicks
@@ -105,6 +120,7 @@ const IndexDocument = memo(({ indexUrl }: IndexDocumentProps) => {
                 renderAnnotationLayer={true}
                 renderTextLayer={true}
                 scale={scale}
+                onLoadSuccess={handlePageLoadSuccess}
               />
             </div>
           );
