@@ -15,6 +15,7 @@ type PendingHighlight = {
 
 type EditorState = {
   scale: number;
+  maxScale: number;
   colorPickerPosition: { x: number | null; y: number | null };
   pendingHighlight: PendingHighlight | null;
   highlights: Highlight[]; // Array to store multiple highlights
@@ -22,6 +23,7 @@ type EditorState = {
 
 const initialState: EditorState = {
   scale: 1.0,
+  maxScale: 3.0,
   colorPickerPosition: { x: null, y: null },
   pendingHighlight: null,
   highlights: [],
@@ -33,10 +35,19 @@ const editorSlice = createSlice({
   reducers: {
     // Scale controls
     setScale: (state, action: PayloadAction<number>) => {
-      state.scale = Math.min(Math.max(action.payload, 0.5), 3.0);
+      state.scale = Math.min(
+        Math.max(action.payload, 0.5),
+        state.maxScale
+      );
+    },
+    setMaxScale: (state, action: PayloadAction<number>) => {
+      state.maxScale = Math.min(Math.max(action.payload, 0.5), 3.0);
+      if (state.scale > state.maxScale) {
+        state.scale = state.maxScale;
+      }
     },
     zoomIn: state => {
-      state.scale = Math.min(state.scale + 0.2, 3.0);
+      state.scale = Math.min(state.scale + 0.2, state.maxScale);
     },
     zoomOut: state => {
       state.scale = Math.max(state.scale - 0.2, 0.5);
@@ -102,6 +113,7 @@ const editorSlice = createSlice({
 
 export const {
   setScale,
+  setMaxScale,
   zoomIn,
   zoomOut,
   setColorPickerPosition,

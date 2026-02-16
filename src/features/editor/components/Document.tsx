@@ -3,17 +3,24 @@ import { useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Document, Page } from 'react-pdf';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { setDocumentPageCount } from '@/features/properties-panel/redux/propertiesPanelSlice';
-import { setPendingComment, setPendingHighlight } from '@/features/toolbar/redux';
+import {
+  setPendingComment,
+  setPendingHighlight,
+} from '@/features/toolbar/redux';
 import { getTextSelectionCoordinates } from '@/lib/pdfCoordinateUtils';
 import { ScreenToPdfCoordinates } from '../helpers';
 import AnnotationLayer from './AnnotationLayer';
 import type { TextHighlightableDocumentProps } from '../types/types';
 
-const PDFDocument = ({ file }: TextHighlightableDocumentProps) => {
+const PDFDocument = ({
+  file,
+  onPageMetrics,
+}: TextHighlightableDocumentProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageInfo, setPageInfo] = useState<Map<number, any>>(new Map());
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
+  const maxWidthReportedRef = useRef<number>(0);
   const dispatch = useAppDispatch();
   const scale = useAppSelector(states => states.editor.scale);
   const activeTool = useAppSelector(states => states.toolbar.activeTool);
@@ -65,6 +72,11 @@ const PDFDocument = ({ file }: TextHighlightableDocumentProps) => {
       });
       return newMap;
     });
+
+    if (onPageMetrics && viewport.width > maxWidthReportedRef.current) {
+      maxWidthReportedRef.current = viewport.width;
+      onPageMetrics({ fileId: file.id, width: viewport.width });
+    }
   };
 
   const handleMouseUp = (event: MouseEvent<HTMLDivElement>) => {
@@ -179,7 +191,6 @@ const PDFDocument = ({ file }: TextHighlightableDocumentProps) => {
           },
         })
       );
-
     }
   };
 
@@ -246,7 +257,6 @@ const PDFDocument = ({ file }: TextHighlightableDocumentProps) => {
           );
         })}
       </Document>
-
     </div>
   );
 };

@@ -31,6 +31,7 @@ export type UseModifiedPDFsResult = {
 export type TextHighlightableDocumentProps = {
   file: Children;
   scale?: number;
+  onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
 };
 
 export type colorPickerPositonType = {

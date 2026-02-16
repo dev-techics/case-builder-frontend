@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,10 +43,17 @@ const CoverPage = ({ type }: CoverPageProps) => {
 
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string | undefined>(
+    undefined
+  );
 
   const isEnabled = type === 'Front' ? frontEnabled : backEnabled;
   const templateKey = type === 'Front' ? frontTemplateKey : backTemplateKey;
   const selectedTemplate = templates.find(t => t.template_key === templateKey);
+
+  useEffect(() => {
+    setAccordionValue(isEnabled ? 'cover-page' : undefined);
+  }, [isEnabled]);
 
   const handleEnableToggle = async (enabled: boolean) => {
     const coverType = type.toLowerCase() as 'front' | 'back';
@@ -123,7 +130,13 @@ const CoverPage = ({ type }: CoverPageProps) => {
 
   return (
     <>
-      <Accordion type="single" collapsible className="w-full">
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full"
+        value={accordionValue}
+        onValueChange={value => setAccordionValue(value || undefined)}
+      >
         <AccordionItem
           value="cover-page"
           className="border rounded-lg bg-white"

@@ -1,7 +1,14 @@
 // src/features/editor/Editor.tsx
 import { FileText } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -20,12 +27,19 @@ import Fallback from '@/components/Fallback';
 import IndexDocument from './components/IndexDocument';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
+import {
+  setMaxScale,
+  setScale,
+  zoomIn,
+  zoomOut,
+} from './redux/editorSlice';
 
 // Component that only renders PDF when visible
 const LazyPDFRenderer: React.FC<{
   file: any;
   onVisible?: () => void;
-}> = ({ file, onVisible }) => {
+  onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
+}> = ({ file, onVisible, onPageMetrics }) => {
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -62,7 +76,7 @@ const LazyPDFRenderer: React.FC<{
     >
       {isVisible ? (
         <ErrorBoundary FallbackComponent={Fallback} resetKeys={[file.url]}>
-          <PDFDocument file={file} />
+          <PDFDocument file={file} onPageMetrics={onPageMetrics} />
         </ErrorBoundary>
       ) : (
         <div className="flex h-96 w-full items-center justify-center">
@@ -76,31 +90,139 @@ const LazyPDFRenderer: React.FC<{
   );
 };
 
+const SCROLL_THRESHOLD_PX = 240;
+const LOAD_COOLDOWN_MS = 400;
+const PDF_CONTAINER_HORIZONTAL_PADDING = 32; // matches p-4 on PDF container
+const DEFAULT_MAX_SCALE = 3.0;
+
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
   const tree = useAppSelector(state => state.fileTree.tree);
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const bundleId = useParams().bundleId;
   const lastSaved = useAppSelector(state => state.propertiesPanel.lastSaved);
+  const scale = useAppSelector(state => state.editor.scale);
+  const maxScale = useAppSelector(state => state.editor.maxScale);
 
-  // State for loaded files (infinite scroll) - NOW ONLY TRACKS IDS
+  // State for loaded files (infinite scroll)
   const [indexUrl, setIndexUrl] = useState<string | null>(null);
-  const [visibleFileIds, setVisibleFileIds] = useState<string[]>([]);
-  const [isLoadingNext, setIsLoadingNext] = useState(false);
+  const [visibleRange, setVisibleRange] = useState<{
+    start: number;
+    end: number;
+  } | null>(null);
+  const [loadingDirection, setLoadingDirection] = useState<
+    'prev' | 'next' | null
+  >(null);
+  const [maxBaseWidth, setMaxBaseWidth] = useState<number | null>(null);
+  const [contentWidth, setContentWidth] = useState<number>(0);
 
   // Refs
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const loadingTimeoutRef = useRef<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const lastLoadTimeRef = useRef<number>(0);
+  const lastScrollTopRef = useRef<number>(0);
+  const loadingDirectionRef = useRef<'prev' | 'next' | null>(null);
+  const pendingScrollAdjustRef = useRef<number | null>(null);
+  const pageWidthsRef = useRef<Map<string, number>>(new Map());
+
+  const cacheBuster = useMemo(
+    () => lastSaved ?? Date.now(),
+    [lastSaved]
+  );
+
+  const handlePageMetrics = useCallback(
+    ({ fileId, width }: { fileId: string; width: number }) => {
+      if (!width) {
+        return;
+      }
+
+      const existingWidth = pageWidthsRef.current.get(fileId) ?? 0;
+      if (width <= existingWidth) {
+        return;
+      }
+
+      pageWidthsRef.current.set(fileId, width);
+
+      let maxWidth = 0;
+      pageWidthsRef.current.forEach(value => {
+        if (value > maxWidth) {
+          maxWidth = value;
+        }
+      });
+
+      setMaxBaseWidth(maxWidth || null);
+    },
+    []
+  );
+
+  useEffect(() => {
+    pageWidthsRef.current.clear();
+    setMaxBaseWidth(null);
+  }, [bundleId]);
+
+  useLayoutEffect(() => {
+    const element = contentRef.current;
+    if (!element) {
+      return;
+    }
+
+    const updateWidth = () => {
+      const styles = window.getComputedStyle(element);
+      const padding =
+        parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+      const width = Math.max(0, element.clientWidth - padding);
+      setContentWidth(width);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const availableWidth = useMemo(
+    () => Math.max(0, contentWidth - PDF_CONTAINER_HORIZONTAL_PADDING),
+    [contentWidth]
+  );
+
+  const computedMaxScale = useMemo(() => {
+    if (!maxBaseWidth || availableWidth === 0) {
+      return DEFAULT_MAX_SCALE;
+    }
+    return Math.min(DEFAULT_MAX_SCALE, availableWidth / maxBaseWidth);
+  }, [availableWidth, maxBaseWidth]);
+
+  useEffect(() => {
+    if (!Number.isFinite(computedMaxScale)) {
+      return;
+    }
+    dispatch(setMaxScale(computedMaxScale));
+  }, [computedMaxScale, dispatch]);
+
+  const canZoomIn = scale < maxScale - 0.01;
+  const canZoomOut = scale > 0.5 + 0.01;
+  const canResetZoom = Math.abs(scale - 1) > 0.01;
+
+  const handleZoomIn = useCallback(() => {
+    dispatch(zoomIn());
+  }, [dispatch]);
+
+  const handleZoomOut = useCallback(() => {
+    dispatch(zoomOut());
+  }, [dispatch]);
+
+  const handleResetZoom = useCallback(() => {
+    dispatch(setScale(1));
+  }, [dispatch]);
 
   // Build index URL with cache buster
   const indexUrlWithCache = useMemo(() => {
     if (!indexUrl) return null;
 
-    const cacheBuster = lastSaved || Date.now();
     return `${indexUrl}?v=${cacheBuster}`;
-  }, [indexUrl, lastSaved]); // Only recompute when these change
+  }, [indexUrl, cacheBuster]); // Only recompute when these change
 
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     Fetch index URL when bundle is loaded
@@ -196,167 +318,187 @@ const PDFViewer: React.FC = () => {
   }, [allFiles, selectedFile, dispatch]);
 
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Initialize with selected file AND reset when selection changes
+    Initialize visible range for selected file
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   useEffect(() => {
-    if (!selectedFile) {
-      if (allFiles.length === 0) {
-        setVisibleFileIds([]);
-        setIsLoadingNext(false);
-      }
+    if (!selectedFile || allFiles.length === 0) {
+      setVisibleRange(null);
+      setLoadingDirection(null);
+      loadingDirectionRef.current = null;
+      lastLoadTimeRef.current = 0;
+      pendingScrollAdjustRef.current = null;
       return;
     }
 
-    const selectedIsFile = allFiles.some(file => file.id === selectedFile);
-    if (!selectedIsFile) {
+    const selectedIndex = allFiles.findIndex(file => file.id === selectedFile);
+    if (selectedIndex === -1) {
       return;
     }
 
-    // Reset to show only the selected file
-    setVisibleFileIds([selectedFile]);
-    setIsLoadingNext(false);
-
-    // Clear any pending loads
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-      loadingTimeoutRef.current = null;
-    }
-
-    // Reset last load time
+    setVisibleRange({ start: selectedIndex, end: selectedIndex });
+    setLoadingDirection(null);
+    loadingDirectionRef.current = null;
     lastLoadTimeRef.current = 0;
+    pendingScrollAdjustRef.current = null;
+
+    if (containerRef.current) {
+      lastScrollTopRef.current = containerRef.current.scrollTop;
+    }
 
     console.log(
       `🎯 Selected file changed to: ${allFiles.find(f => f.id === selectedFile)?.name}`
     );
   }, [selectedFile, allFiles]);
 
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   Load next file function - STRICT SEQUENTIAL LOADING
-  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-  const loadNextFile = useCallback(() => {
+  const requestLoadNext = useCallback(() => {
+    if (!visibleRange || allFiles.length === 0) {
+      return;
+    }
+
+    if (loadingDirectionRef.current) {
+      return;
+    }
+
+    if (visibleRange.end >= allFiles.length - 1) {
+      return;
+    }
+
     const now = Date.now();
-
-    // DEBOUNCE: Prevent calls within 1.5 seconds of last load
-    if (now - lastLoadTimeRef.current < 1500) {
-      console.log('⏱️ Debounced - too soon since last load');
+    if (now - lastLoadTimeRef.current < LOAD_COOLDOWN_MS) {
       return;
     }
 
-    // CRITICAL: Prevent multiple simultaneous loads
-    if (isLoadingNext || allFiles.length === 0) {
-      console.log('🚫 Already loading or no files');
+    lastLoadTimeRef.current = now;
+    loadingDirectionRef.current = 'next';
+    setLoadingDirection('next');
+
+    setVisibleRange(prev => {
+      if (!prev || prev.end >= allFiles.length - 1) {
+        return prev;
+      }
+      return { start: prev.start, end: prev.end + 1 };
+    });
+  }, [allFiles.length, visibleRange]);
+
+  const requestLoadPrev = useCallback(() => {
+    if (!visibleRange || allFiles.length === 0) {
       return;
     }
 
-    const currentLastId = visibleFileIds[visibleFileIds.length - 1];
-    const currentIndex = allFiles.findIndex(f => f.id === currentLastId);
-
-    // Check if there's a next file
-    if (currentIndex === -1 || currentIndex >= allFiles.length - 1) {
-      console.log('✋ No more files to load');
+    if (loadingDirectionRef.current) {
       return;
     }
 
-    const nextFile = allFiles[currentIndex + 1];
-
-    // Double-check file isn't already being loaded or loaded
-    if (!nextFile || visibleFileIds.includes(nextFile.id)) {
-      console.log('⚠️ File already loaded or invalid');
+    if (visibleRange.start <= 0) {
       return;
     }
 
-    console.log(`📄 Loading next file: ${nextFile.name}`);
+    const now = Date.now();
+    if (now - lastLoadTimeRef.current < LOAD_COOLDOWN_MS) {
+      return;
+    }
 
-    // Lock loading state IMMEDIATELY
-    setIsLoadingNext(true);
     lastLoadTimeRef.current = now;
 
-    // Clear any existing timeout
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
+    if (containerRef.current) {
+      pendingScrollAdjustRef.current = containerRef.current.scrollHeight;
     }
 
-    // Wait before loading next
-    loadingTimeoutRef.current = window.setTimeout(() => {
-      setVisibleFileIds(prev => {
-        // Triple-check to prevent race condition
-        if (prev.includes(nextFile.id)) {
-          console.log('⚠️ Race condition prevented');
-          setIsLoadingNext(false);
-          return prev;
-        }
-        console.log(`✅ Added file to visible list: ${nextFile.name}`);
-        return [...prev, nextFile.id];
-      });
+    loadingDirectionRef.current = 'prev';
+    setLoadingDirection('prev');
 
-      // Unlock after adding file with extra buffer
-      window.setTimeout(() => {
-        setIsLoadingNext(false);
-        console.log('🔓 Unlocked for next load');
-      }, 500); // Keep locked for extra 500ms after adding
-    }, 1000); // 1 second delay
-  }, [visibleFileIds, allFiles, isLoadingNext]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
+    setVisibleRange(prev => {
+      if (!prev || prev.start <= 0) {
+        return prev;
       }
-    };
-  }, []);
+      return { start: prev.start - 1, end: prev.end };
+    });
+  }, [allFiles.length, visibleRange]);
 
-  /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Setup Intersection Observer - STRICT SINGLE TRIGGER
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-
-    // Don't observe if no files or currently loading
-    if (!sentinel || visibleFileIds.length === 0 || isLoadingNext) {
+    if (!loadingDirectionRef.current) {
       return;
     }
 
-    const observer = new IntersectionObserver(
-      entries => {
-        const [entry] = entries;
-        // Only trigger if intersecting AND not already loading
-        if (entry?.isIntersecting && !isLoadingNext) {
-          loadNextFile();
-        }
-      },
-      {
-        root: null,
-        rootMargin: '400px',
-        threshold: 0.1,
-      }
-    );
+    const id = window.setTimeout(() => {
+      loadingDirectionRef.current = null;
+      setLoadingDirection(null);
+    }, 0);
 
-    observer.observe(sentinel);
+    return () => window.clearTimeout(id);
+  }, [visibleRange]);
 
-    return () => {
-      observer.disconnect();
-    };
-  }, [loadNextFile, visibleFileIds.length, isLoadingNext]);
+  useLayoutEffect(() => {
+    const previousHeight = pendingScrollAdjustRef.current;
+    const container = containerRef.current;
+
+    if (previousHeight === null || !container) {
+      return;
+    }
+
+    const newHeight = container.scrollHeight;
+    const delta = newHeight - previousHeight;
+
+    if (delta > 0) {
+      container.scrollTop += delta;
+    }
+
+    lastScrollTopRef.current = container.scrollTop;
+    pendingScrollAdjustRef.current = null;
+  }, [visibleRange]);
 
   // Get visible files with their data
   const visibleFiles = useMemo(() => {
-    return visibleFileIds
-      .map(id => allFiles.find(f => f.id === id))
-      .filter(Boolean);
-  }, [visibleFileIds, allFiles]);
+    if (!visibleRange) {
+      return [];
+    }
+    return allFiles.slice(visibleRange.start, visibleRange.end + 1);
+  }, [visibleRange, allFiles]);
 
   // Create files with URLs and cache busting
   const filesWithUrls = useMemo(() => {
-    const cacheBuster = lastSaved || Date.now();
     return visibleFiles.map(file => ({
       ...file,
       url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?v=${cacheBuster}`,
     }));
-  }, [visibleFiles, lastSaved]);
+  }, [visibleFiles, cacheBuster]);
+
+  const hasPreviousFiles = visibleRange ? visibleRange.start > 0 : false;
+  const hasNextFiles = visibleRange
+    ? visibleRange.end < allFiles.length - 1
+    : false;
+
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !visibleRange) {
+      return;
+    }
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    if (scrollTop === lastScrollTopRef.current) {
+      return;
+    }
+
+    const direction =
+      scrollTop > lastScrollTopRef.current ? 'down' : 'up';
+    lastScrollTopRef.current = scrollTop;
+
+    const nearTop = scrollTop <= SCROLL_THRESHOLD_PX;
+    const nearBottom =
+      scrollTop + clientHeight >= scrollHeight - SCROLL_THRESHOLD_PX;
+
+    if (direction === 'down' && nearBottom && hasNextFiles) {
+      requestLoadNext();
+    }
+
+    if (direction === 'up' && nearTop && hasPreviousFiles) {
+      requestLoadPrev();
+    }
+  }, [hasNextFiles, hasPreviousFiles, requestLoadNext, requestLoadPrev, visibleRange]);
 
   const hasFiles = allFiles.length > 0;
   const hasIndex = Boolean(indexUrlWithCache);
+  const shouldShowIndex = Boolean(indexUrlWithCache) && !hasPreviousFiles;
 
   /*----------------------------
       Empty State
@@ -382,22 +524,24 @@ const PDFViewer: React.FC = () => {
     );
   }
 
-  const hasMoreFiles = visibleFileIds.length < allFiles.length;
-
   return (
     <div className="relative flex h-full flex-col">
       {/* PDF Document Viewer Container */}
       <div
         ref={containerRef}
+        onScroll={handleScroll}
         className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100"
       >
         <div className="sticky top-0 z-30">
           <AnnotationToolbar />
         </div>
 
-        <div className="mx-auto max-w-4xl space-y-8 p-8">
-          {/* INDEX PAGE - Always first */}
-          {indexUrlWithCache && (
+        <div
+          ref={contentRef}
+          className="mx-auto max-w-4xl space-y-8 p-8"
+        >
+          {/* INDEX PAGE - Only show when at the beginning of the list */}
+          {shouldShowIndex && (
             <div className="rounded-lg bg-white shadow-lg">
               {/* Index Header */}
               <div className="flex items-center justify-between border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3">
@@ -418,9 +562,30 @@ const PDFViewer: React.FC = () => {
                 resetKeys={[indexUrl]}
               >
                 {indexUrlWithCache && (
-                  <IndexDocument indexUrl={indexUrlWithCache} />
+                  <IndexDocument
+                    indexUrl={indexUrlWithCache}
+                    onPageMetrics={handlePageMetrics}
+                  />
                 )}
               </ErrorBoundary>
+            </div>
+          )}
+
+          {/* Load Previous Files */}
+          {hasPreviousFiles && (
+            <div className="flex h-24 items-center justify-center">
+              {loadingDirection === 'prev' ? (
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-6 animate-spin rounded-full border-3 border-gray-300 border-t-blue-500" />
+                  <div className="text-gray-500 font-medium">
+                    Loading previous PDF...
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  Scroll up to load previous files
+                </div>
+              )}
             </div>
           )}
 
@@ -433,21 +598,30 @@ const PDFViewer: React.FC = () => {
             >
               {/* PDF Header */}
               <ErrorBoundary FallbackComponent={Fallback}>
-                <PdfHeader file={fileWithUrl} />
+                <PdfHeader
+                  file={fileWithUrl}
+                  scale={scale}
+                  canZoomIn={canZoomIn}
+                  canZoomOut={canZoomOut}
+                  canResetZoom={canResetZoom}
+                  onZoomIn={handleZoomIn}
+                  onZoomOut={handleZoomOut}
+                  onResetZoom={handleResetZoom}
+                />
               </ErrorBoundary>
 
               {/* PDF Content Area - LAZY LOADED */}
-              <LazyPDFRenderer file={fileWithUrl} />
+              <LazyPDFRenderer
+                file={fileWithUrl}
+                onPageMetrics={handlePageMetrics}
+              />
             </div>
           ))}
 
-          {/* Intersection Observer Sentinel */}
-          {hasMoreFiles && (
-            <div
-              ref={sentinelRef}
-              className="flex h-32 items-center justify-center"
-            >
-              {isLoadingNext ? (
+          {/* Load Next Files */}
+          {hasNextFiles && (
+            <div className="flex h-32 items-center justify-center">
+              {loadingDirection === 'next' ? (
                 <div className="flex items-center gap-3">
                   <div className="h-6 w-6 animate-spin rounded-full border-3 border-gray-300 border-t-blue-500" />
                   <div className="text-gray-500 font-medium">
@@ -456,18 +630,19 @@ const PDFViewer: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-gray-400 text-sm">
-                  Scroll to load more files
+                  Scroll down to load more files
                 </div>
               )}
             </div>
           )}
 
           {/* End of files indicator */}
-          {!hasMoreFiles && visibleFileIds.length > 1 && (
+          {visibleFiles.length === allFiles.length &&
+            visibleFiles.length > 1 && (
             <div className="flex items-center justify-center py-8">
               <div className="rounded-full bg-gray-200 px-4 py-2">
                 <p className="text-gray-600 text-sm font-medium">
-                  All files loaded ({visibleFileIds.length} files)
+                  All files loaded ({visibleFiles.length} files)
                 </p>
               </div>
             </div>
