@@ -17,6 +17,7 @@ import UploadFile from './components/UploadFile';
 import { loadComments } from '../toolbar/redux';
 import { DocumentApiService } from '@/api/axiosInstance';
 import {
+  clearDocumentInfo,
   loadMetadataFromBackend,
   setCurrentBundleId,
 } from '../properties-panel/redux/propertiesPanelSlice';
@@ -24,7 +25,7 @@ import { selectFile } from '../file-explorer/redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
-import IndexDocument from './components/IndexDocument';
+import IndexPreview from './components/IndexPreview';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
 import {
@@ -105,7 +106,6 @@ const PDFViewer: React.FC = () => {
   const maxScale = useAppSelector(state => state.editor.maxScale);
 
   // State for loaded files (infinite scroll)
-  const [indexUrl, setIndexUrl] = useState<string | null>(null);
   const [visibleRange, setVisibleRange] = useState<{
     start: number;
     end: number;
@@ -217,46 +217,9 @@ const PDFViewer: React.FC = () => {
     dispatch(setScale(1));
   }, [dispatch]);
 
-  // Build index URL with cache buster
-  const indexUrlWithCache = useMemo(() => {
-    if (!indexUrl) return null;
-
-    return `${indexUrl}?v=${cacheBuster}`;
-  }, [indexUrl, cacheBuster]); // Only recompute when these change
-
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Fetch index URL when bundle is loaded
+    Index preview is rendered locally from tree data
   -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-  useEffect(() => {
-    const fetchIndexUrl = async () => {
-      if (!bundleId) return;
-
-      try {
-        console.log('📋 Fetching index for bundle:', bundleId);
-
-        const response = await DocumentApiService.fetchTree(bundleId);
-
-        if (response.indexUrl) {
-          // Only update if URL actually changed
-          setIndexUrl(prev => {
-            if (prev !== response.indexUrl) {
-              console.log('📋 Index URL loaded:', response.indexUrl);
-              return response.indexUrl as string;
-            }
-            return prev;
-          });
-        } else {
-          console.log('ℹ️ No index URL in response');
-          setIndexUrl(null);
-        }
-      } catch (error) {
-        console.error('❌ Failed to fetch index URL:', error);
-        setIndexUrl(null);
-      }
-    };
-
-    fetchIndexUrl();
-  }, [bundleId, lastSaved]);
 
   /* Load comments for the current bundle */
   useEffect(() => {
@@ -264,6 +227,12 @@ const PDFViewer: React.FC = () => {
       dispatch(loadComments({ bundleId: bundleId }));
     }
   }, [dispatch, bundleId]);
+
+  useEffect(() => {
+    if (bundleId) {
+      dispatch(clearDocumentInfo());
+    }
+  }, [bundleId, dispatch]);
 
   useEffect(() => {
     const bundleId = tree.id.split('-')[1];
@@ -497,13 +466,12 @@ const PDFViewer: React.FC = () => {
   }, [hasNextFiles, hasPreviousFiles, requestLoadNext, requestLoadPrev, visibleRange]);
 
   const hasFiles = allFiles.length > 0;
-  const hasIndex = Boolean(indexUrlWithCache);
-  const shouldShowIndex = Boolean(indexUrlWithCache) && !hasPreviousFiles;
+  const shouldShowIndex = hasFiles && !hasPreviousFiles;
 
   /*----------------------------
       Empty State
   ------------------------------*/
-  if (!hasFiles && !hasIndex) {
+  if (!hasFiles) {
     return <UploadFile />;
   }
 
@@ -543,30 +511,9 @@ const PDFViewer: React.FC = () => {
           {/* INDEX PAGE - Only show when at the beginning of the list */}
           {shouldShowIndex && (
             <div className="rounded-lg bg-white shadow-lg">
-              {/* Index Header */}
-              <div className="flex items-center justify-between border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <span className="font-semibold text-gray-800">
-                    Table of Contents
-                  </span>
-                  <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                    Index
-                  </span>
-                </div>
-              </div>
-
               {/* Index Content */}
-              <ErrorBoundary
-                FallbackComponent={Fallback}
-                resetKeys={[indexUrl]}
-              >
-                {indexUrlWithCache && (
-                  <IndexDocument
-                    indexUrl={indexUrlWithCache}
-                    onPageMetrics={handlePageMetrics}
-                  />
-                )}
+              <ErrorBoundary FallbackComponent={Fallback}>
+                <IndexPreview />
               </ErrorBoundary>
             </div>
           )}
