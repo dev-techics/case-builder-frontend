@@ -1,6 +1,7 @@
 // src/api/axiosInstance.ts
 import type { Tree } from '@/features/file-explorer/redux/fileTreeSlice';
 import axios from 'axios';
+import camelcaseKeys from 'camelcase-keys';
 
 const API_URL = import.meta.env.VITE_BASE_URL;
 
@@ -15,7 +16,9 @@ const axiosInstance = axios.create({
   timeout: 30000, // Increased timeout for PDF processing
 });
 
-// Request interceptor to add auth token
+/*------------------------------------
+ Request interceptor to add auth token
+ --------------------------------------*/
 axiosInstance.interceptors.request.use(
   config => {
     const token = localStorage.getItem('access_token');
@@ -30,6 +33,28 @@ axiosInstance.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+/*-------------------------------------------------------
+  Response interceptor to convert snake_case to camelCase
+---------------------------------------------------------*/
+axiosInstance.interceptors.response.use(response => {
+  if (response.data) {
+    const responseType = response.config?.responseType;
+    const isBinaryResponse =
+      responseType === 'blob' || responseType === 'arraybuffer';
+    const isBinaryData =
+      response.data instanceof Blob || response.data instanceof ArrayBuffer;
+    const isTransformable =
+      typeof response.data === 'object' &&
+      !isBinaryResponse &&
+      !isBinaryData;
+
+    if (isTransformable) {
+      response.data = camelcaseKeys(response.data, { deep: true });
+    }
+  }
+  return response;
+});
 
 export class DocumentApiService {
   /**

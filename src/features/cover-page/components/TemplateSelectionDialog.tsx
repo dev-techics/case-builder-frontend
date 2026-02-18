@@ -9,7 +9,7 @@ import { useAppSelector } from '@/app/hooks';
 interface TemplateSelectionDialogProps {
   open: boolean;
   onOpen: (open: boolean) => void;
-  onSelect: (key: string) => void;
+  onSelect: (id: string, key: string) => void;
   onCreate: () => void;
   type: 'Front' | 'Back';
 }
@@ -36,8 +36,8 @@ const TemplateSelectionDialog = ({
     return template.type === type.toLowerCase();
   });
 
-  const handleSelectTemplate = (key: string) => {
-    onSelect(key);
+  const handleSelectTemplate = (id: string, key: string) => {
+    onSelect(id, key);
   };
 
   return (
@@ -67,19 +67,21 @@ const TemplateSelectionDialog = ({
           {filteredTemplates.length > 0 ? (
             filteredTemplates.map(template => (
               <button
-                key={template.template_key}
+                key={template.id}
                 className={`group rounded-lg border-2 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 ${
-                  template.template_key === currentTemplateKey
+                  template.templateKey === currentTemplateKey
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200'
                 }`}
-                onClick={() => handleSelectTemplate(template.template_key)}
+                onClick={() =>
+                  handleSelectTemplate(template.id, template.templateKey)
+                }
               >
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 text-sm">
                     {template.name}
                   </h3>
-                  {template.template_key === currentTemplateKey && (
+                  {template.templateKey === currentTemplateKey && (
                     <div className="rounded-full bg-blue-500 px-2 py-1 font-medium text-white text-xs">
                       Active
                     </div>

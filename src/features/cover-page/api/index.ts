@@ -1,21 +1,23 @@
 import axiosInstance from '@/api/axiosInstance';
+import type { Template } from '../types';
 
 export class CoverPageApi {
   /**
    * *Create a new cover page (coming soon feature)
    */
   static async createCoverPage(data: {
-    template_key: string;
+    templateKey: string;
     values?: Record<string, any>;
-    html_content?: string;
-    lexical_json?: string;
+    html?: string;
+    lexicalJson?: string;
     type: string;
     name?: string;
     description?: string;
-    is_default?: boolean;
+    isDefault?: boolean;
   }) {
     const response = await axiosInstance.post('/api/cover-pages', data);
-    return response.data.cover_page;
+    const payload = response.data;
+    return payload.coverPage ?? payload.cover_page ?? payload;
   }
 
   /**
@@ -37,9 +39,11 @@ export class CoverPageApi {
     );
     return response.data;
   }
-  static async getCoverPages() {
-    const response = await axiosInstance.get('/api/cover-pages');
-    return response.data;
+  static async getCoverPages(): Promise<Template[]> {
+    const response = await axiosInstance.get<Template[]>('/api/cover-pages');
+    console.log(response.data);
+    const payload: any = response.data;
+    return payload.coverPages ?? payload.cover_pages ?? payload;
   }
 
   /**
@@ -48,20 +52,20 @@ export class CoverPageApi {
   static async updateCoverPage(
     coverPageId: string,
     data: {
-      template_key?: any;
-      values?: Record<string, any>;
-      html_content?: string;
-      lexical_json?: string;
+      templateKey?: any;
+      html?: string;
+      lexicalJson?: string;
       type?: string;
       name?: string;
       description?: string;
-      is_default?: boolean;
+      isDefault?: boolean;
     }
-  ) {
+  ): Promise<Template> {
     const response = await axiosInstance.patch(
       `/api/cover-pages/${coverPageId}`,
       data
     );
-    return response.data.cover_page;
+    const payload = response.data;
+    return payload.coverPage ?? payload.cover_page ?? payload;
   }
 }
