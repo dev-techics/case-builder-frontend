@@ -19,12 +19,20 @@ import { TRANSFORMERS } from '@lexical/markdown';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
-import { $getRoot, $insertNodes, type EditorState, type LexicalEditor } from 'lexical';
+import {
+  $getRoot,
+  $insertNodes,
+  type EditorState,
+  type LexicalEditor,
+} from 'lexical';
 
 import ToolbarPlugin from './plugins/ToolbarPlugin';
 import { ImagePlugin } from './plugins/ImagePlugin';
 import { ImageNode } from './nodes/ImageNode';
-import { setCoverPageHtml, setCoverPageLexicalJson } from '../redux/coverPageSlice';
+import {
+  setCoverPageHtml,
+  setCoverPageLexicalJson,
+} from '../redux/coverPageSlice';
 import { Button } from '@/components/ui/button';
 import CoverPagePreviewHtml from './CoverPagePreviewHtml';
 
@@ -177,7 +185,10 @@ const applyMpdfImageAlignment = (dom: Document) => {
     if (parent && isImageOnlyContainer(parent)) {
       parent.setAttribute(
         'style',
-        mergeInlineStyles(parent.getAttribute('style'), `text-align:${alignment}`)
+        mergeInlineStyles(
+          parent.getAttribute('style'),
+          `text-align:${alignment}`
+        )
       );
       image.setAttribute(
         'style',
@@ -243,7 +254,10 @@ function LoadHtmlPlugin({
         isFirstRender.current = false;
         return;
       } catch (error) {
-        console.error('Failed to parse lexical JSON, falling back to HTML', error);
+        console.error(
+          'Failed to parse lexical JSON, falling back to HTML',
+          error
+        );
       }
     }
 
@@ -302,7 +316,7 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
   const html = type === 'front' ? frontHtml : backHtml;
   const lexicalJson = type === 'front' ? frontLexicalJson : backLexicalJson;
   const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
-  const template = templates.find(t => t.template_key === templateKey);
+  const template = templates.find(t => t.templateKey === templateKey);
 
   const [showPreview, setShowPreview] = useState(false);
 

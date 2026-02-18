@@ -60,7 +60,7 @@ const CreateNewBundleDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Create New Bundle</DialogTitle>
           <DialogDescription>

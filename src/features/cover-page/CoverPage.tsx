@@ -49,7 +49,7 @@ const CoverPage = ({ type }: CoverPageProps) => {
 
   const isEnabled = type === 'Front' ? frontEnabled : backEnabled;
   const templateKey = type === 'Front' ? frontTemplateKey : backTemplateKey;
-  const selectedTemplate = templates.find(t => t.template_key === templateKey);
+  const selectedTemplate = templates.find(t => t.templateKey === templateKey);
 
   useEffect(() => {
     setAccordionValue(isEnabled ? 'cover-page' : undefined);
@@ -66,9 +66,20 @@ const CoverPage = ({ type }: CoverPageProps) => {
     }
   };
 
-  const handleSelectTemplate = (key: string) => {
+  /*--------------------------------------------------
+    Select template and save the id in bundle metadata
+   ---------------------------------------------------*/
+  const handleSelectTemplate = async (id: string, key: string) => {
     const coverType = type.toLowerCase() as 'front' | 'back';
     dispatch(setTemplate({ type: coverType, templateKey: key }));
+
+    await dispatch(
+      saveCoverPageIdInMetadata({
+        type: coverType,
+        coverPageId: id,
+      })
+    ).unwrap();
+
     setShowTemplateDialog(false);
   };
 
@@ -78,13 +89,12 @@ const CoverPage = ({ type }: CoverPageProps) => {
 
     dispatch(
       upsertTemplate({
-        template_key: templateKey,
+        templateKey,
         name: `Custom ${type} Cover Page`,
         description: 'Custom template',
         type: coverType,
-        default_html: '',
-        html_content: '',
-        lexical_json: null,
+        html: '',
+        lexicalJson: null,
       })
     );
 
@@ -112,13 +122,16 @@ const CoverPage = ({ type }: CoverPageProps) => {
       const result = await dispatch(saveCoverPageData(coverType)).unwrap();
       console.log(result);
       // Then save the cover page ID in the bundle metadata
-      if (result.response.id) {
+      const coverPageId = result?.response?.id;
+      if (coverPageId) {
         await dispatch(
           saveCoverPageIdInMetadata({
             type: coverType,
-            coverPageId: result.response.id,
+            coverPageId,
           })
         ).unwrap();
+      } else {
+        console.warn('Cover page saved without an id in the response.', result);
       }
 
       handleCloseEditor();
@@ -130,6 +143,9 @@ const CoverPage = ({ type }: CoverPageProps) => {
 
   return (
     <>
+      {/*----------------------
+        Cover Page Accordion
+      -----------------------*/}
       <Accordion
         type="single"
         collapsible
@@ -159,6 +175,7 @@ const CoverPage = ({ type }: CoverPageProps) => {
               </label>
             </div>
           </AccordionTrigger>
+
           <AccordionContent className="px-4 pb-4">
             <div className="space-y-3">
               {/* Template Selection */}
@@ -204,7 +221,9 @@ const CoverPage = ({ type }: CoverPageProps) => {
         </AccordionItem>
       </Accordion>
 
-      {/* Template Selection Dialog */}
+      {/*--------------------------- 
+        Template Selection Dialog 
+        ---------------------------*/}
       <TemplateSelectionDialog
         open={showTemplateDialog}
         onOpen={setShowTemplateDialog}
@@ -213,7 +232,9 @@ const CoverPage = ({ type }: CoverPageProps) => {
         type={type}
       />
 
-      {/* Cover Page Editor Dialog */}
+      {/*--------------------------------- 
+        Cover Page Editor Dialog (Lexical) 
+        ----------------------------------*/}
       <Dialog open={showEditor} onOpenChange={setShowEditor}>
         <DialogContent className="flex flex-col max-h-[90vh] max-w-9xl h-screen p-0 overflow-hidden">
           <DialogHeader className="border-b p-6 pb-4">

@@ -5,17 +5,20 @@ import {
   type PayloadAction,
 } from '@reduxjs/toolkit';
 import { CoverPageApi } from '../api';
+import type { Template } from '../types';
 
 interface CoverPageState {
   frontEnabled: boolean;
   backEnabled: boolean;
-  templates: any[];
+  templates: Template[];
+  //! why are we storing template keys in the state? We can directly store the selected template id and find the template details from the templates array when needed. This will simplify the state and reduce redundancy.
   frontTemplateKey: string;
   backTemplateKey: string;
   frontHtml: string;
   backHtml: string;
   frontLexicalJson: string | null;
   backLexicalJson: string | null;
+
   isEditing: boolean;
   isSaving: boolean;
   currentBundleId: string | null;
@@ -45,6 +48,7 @@ export const loadCoverPageTemplates = createAsyncThunk(
   'coverPage/loadCoverPageTemplates',
   async () => {
     const response = await CoverPageApi.getCoverPages();
+    console.log('API response for cover pages:', response);
     return response;
   }
 );
@@ -114,21 +118,20 @@ export const saveCoverPageData = createAsyncThunk(
     } = state.coverPage;
 
     const html = type === 'front' ? frontHtml : backHtml;
-    const lexicalJson =
-      type === 'front' ? frontLexicalJson : backLexicalJson;
+    const lexicalJson = type === 'front' ? frontLexicalJson : backLexicalJson;
     const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
     const currentCoverPageId =
       type === 'front' ? frontCoverPageId : backCoverPageId;
     const selectedTemplate = templates.find(
-      (template: any) => template.template_key === templateKey
+      (template: any) => template.templateKey === templateKey
     );
     const fallbackName =
       type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
 
     const payload = {
-      template_key: templateKey,
-      html_content: html,
-      lexical_json: lexicalJson || undefined,
+      templateKey: templateKey,
+      html: html,
+      lexicalJson: lexicalJson || undefined,
       type: type,
       name: selectedTemplate?.name || fallbackName,
       description: selectedTemplate?.description,
@@ -180,16 +183,13 @@ const coverPageSlice = createSlice({
 
       // Find template and load default HTML if available
       const selectedTemplate = state.templates.find(
-        template => template.template_key === templateKey
+        template => template.templateKey === templateKey
       );
 
-      const templateHtml =
-        selectedTemplate?.html_content ||
-        selectedTemplate?.html ||
-        selectedTemplate?.default_html ||
-        '';
-      const rawLexical =
-        selectedTemplate?.lexical_json || selectedTemplate?.lexicalJson || null;
+      const templateHtml = selectedTemplate?.html || '';
+
+      const rawLexical = selectedTemplate?.lexicalJson || null;
+
       const normalizedLexical =
         rawLexical && typeof rawLexical !== 'string'
           ? JSON.stringify(rawLexical)
@@ -300,7 +300,7 @@ const coverPageSlice = createSlice({
     upsertTemplate: (state, action: PayloadAction<any>) => {
       const incoming = action.payload;
       const index = state.templates.findIndex(
-        template => template.template_key === incoming.template_key
+        template => template.templateKey === incoming.templateKey
       );
 
       if (index >= 0) {
@@ -325,22 +325,22 @@ const coverPageSlice = createSlice({
           const frontTemplate =
             action.payload.find(
               (t: any) =>
-                t.template_key === state.frontTemplateKey && t.type === 'front'
+                t.templateKey === state.frontTemplateKey && t.type === 'front'
             ) || action.payload.find((t: any) => t.type === 'front');
 
-          if (frontTemplate?.default_html && !state.frontHtml) {
-            state.frontHtml = frontTemplate.default_html;
+          if (frontTemplate?.isDefault && !state.frontHtml) {
+            state.frontHtml = frontTemplate.html;
           }
 
           // Initialize back cover HTML
           const backTemplate =
             action.payload.find(
               (t: any) =>
-                t.template_key === state.backTemplateKey && t.type === 'back'
+                t.templateKey === state.backTemplateKey && t.type === 'back'
             ) || action.payload.find((t: any) => t.type === 'back');
 
-          if (backTemplate?.default_html && !state.backHtml) {
-            state.backHtml = backTemplate.default_html;
+          if (backTemplate?.isDefault && !state.backHtml) {
+            state.backHtml = backTemplate.html;
           }
         }
       })

@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import IndexInitializer from '@/features/auto-index/components/IndexInitializer';
 import PropertiesSidebar from '@/features/properties-panel';
 import EditorSidebar from '@/features/sidebar';
 import { SidebarStateProvider } from '@/context/SidebarContext';
@@ -10,7 +9,6 @@ export default function EditorLayout() {
   return (
     <div className="flex h-screen">
       <SidebarStateProvider>
-        <IndexInitializer />
         {/* Left Sidebar with its own provider */}
         <SidebarProvider>
           <EditorSidebar />
