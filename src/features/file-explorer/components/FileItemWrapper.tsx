@@ -49,9 +49,7 @@ const FileItemWrapper = ({
 
   const children = folder.children || [];
   const validChildren = children.filter(Boolean);
-  const shouldShowCreateInput =
-    isCreating &&
-    (selectedFolderId ? selectedFolderId === folder.id : level === 0);
+  const shouldShowCreateInput = isCreating && level === 0;
 
   return (
     <>
@@ -61,7 +59,7 @@ const FileItemWrapper = ({
       >
         {/* ---- create new folder input ------ */}
         {shouldShowCreateInput && (
-          <CreateNewFolderInput parentId={selectedFolderId} />
+          <CreateNewFolderInput parentId={null} />
         )}
         {validChildren.length === 0 ? (
           <div className="px-2 py-1 text-xs text-gray-400">No items yet</div>
