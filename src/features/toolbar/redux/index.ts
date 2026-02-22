@@ -72,18 +72,18 @@ export const loadComments = createAsyncThunk<
     const comments: Comment[] = response.data.comments.map(
       (c: CommentApiResponse) => ({
         id: String(c.id),
-        fileId: String(c.document_id),
-        pageNumber: c.page_number,
+        fileId: String(c.documentId),
+        pageNumber: c.pageNumber,
         text: c.text,
-        selectedText: c.selected_text,
+        selectedText: c.selectedText,
         position: {
           x: c.x,
           y: c.y,
-          pageY: c.page_y,
+          pageY: c.pageY,
         },
         resolved: c.resolved,
-        createdAt: c.created_at,
-        updatedAt: c.updated_at,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
         author: c.user?.name,
       })
     );
@@ -116,18 +116,18 @@ export const createComment = createAsyncThunk<
     // Transform to frontend format
     const comment: Comment = {
       id: String(c.id),
-      fileId: String(c.document_id),
-      pageNumber: c.page_number,
+      fileId: String(c.documentId),
+      pageNumber: c.pageNumber,
       text: c.text,
-      selectedText: c.selected_text,
+      selectedText: c.selectedText,
       position: {
         x: c.x,
         y: c.y,
-        pageY: c.page_y,
+        pageY: c.pageY,
       },
       resolved: c.resolved,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
       author: c.user?.name,
     };
 
@@ -158,18 +158,18 @@ export const updateCommentThunk = createAsyncThunk<
 
     const comment: Comment = {
       id: String(c.id),
-      fileId: String(c.document_id),
-      pageNumber: c.page_number,
+      fileId: String(c.documentId),
+      pageNumber: c.pageNumber,
       text: c.text,
-      selectedText: c.selected_text,
+      selectedText: c.selectedText,
       position: {
         x: c.x,
         y: c.y,
-        pageY: c.page_y,
+        pageY: c.pageY,
       },
       resolved: c.resolved,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
       author: c.user?.name,
     };
 
@@ -202,18 +202,18 @@ export const toggleCommentResolvedThunk = createAsyncThunk<
 
       const comment: Comment = {
         id: String(c.id),
-        fileId: String(c.document_id),
-        pageNumber: c.page_number,
+        fileId: String(c.documentId),
+        pageNumber: c.pageNumber,
         text: c.text,
-        selectedText: c.selected_text,
+        selectedText: c.selectedText,
         position: {
           x: c.x,
           y: c.y,
-          pageY: c.page_y,
+          pageY: c.pageY,
         },
         resolved: c.resolved,
-        createdAt: c.created_at,
-        updatedAt: c.updated_at,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
         author: c.user?.name,
       };
 
@@ -326,8 +326,8 @@ export const loadHighlights = createAsyncThunk<
     const highlights: Highlight[] = response.data.highlights.map(
       (h: HighlightApiResponse) => ({
         id: String(h.id),
-        fileId: String(h.document_id),
-        pageNumber: h.page_number,
+        fileId: String(h.documentId),
+        pageNumber: h.pageNumber,
         coordinates: {
           x: h.x,
           y: h.y,
@@ -336,12 +336,12 @@ export const loadHighlights = createAsyncThunk<
         },
         text: h.text,
         color: {
-          name: h.color_name,
-          hex: h.color_hex,
-          rgb: h.color_rgb,
+          name: h.colorName,
+          hex: h.colorHex,
+          rgb: h.colorRgb,
           opacity: h.opacity,
         },
-        createdAt: h.created_at,
+        createdAt: h.createdAt,
       })
     );
 
@@ -356,8 +356,8 @@ export const loadHighlights = createAsyncThunk<
 
 const mapRedactionFromApi = (r: RedactionApiResponse): Redaction => ({
   id: String(r.id),
-  fileId: String(r.document_id),
-  pageNumber: r.page_number,
+  fileId: String(r.documentId),
+  pageNumber: r.pageNumber,
   coordinates: {
     x: r.x,
     y: r.y,
@@ -366,12 +366,12 @@ const mapRedactionFromApi = (r: RedactionApiResponse): Redaction => ({
   },
   style: {
     name: r.name || 'Custom',
-    fillHex: r.opacity === 0 ? null : r.fill_hex,
+    fillHex: r.opacity === 0 ? null : r.fillHex,
     opacity: r.opacity ?? 1,
-    borderHex: r.border_hex || '#000000',
-    borderWidth: r.border_width ?? 2,
+    borderHex: r.borderHex || '#000000',
+    borderWidth: r.borderWidth ?? 2,
   },
-  createdAt: r.created_at,
+  createdAt: r.createdAt,
 });
 
 /*=============================================
@@ -465,8 +465,8 @@ export const createHighlight = createAsyncThunk<
       // Transform to frontend format
       const highlight: Highlight = {
         id: String(h.id),
-        fileId: String(h.document_id),
-        pageNumber: h.page_number,
+        fileId: String(h.documentId),
+        pageNumber: h.pageNumber,
         coordinates: {
           x: h.x,
           y: h.y,
@@ -475,12 +475,12 @@ export const createHighlight = createAsyncThunk<
         },
         text: h.text,
         color: {
-          name: h.color_name,
-          rgb: h.color_rgb,
-          hex: h.color_hex,
+          name: h.colorName,
+          rgb: h.colorRgb,
+          hex: h.colorHex,
           opacity: h.opacity,
         },
-        createdAt: h.created_at,
+        createdAt: h.createdAt,
       };
 
       console.log('✅ Highlight created:', highlight);
@@ -546,8 +546,8 @@ export const updateHighlightColor = createAsyncThunk<
 
       const highlight: Highlight = {
         id: String(h.id),
-        fileId: String(h.document_id),
-        pageNumber: h.page_number,
+        fileId: String(h.documentId),
+        pageNumber: h.pageNumber,
         coordinates: {
           x: h.x,
           y: h.y,
@@ -556,12 +556,12 @@ export const updateHighlightColor = createAsyncThunk<
         },
         text: h.text,
         color: {
-          name: h.color_name,
-          hex: h.color_hex,
-          rgb: h.color_rgb,
+          name: h.colorName,
+          hex: h.colorHex,
+          rgb: h.colorRgb,
           opacity: h.opacity,
         },
-        createdAt: h.created_at,
+        createdAt: h.createdAt,
       };
 
       console.log('✅ Highlight color updated:', highlight);

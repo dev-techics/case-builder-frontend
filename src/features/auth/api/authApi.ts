@@ -3,6 +3,7 @@ import type {
   LoginCredentials,
   RegisterCredentials,
   AuthResponse,
+  User,
 } from '../types/types';
 
 export const authApi = {
@@ -13,8 +14,8 @@ export const authApi = {
     );
 
     // Store token in localStorage
-    if (data.access_token) {
-      localStorage.setItem('access_token', data.access_token);
+    if (data.accessToken) {
+      localStorage.setItem('access_token', data.accessToken);
     }
 
     return data;
@@ -27,8 +28,8 @@ export const authApi = {
     );
 
     // Store token in localStorage
-    if (data.access_token) {
-      localStorage.setItem('access_token', data.access_token);
+    if (data.accessToken) {
+      localStorage.setItem('access_token', data.accessToken);
     }
 
     return data;
@@ -43,8 +44,8 @@ export const authApi = {
     }
   },
 
-  async me(): Promise<{ user: any }> {
-    const { data } = await axiosInstance.get<{ user: any }>('/api/me');
+  async me(): Promise<{ user: User }> {
+    const { data } = await axiosInstance.get<{ user: User }>('/api/me');
     return data;
   },
 

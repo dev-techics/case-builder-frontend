@@ -1,7 +1,40 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { Bundle } from '../types/types';
 import axiosInstance from '@/api/axiosInstance';
-import camelcaseKeys from 'camelcase-keys';
+import type { CreateBundleDto } from '../api/bundlesApi';
+
+const normalizeBundle = (bundle: any): Bundle => {
+  const documentCount =
+    bundle?.documentCount ??
+    bundle?.documentsCount ??
+    bundle?.document_count ??
+    bundle?.documents_count ??
+    0;
+
+  const updatedAt =
+    bundle?.updatedAt ??
+    bundle?.lastModified ??
+    bundle?.last_modified ??
+    bundle?.updated_at ??
+    bundle?.createdAt ??
+    bundle?.created_at ??
+    undefined;
+
+  return {
+    id: bundle?.id,
+    name: bundle?.name,
+    caseNumber: bundle?.caseNumber ?? bundle?.case_number ?? '',
+    documentCount,
+    status: bundle?.status ?? 'In Progress',
+    color: bundle?.color ?? 'blue',
+    createdAt: bundle?.createdAt ?? bundle?.created_at,
+    updatedAt,
+    updatedBy: bundle?.updatedBy ?? bundle?.updated_by,
+    description: bundle?.description,
+    tags: bundle?.tags,
+    userId: bundle?.userId ?? bundle?.user_id,
+  };
+};
 
 type bundlesListState = {
   bundles: Bundle[];
@@ -82,7 +115,9 @@ export const fetchBundles = createAsyncThunk(
   'bundles/fetchBundles',
   async () => {
     const response = await axiosInstance.get('/api/bundles');
-    return camelcaseKeys(response.data.data, { deep: true });
+    const payload = response.data?.data ?? response.data?.bundles ?? [];
+    const bundles = Array.isArray(payload) ? payload : [];
+    return bundles.map(normalizeBundle);
   }
 );
 
@@ -91,7 +126,8 @@ export const fetchBundleById = createAsyncThunk(
   'bundles/fetchBundleById',
   async (bundleId: string) => {
     const response = await axiosInstance.get(`/api/bundles/${bundleId}`);
-    return camelcaseKeys(response.data.bundle, { deep: true }) as Bundle;
+    const payload = response.data?.bundle ?? response.data;
+    return normalizeBundle(payload);
   }
 );
 
@@ -99,9 +135,10 @@ export const fetchBundleById = createAsyncThunk(
 
 export const createBundleAsync = createAsyncThunk(
   'bundles/createBundle',
-  async (bundleData: Partial<Bundle>) => {
+  async (bundleData: CreateBundleDto) => {
     const response = await axiosInstance.post('/api/bundles', bundleData);
-    return camelcaseKeys(response.data.bundle, { deep: true }) as Bundle;
+    const payload = response.data?.bundle ?? response.data;
+    return normalizeBundle(payload);
   }
 );
 
@@ -133,7 +170,7 @@ const bundleListSlice = createSlice({
           ...originalBundle,
           id: crypto.randomUUID(),
           name: `${originalBundle.name} (Copy)`,
-          lastModified: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
           status: 'In Progress',
           documentCount: 0, // or keep original count: originalBundle.documentCount
         };

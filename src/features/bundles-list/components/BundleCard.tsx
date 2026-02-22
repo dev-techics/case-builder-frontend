@@ -122,7 +122,7 @@ const BundleCard = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <FileText className="h-4 w-4" />
-            <span>{bundle.documentsCount} documents</span>
+            <span>{bundle.documentCount} documents</span>
           </div>
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[bundle.status]}`}
@@ -132,7 +132,7 @@ const BundleCard = ({
         </div>
 
         <div className="text-xs text-gray-500">
-          Last modified: {bundle.updatedAt}
+          Last modified: {bundle.updatedAt ?? '—'}
         </div>
       </div>
     </div>

@@ -102,15 +102,15 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
       console.log('✅ Upload successful:', response.data);
 
       // Extract conversion statuses if any
-      if (response.data.conversion_statuses) {
-        setConversionStatuses(response.data.conversion_statuses);
+      if (response.data.conversionStatuses) {
+        setConversionStatuses(response.data.conversionStatuses);
       }
 
       // Extract the uploaded documents from response
       const uploadedDocuments: FileNode[] = response.data.documents.map(
         (doc: any) => ({
           id: doc.id,
-          parentId: doc.parent_id,
+          parentId: doc.parentId,
           name: doc.name,
           type: doc.type,
           url: doc.url,

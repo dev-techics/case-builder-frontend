@@ -146,8 +146,8 @@ const propertiesPanelSlice = createSlice({
       .addCase(loadMetadataFromBackend.fulfilled, (state, action) => {
         const { metadata, bundleId } = action.payload;
         state.currentBundleId = bundleId;
-        state.headersFooter.headerLeft.text = metadata.header_left || '';
-        state.headersFooter.headerRight.text = metadata.header_right || '';
+        state.headersFooter.headerLeft.text = metadata.headerLeft || '';
+        state.headersFooter.headerRight.text = metadata.headerRight || '';
         state.headersFooter.footer.text = metadata.footer || '';
       });
   },

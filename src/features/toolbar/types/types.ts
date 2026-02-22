@@ -137,25 +137,25 @@ export interface CreateHighlightRequest {
 
 export interface HighlightApiResponse {
   id: number;
-  bundle_id: number;
-  document_id: number;
-  user_id: number;
-  page_number: number;
+  bundleId: number;
+  documentId: number;
+  userId: number;
+  pageNumber: number;
   x: number;
   y: number;
   width: number;
   height: number;
   text: string;
-  color_name: string;
-  color_hex: string;
-  color_rgb: {
+  colorName: string;
+  colorHex: string;
+  colorRgb: {
     r: number;
     g: number;
     b: number;
   };
   opacity: number;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateCommentRequest {
@@ -184,37 +184,37 @@ export interface CreateRedactionRequest {
 
 export interface RedactionApiResponse {
   id: number;
-  bundle_id: number;
-  document_id: number;
-  user_id: number;
-  page_number: number;
+  bundleId: number;
+  documentId: number;
+  userId: number;
+  pageNumber: number;
   x: number;
   y: number;
   width: number;
   height: number;
   name: string;
-  fill_hex: string;
+  fillHex: string;
   opacity: number;
-  border_hex: string;
-  border_width: number;
-  created_at: string;
-  updated_at: string;
+  borderHex: string;
+  borderWidth: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CommentApiResponse {
   id: number;
-  bundle_id: number;
-  document_id: number;
-  user_id: number;
-  page_number: number;
+  bundleId: number;
+  documentId: number;
+  userId: number;
+  pageNumber: number;
   text: string;
-  selected_text?: string;
+  selectedText?: string;
   x: number;
   y: number;
-  page_y: number;
+  pageY: number;
   resolved: boolean;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   user?: {
     id: number;
     name: string;

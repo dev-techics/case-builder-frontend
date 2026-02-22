@@ -69,7 +69,9 @@ const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
           {bundle.status}
         </span>
       </td>
-      <td className="px-6 py-4 text-sm text-gray-500">{bundle.lastModified}</td>
+      <td className="px-6 py-4 text-sm text-gray-500">
+        {bundle.updatedAt ?? '—'}
+      </td>
       <td className="px-6 py-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>

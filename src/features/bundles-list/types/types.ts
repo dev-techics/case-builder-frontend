@@ -36,24 +36,15 @@ export interface Bundle {
   id: string | number; // Backend uses number, frontend may use string
   name: string;
   caseNumber: string; // Frontend uses camelCase
-  case_number?: string; // Backend uses snake_case
   documentCount: number; // Frontend uses camelCase
-  documentsCount: number; // Frontend uses camelCase
-  document_count?: number; // Backend uses snake_case
-  documents_count?: number; // Backend uses snake_case
-  lastModified: string;
-  last_modified?: string;
   status: BundleStatus;
   color: BundleColor;
   createdAt?: string;
-  created_at?: string;
   updatedAt?: string;
-  updated_at?: string;
   updatedBy?: string;
   description?: string;
   tags?: string[];
   userId?: number;
-  user_id?: number;
 }
 /**
  * Filter State Interface

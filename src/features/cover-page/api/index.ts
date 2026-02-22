@@ -17,7 +17,7 @@ export class CoverPageApi {
   }) {
     const response = await axiosInstance.post('/api/cover-pages', data);
     const payload = response.data;
-    return payload.coverPage ?? payload.cover_page ?? payload;
+    return payload.coverPage ?? payload;
   }
 
   /**
@@ -43,7 +43,7 @@ export class CoverPageApi {
     const response = await axiosInstance.get<Template[]>('/api/cover-pages');
     console.log(response.data);
     const payload: any = response.data;
-    return payload.coverPages ?? payload.cover_pages ?? payload;
+    return payload.coverPages ?? payload;
   }
 
   /**
@@ -66,6 +66,6 @@ export class CoverPageApi {
       data
     );
     const payload = response.data;
-    return payload.coverPage ?? payload.cover_page ?? payload;
+    return payload.coverPage ?? payload;
   }
 }
