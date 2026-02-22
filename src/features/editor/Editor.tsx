@@ -158,7 +158,8 @@ const PDFViewer: React.FC = () => {
   useEffect(() => {
     pageWidthsRef.current.clear();
     setMaxBaseWidth(null);
-  }, [bundleId]);
+    dispatch(setScale(1));
+  }, [bundleId, dispatch]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
