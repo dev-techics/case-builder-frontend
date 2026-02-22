@@ -161,23 +161,24 @@ const PDFViewer: React.FC = () => {
   }, [bundleId]);
 
   useLayoutEffect(() => {
-    const element = contentRef.current;
-    if (!element) {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) {
       return;
     }
 
     const updateWidth = () => {
-      const styles = window.getComputedStyle(element);
+      const styles = window.getComputedStyle(content);
       const padding =
         parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
-      const width = Math.max(0, element.clientWidth - padding);
+      const width = Math.max(0, container.clientWidth - padding);
       setContentWidth(width);
     };
 
     updateWidth();
 
     const observer = new ResizeObserver(updateWidth);
-    observer.observe(element);
+    observer.observe(container);
 
     return () => observer.disconnect();
   }, []);
@@ -193,6 +194,27 @@ const PDFViewer: React.FC = () => {
     }
     return Math.min(DEFAULT_MAX_SCALE, availableWidth / maxBaseWidth);
   }, [availableWidth, maxBaseWidth]);
+
+  const scaledDocumentWidth = useMemo(() => {
+    if (!maxBaseWidth) {
+      return null;
+    }
+    return Math.ceil(maxBaseWidth * scale + PDF_CONTAINER_HORIZONTAL_PADDING);
+  }, [maxBaseWidth, scale]);
+
+  const contentStyle = useMemo<React.CSSProperties | undefined>(() => {
+    const baseWidth = contentWidth > 0 ? contentWidth : 0;
+    const targetWidth =
+      scaledDocumentWidth && baseWidth
+        ? Math.max(scaledDocumentWidth, baseWidth)
+        : scaledDocumentWidth ?? (baseWidth || null);
+
+    if (!targetWidth) {
+      return undefined;
+    }
+
+    return { width: `${Math.ceil(targetWidth)}px` };
+  }, [contentWidth, scaledDocumentWidth]);
 
   useEffect(() => {
     if (!Number.isFinite(computedMaxScale)) {
@@ -498,7 +520,7 @@ const PDFViewer: React.FC = () => {
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="pdf-viewer-container flex-1 overflow-y-auto bg-gray-100"
+        className="pdf-viewer-container flex-1 overflow-x-auto overflow-y-auto bg-gray-100"
       >
         <div className="sticky top-0 z-30">
           <AnnotationToolbar />
@@ -506,7 +528,8 @@ const PDFViewer: React.FC = () => {
 
         <div
           ref={contentRef}
-          className="mx-auto max-w-4xl space-y-8 p-8"
+          className="mx-auto max-w-none space-y-8 p-8 box-content"
+          style={contentStyle}
         >
           {/* INDEX PAGE - Only show when at the beginning of the list */}
           {shouldShowIndex && (

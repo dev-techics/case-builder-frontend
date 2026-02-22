@@ -226,21 +226,47 @@ const calculateIndexPageCount = (nodes: Children[]): number => {
 
 // ─── A4 Page Shell ────────────────────────────────────────────────────────────
 
-const A4Page = ({ children }: { children: React.ReactNode }) => (
-  <div
-    className="relative mx-auto bg-white shadow-md"
-    style={{
-      width: `${A4.pageWidthPx}px`,
-      minHeight: `${A4.pageHeightPx}px`,
-      padding: `${A4.topMarginMm * 3.7795}px ${A4.topMarginMm * 3.7795}px ${A4.bottomMarginMm * 3.7795}px`,
-      boxSizing: 'border-box',
-      breakInside: 'avoid',
-      pageBreakAfter: 'always',
-    }}
-  >
-    {children}
-  </div>
-);
+const MM_TO_PX = 3.7795;
+
+const A4Page = ({
+  children,
+  scale = 1,
+}: {
+  children: React.ReactNode;
+  scale?: number;
+}) => {
+  const safeScale =
+    Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const scaledWidth = A4.pageWidthPx * safeScale;
+  const scaledHeight = A4.pageHeightPx * safeScale;
+  const topPadding = A4.topMarginMm * MM_TO_PX;
+  const bottomPadding = A4.bottomMarginMm * MM_TO_PX;
+
+  return (
+    <div
+      className="relative mx-auto"
+      style={{
+        width: `${scaledWidth}px`,
+        minHeight: `${scaledHeight}px`,
+      }}
+    >
+      <div
+        className="absolute left-0 top-0 origin-top-left bg-white shadow-md"
+        style={{
+          width: `${A4.pageWidthPx}px`,
+          minHeight: `${A4.pageHeightPx}px`,
+          padding: `${topPadding}px ${topPadding}px ${bottomPadding}px`,
+          boxSizing: 'border-box',
+          breakInside: 'avoid',
+          pageBreakAfter: 'always',
+          transform: `scale(${safeScale})`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
 
 // ─── Single page of index entries ────────────────────────────────────────────
 
@@ -248,10 +274,16 @@ interface IndexPageProps {
   entries: IndexEntry[];
   showHeading: boolean;
   onSelectFile: (id: string) => void;
+  scale: number;
 }
 
-const IndexPage = ({ entries, showHeading, onSelectFile }: IndexPageProps) => (
-  <A4Page>
+const IndexPage = ({
+  entries,
+  showHeading,
+  onSelectFile,
+  scale,
+}: IndexPageProps) => (
+  <A4Page scale={scale}>
     {showHeading && (
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold tracking-wide text-gray-900">
@@ -311,6 +343,7 @@ const IndexPreview = () => {
   const documentInfo = useAppSelector(
     state => state.propertiesPanel.documentInfo
   );
+  const scale = useAppSelector(state => state.editor.scale);
 
   // ── 1. Do we have any files at all?
   const hasFiles = useMemo(() => hasAnyFiles(tree.children), [tree.children]);
@@ -364,6 +397,7 @@ const IndexPreview = () => {
           entries={pageEntries}
           showHeading={pageIdx === 0}
           onSelectFile={id => dispatch(selectFile(id))}
+          scale={scale}
         />
       ))}
 
