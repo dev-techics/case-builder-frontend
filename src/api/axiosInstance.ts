@@ -45,9 +45,7 @@ axiosInstance.interceptors.response.use(response => {
     const isBinaryData =
       response.data instanceof Blob || response.data instanceof ArrayBuffer;
     const isTransformable =
-      typeof response.data === 'object' &&
-      !isBinaryResponse &&
-      !isBinaryData;
+      typeof response.data === 'object' && !isBinaryResponse && !isBinaryData;
 
     if (isTransformable) {
       response.data = camelcaseKeys(response.data, { deep: true });
