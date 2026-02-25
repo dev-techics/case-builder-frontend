@@ -182,7 +182,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
       }}
       style={style}
     >
-      {' '}
       {/* Folder Header */}
       <div
         ref={folderRef}
@@ -238,7 +237,10 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
               className="truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
             />
           ) : (
-            <span className="truncate text-gray-800 text-sm font-medium">
+            <span
+              className="truncate text-gray-800 text-sm font-medium"
+              title={folder.name}
+            >
               {folder.name}
             </span>
           )}
@@ -252,6 +254,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
         {/* Action Menu */}
         <ActionMenu file={folder} onRenameClick={handleRenameClick} />
       </div>
+
       {/* Nested Children */}
       {isExpanded && (
         <div style={{ paddingLeft: `${12}px` }}>

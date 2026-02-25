@@ -170,7 +170,12 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
             className="truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
           />
         ) : (
-          <span className="truncate text-gray-800 text-sm">{file.name}</span>
+          <span
+            className="truncate text-gray-800 text-sm"
+            title={file.name}
+          >
+            {file.name}
+          </span>
         )}
       </div>
       {/* Rename and delete menu */}

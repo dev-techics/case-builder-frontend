@@ -31,9 +31,6 @@ const FileItemWrapper = ({
 }: FileItemWrapperProps) => {
   const dispatch = useAppDispatch();
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
-  const selectedFolderId = useAppSelector(
-    state => state.fileTree.selectedFolderId
-  );
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
   const isCreating = useAppSelector(
     state => state.fileTree.isCreatingNewFolder
@@ -58,9 +55,7 @@ const FileItemWrapper = ({
         strategy={verticalListSortingStrategy}
       >
         {/* ---- create new folder input ------ */}
-        {shouldShowCreateInput && (
-          <CreateNewFolderInput parentId={null} />
-        )}
+        {shouldShowCreateInput && <CreateNewFolderInput parentId={null} />}
         {validChildren.length === 0 ? (
           <div className="px-2 py-1 text-xs text-gray-400">No items yet</div>
         ) : (
@@ -95,7 +90,6 @@ const FileItemWrapper = ({
           })
         )}
       </SortableContext>
-
     </>
   );
 };
