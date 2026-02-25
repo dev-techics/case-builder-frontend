@@ -92,13 +92,14 @@ function Exports() {
         }
       );
 
-      const exportId = data.export_id;
+      const exportId = data.exportId;
       setExportMessage('Processing PDF on server...');
 
       // Step 2: Poll until ready
       await new Promise<void>((resolve, reject) => {
         const interval = setInterval(async () => {
           try {
+            console.log(exportId);
             const { data: statusData } = await axiosInstance.get(
               `/api/bundles/exports/${exportId}/status`
             );
@@ -263,7 +264,12 @@ function Exports() {
             <span>Include table of contents</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
-            <input checked={true} className="rounded" readOnly type="checkbox" />
+            <input
+              checked={true}
+              className="rounded"
+              readOnly
+              type="checkbox"
+            />
             <span>Merge all PDFs into one document</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
@@ -294,7 +300,12 @@ function Exports() {
             <span>Include highlights ({highlights.length})</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
-            <input checked={true} className="rounded" readOnly type="checkbox" />
+            <input
+              checked={true}
+              className="rounded"
+              readOnly
+              type="checkbox"
+            />
             <span>Add page numbers</span>
           </label>
         </div>
