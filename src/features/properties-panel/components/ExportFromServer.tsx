@@ -69,76 +69,93 @@ function Exports() {
   }, [bundleId, dispatch]);
 
   const handleExport = async () => {
-    if (!hasFiles) {
+    if (!hasFiles || !bundleId) {
       setExportStatus('error');
-      setExportMessage('No PDF files to export');
-      return;
-    }
-
-    if (!bundleId) {
-      setExportStatus('error');
-      setExportMessage('Bundle ID not found');
+      setExportMessage(
+        !hasFiles ? 'No PDF files to export' : 'Bundle ID not found'
+      );
       return;
     }
 
     setIsExporting(true);
     setExportStatus('exporting');
-    setExportMessage('Preparing export on server...');
+    setExportMessage('Starting export...');
 
     try {
-      // Make API request to backend
-      const response = await axiosInstance.post(
+      // Step 1: Kick off the export job
+      const { data } = await axiosInstance.post(
         `/api/bundles/${bundleId}/export`,
         {
           include_index: includeIndex,
           include_front_cover: includeFrontCover && frontEnabled,
           include_back_cover: includeBackCover && backEnabled,
-        },
+        }
+      );
+
+      const exportId = data.export_id;
+      setExportMessage('Processing PDF on server...');
+
+      // Step 2: Poll until ready
+      await new Promise<void>((resolve, reject) => {
+        const interval = setInterval(async () => {
+          try {
+            const { data: statusData } = await axiosInstance.get(
+              `/api/bundles/exports/${exportId}/status`
+            );
+
+            if (statusData.status === 'complete') {
+              clearInterval(interval);
+              resolve();
+            } else if (statusData.status === 'failed') {
+              clearInterval(interval);
+              reject(new Error(statusData.error || 'Export failed on server'));
+            } else {
+              setExportMessage(
+                statusData.status === 'processing'
+                  ? 'Generating PDF...'
+                  : 'Waiting in queue...'
+              );
+            }
+          } catch (err) {
+            clearInterval(interval);
+            reject(err);
+          }
+        }, 3000);
+      });
+
+      // Step 3: Download the file
+      setExportMessage('Downloading...');
+      const response = await axiosInstance.get(
+        `/api/bundles/exports/${exportId}/download`,
         {
-          responseType: 'blob', // Important: receive as blob for file download
+          responseType: 'blob',
           onDownloadProgress: progressEvent => {
-            // Optional: show download progress
             if (progressEvent.total) {
-              const percentCompleted = Math.round(
+              const pct = Math.round(
                 (progressEvent.loaded * 100) / progressEvent.total
               );
-              setExportMessage(`Downloading... ${percentCompleted}%`);
+              setExportMessage(`Downloading... ${pct}%`);
             }
           },
         }
       );
 
-      // Create blob URL and trigger download
+      // Trigger browser download
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-
-      // Extract filename from Content-Disposition header or use default
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = `${tree.projectName || 'Bundle'}_${new Date().getTime()}.pdf`;
-
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
-        }
-      }
-
-      // Create link and trigger download
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename;
+      link.download = `${tree.projectName || 'Bundle'}_${Date.now()}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Clean up the blob URL
       setTimeout(() => URL.revokeObjectURL(url), 100);
 
       // Build success message
-      let successParts = [];
+      const successParts = [];
       if (includeFrontCover && frontEnabled) successParts.push('front cover');
       if (includeBackCover && backEnabled) successParts.push('back cover');
-      if (includeIndex && tree.indexUrl) successParts.push('index');
+      if (includeIndex) successParts.push('index');
       successParts.push(`${pdfFiles.length} files`);
 
       const successAddons =
@@ -154,23 +171,14 @@ function Exports() {
         setExportMessage('');
       }, 3000);
     } catch (error: any) {
-      console.error('Error exporting bundle:', error);
+      console.error('Export error:', error);
 
-      let errorMessage = 'Failed to export bundle';
-
-      if (error.response) {
-        // Server responded with error
-        if (error.response.status === 403) {
-          errorMessage = 'You do not have permission to export this bundle';
-        } else if (error.response.status === 404) {
-          errorMessage = 'Bundle not found';
-        } else if (error.response.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-      } else if (error.request) {
-        // Request made but no response
-        errorMessage = 'No response from server. Please check your connection.';
-      }
+      const errorMessage =
+        error.response?.status === 403
+          ? 'You do not have permission to export this bundle'
+          : error.response?.status === 404
+            ? 'Bundle not found'
+            : error.message || 'Failed to export bundle';
 
       setExportStatus('error');
       setExportMessage(errorMessage);
@@ -255,12 +263,7 @@ function Exports() {
             <span>Include table of contents</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
-            <input
-              checked={true}
-              className="rounded"
-              readOnly
-              type="checkbox"
-            />
+            <input checked={true} className="rounded" readOnly type="checkbox" />
             <span>Merge all PDFs into one document</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
@@ -291,12 +294,7 @@ function Exports() {
             <span>Include highlights ({highlights.length})</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
-            <input
-              checked={true}
-              className="rounded"
-              readOnly
-              type="checkbox"
-            />
+            <input checked={true} className="rounded" readOnly type="checkbox" />
             <span>Add page numbers</span>
           </label>
         </div>
