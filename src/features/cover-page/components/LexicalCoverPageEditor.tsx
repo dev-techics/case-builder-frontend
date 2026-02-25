@@ -359,9 +359,9 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
   }
 
   return (
-    <div className="grid h-full min-h-0 gap-6 lg:grid-cols-2">
-      {/* Left: Editor */}
-      <div className="order-1 overflow-hidden flex flex-col">
+    <div className="grid h-full min-h-0 gap-6 lg:grid-cols-6">
+      {/* ----------- Left: Editor ------------ */}
+      <div className="order-1 overflow-hidden flex flex-col col-span-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold text-gray-900 text-sm">
             Edit {type === 'front' ? 'Front' : 'Back'} Cover Page
@@ -379,6 +379,7 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
           <LexicalComposer initialConfig={initialConfig}>
             <div className="editor-container h-full flex flex-col">
               <ToolbarPlugin />
+
               <div className="editor-inner flex-1 overflow-auto relative">
                 <RichTextPlugin
                   contentEditable={
@@ -413,8 +414,8 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
         </p>
       </div>
 
-      {/* Right: Preview */}
-      <div className="order-2 lg:order-2">
+      {/* -----------Right: Preview------------- */}
+      <div className="order-2 lg:order-2 col-span-2">
         {showPreview && (
           <div className="sticky top-6">
             <h3 className="mb-3 font-semibold text-gray-900 text-sm">

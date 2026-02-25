@@ -17,7 +17,11 @@ import {
 } from 'lexical';
 import type { NodeKey } from 'lexical';
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
-import { $wrapNodes } from '@lexical/selection';
+import {
+  $getSelectionStyleValueForProperty,
+  $patchStyleText,
+  $wrapNodes,
+} from '@lexical/selection';
 import { $getNearestNodeOfType, mergeRegister } from '@lexical/utils';
 import {
   INSERT_ORDERED_LIST_COMMAND,
@@ -73,6 +77,99 @@ const blockTypeToBlockName = {
   paragraph: 'Normal',
   quote: 'Quote',
   bullet: 'Bulleted List',
+};
+
+const FONT_FAMILY_OPTIONS = [
+  {
+    label: 'Default',
+    value: 'default',
+    css: '',
+    matches: [],
+  },
+  {
+    label: 'Arial',
+    value: 'arial',
+    css: 'Arial, Helvetica, sans-serif',
+    matches: ['arial'],
+  },
+  {
+    label: 'Times New Roman',
+    value: 'times-new-roman',
+    css: '"Times New Roman", Times, serif',
+    matches: ['times new roman'],
+  },
+  {
+    label: 'Georgia',
+    value: 'georgia',
+    css: 'Georgia, serif',
+    matches: ['georgia'],
+  },
+  {
+    label: 'Garamond',
+    value: 'garamond',
+    css: 'Garamond, serif',
+    matches: ['garamond'],
+  },
+  {
+    label: 'Verdana',
+    value: 'verdana',
+    css: 'Verdana, Geneva, sans-serif',
+    matches: ['verdana'],
+  },
+  {
+    label: 'Tahoma',
+    value: 'tahoma',
+    css: 'Tahoma, Geneva, sans-serif',
+    matches: ['tahoma'],
+  },
+  {
+    label: 'Courier New',
+    value: 'courier-new',
+    css: '"Courier New", Courier, monospace',
+    matches: ['courier new', 'courier'],
+  },
+];
+
+const normalizeFontFamily = (value: string) =>
+  value.replace(/['"]/g, '').toLowerCase();
+
+const resolveFontFamilyValue = (styleValue: string) => {
+  if (!styleValue) {
+    return 'default';
+  }
+  const normalized = normalizeFontFamily(styleValue);
+  const match = FONT_FAMILY_OPTIONS.find(option =>
+    option.matches.some(token => normalized.includes(token))
+  );
+  return match ? match.value : 'default';
+};
+
+const getFontFamilyCss = (value: string) =>
+  FONT_FAMILY_OPTIONS.find(option => option.value === value)?.css ?? '';
+
+const normalizeFontSize = (value: string) => {
+  if (!value) {
+    return '';
+  }
+  const match = value.match(/\d+(?:\.\d+)?/);
+  return match ? match[0] : '';
+};
+
+const normalizeImageUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+  if (/^(data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^\/\//.test(trimmed)) {
+    return `https:${trimmed}`;
+  }
+  return `https://${trimmed}`;
 };
 
 type SelectedImage = {
@@ -208,6 +305,8 @@ export default function ToolbarPlugin() {
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] =
     useState<keyof typeof blockTypeToBlockName>('paragraph');
+  const [fontFamily, setFontFamily] = useState('default');
+  const [fontSize, setFontSize] = useState('');
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
@@ -236,6 +335,19 @@ export default function ToolbarPlugin() {
       setIsUnderline(selection.hasFormat('underline'));
       setIsStrikethrough(selection.hasFormat('strikethrough'));
       setIsCode(selection.hasFormat('code'));
+
+      const nextFontFamily = $getSelectionStyleValueForProperty(
+        selection,
+        'font-family',
+        ''
+      );
+      const nextFontSize = $getSelectionStyleValueForProperty(
+        selection,
+        'font-size',
+        ''
+      );
+      setFontFamily(resolveFontFamilyValue(nextFontFamily));
+      setFontSize(normalizeFontSize(nextFontSize));
 
       // Update links
       const node = selection.anchor.getNode();
@@ -325,13 +437,55 @@ export default function ToolbarPlugin() {
 
   const insertImage = useCallback(() => {
     const url = prompt('Enter image URL:');
-    if (url) {
-      editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-        altText: 'Image',
-        src: url,
-      });
+    if (!url) {
+      return;
     }
+    const normalized = normalizeImageUrl(url);
+    if (!normalized) {
+      return;
+    }
+    editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
+      altText: 'Image',
+      src: normalized,
+    });
   }, [editor]);
+
+  const handleFontFamilyChange = useCallback(
+    (nextValue: string) => {
+      setFontFamily(nextValue);
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          const cssValue = getFontFamilyCss(nextValue);
+          $patchStyleText(selection, {
+            'font-family': cssValue ? cssValue : null,
+          });
+        }
+      });
+    },
+    [editor]
+  );
+
+  const handleFontSizeChange = useCallback(
+    (nextValue: string) => {
+      setFontSize(nextValue);
+      editor.update(() => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection)) {
+          return;
+        }
+        if (nextValue.trim() === '') {
+          $patchStyleText(selection, { 'font-size': null });
+          return;
+        }
+        const parsed = Number(nextValue);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          $patchStyleText(selection, { 'font-size': `${parsed}px` });
+        }
+      });
+    },
+    [editor]
+  );
 
   const setImageAlignment = useCallback(
     (alignment: ImageAlignment) => {
@@ -384,6 +538,7 @@ export default function ToolbarPlugin() {
       className="toolbar border-b border-gray-200 p-2 flex items-center gap-1 flex-wrap bg-gray-50"
       ref={toolbarRef}
     >
+      {/* ------- Undo -------*/}
       <Button
         variant="ghost"
         size="sm"
@@ -396,6 +551,7 @@ export default function ToolbarPlugin() {
       >
         <Undo className="h-4 w-4" />
       </Button>
+      {/* ------- Redo ------ */}
       <Button
         variant="ghost"
         size="sm"
@@ -408,9 +564,40 @@ export default function ToolbarPlugin() {
       >
         <Redo className="h-4 w-4" />
       </Button>
+
       <Divider />
       <BlockFormatDropDown blockType={blockType} editor={editor} />
       <Divider />
+      <Select
+        value={fontFamily}
+        onValueChange={handleFontFamilyChange}
+        disabled={!!selectedImage}
+      >
+        <SelectTrigger className="w-[160px] h-8 text-xs">
+          <SelectValue placeholder="Font" />
+        </SelectTrigger>
+        <SelectContent>
+          {FONT_FAMILY_OPTIONS.map(option => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          min={8}
+          className="h-8 w-16 px-2 text-xs"
+          value={fontSize}
+          onChange={event => handleFontSizeChange(event.target.value)}
+          placeholder="Size"
+          disabled={!!selectedImage}
+        />
+        <span className="text-[10px] text-gray-500">px</span>
+      </div>
+      <Divider />
+      {/* ------- Bold ---------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -422,6 +609,7 @@ export default function ToolbarPlugin() {
       >
         <Bold className="h-4 w-4" />
       </Button>
+      {/* ------- Italic -------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -433,6 +621,7 @@ export default function ToolbarPlugin() {
       >
         <Italic className="h-4 w-4" />
       </Button>
+      {/* ------- Underline -------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -444,6 +633,7 @@ export default function ToolbarPlugin() {
       >
         <Underline className="h-4 w-4" />
       </Button>
+      {/* --------- Strike through -------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -455,6 +645,7 @@ export default function ToolbarPlugin() {
       >
         <Strikethrough className="h-4 w-4" />
       </Button>
+      {/* --------- code --------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -466,6 +657,7 @@ export default function ToolbarPlugin() {
       >
         <Code className="h-4 w-4" />
       </Button>
+      {/* ---------- link ---------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -475,7 +667,9 @@ export default function ToolbarPlugin() {
       >
         <Link className="h-4 w-4" />
       </Button>
+
       <Divider />
+      {/* -------- Align Left --------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -489,6 +683,7 @@ export default function ToolbarPlugin() {
       >
         <AlignLeft className="h-4 w-4" />
       </Button>
+      {/* --------- Align Center -------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -502,6 +697,7 @@ export default function ToolbarPlugin() {
       >
         <AlignCenter className="h-4 w-4" />
       </Button>
+      {/* -------- Align Right -------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -515,6 +711,7 @@ export default function ToolbarPlugin() {
       >
         <AlignRight className="h-4 w-4" />
       </Button>
+      {/* ------- Align Justify -------- */}
       <Button
         variant="ghost"
         size="sm"
@@ -527,6 +724,7 @@ export default function ToolbarPlugin() {
         <AlignJustify className="h-4 w-4" />
       </Button>
       <Divider />
+      {/* ------- Image ----------- */}
       <Button
         variant="ghost"
         size="sm"
