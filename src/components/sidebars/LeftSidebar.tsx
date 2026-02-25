@@ -4,10 +4,14 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 
-const LeftSidebar = ({ children }: { children: React.ReactNode }) => {
+type LeftSidebarProps = {
+  children: React.ReactNode;
+};
+
+const LeftSidebar = ({ children }: LeftSidebarProps) => {
   return (
     <Sidebar
-      className="[--sidebar-width:280px] transition-all duration-300 ease-in-out"
+      className="transition-all duration-300 ease-in-out"
       collapsible="offcanvas"
       side="left"
       variant="sidebar"

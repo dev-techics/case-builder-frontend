@@ -1,5 +1,5 @@
 // src/features/editor/Editor.tsx
-import { FileText } from 'lucide-react';
+import { FileText, ArrowUp } from 'lucide-react';
 import type React from 'react';
 import {
   useCallback,
@@ -93,8 +93,9 @@ const LazyPDFRenderer: React.FC<{
 
 const SCROLL_THRESHOLD_PX = 240;
 const LOAD_COOLDOWN_MS = 400;
-const PDF_CONTAINER_HORIZONTAL_PADDING = 32; // matches p-4 on PDF container
+const PDF_CONTAINER_HORIZONTAL_PADDING = 32;
 const DEFAULT_MAX_SCALE = 3.0;
+const SCROLL_TOP_SHOW_THRESHOLD = 300;
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -115,6 +116,7 @@ const PDFViewer: React.FC = () => {
   >(null);
   const [maxBaseWidth, setMaxBaseWidth] = useState<number | null>(null);
   const [contentWidth, setContentWidth] = useState<number>(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,6 +131,10 @@ const PDFViewer: React.FC = () => {
     () => lastSaved ?? Date.now(),
     [lastSaved]
   );
+
+  const handleScrollToTop = useCallback(() => {
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const handlePageMetrics = useCallback(
     ({ fileId, width }: { fileId: string; width: number }) => {
@@ -474,6 +480,9 @@ const PDFViewer: React.FC = () => {
       scrollTop > lastScrollTopRef.current ? 'down' : 'up';
     lastScrollTopRef.current = scrollTop;
 
+    // Show/hide scroll-to-top button
+    setShowScrollTop(scrollTop > SCROLL_TOP_SHOW_THRESHOLD);
+
     const nearTop = scrollTop <= SCROLL_THRESHOLD_PX;
     const nearBottom =
       scrollTop + clientHeight >= scrollHeight - SCROLL_THRESHOLD_PX;
@@ -619,6 +628,18 @@ const PDFViewer: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Scroll to Top Button - positioned relative to the outer wrapper */}
+      {showScrollTop && (
+        <button
+          onClick={handleScrollToTop}
+          className="absolute bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-50 hover:shadow-xl transition-all duration-200"
+          title="Scroll to top"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-5 w-5 text-gray-600" />
+        </button>
+      )}
     </div>
   );
 };
