@@ -122,4 +122,9 @@
       -apple-system,
       sans-serif;
   }
+
+  .editor-image {
+    display: block;
+    width: 100%;
+  }
 }

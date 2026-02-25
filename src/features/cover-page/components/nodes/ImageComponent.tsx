@@ -90,6 +90,12 @@ export default function ImageComponent({
   }, [clearSelection, editor, isSelected, onDelete, setSelected]);
 
   const draggable = isSelected;
+  const alignmentStyles =
+    alignment === 'center'
+      ? { marginLeft: 'auto', marginRight: 'auto' }
+      : alignment === 'right'
+        ? { marginLeft: 'auto', marginRight: '0' }
+        : { marginLeft: '0', marginRight: 'auto' };
 
   return (
     <>
@@ -97,7 +103,6 @@ export default function ImageComponent({
         draggable={draggable}
         style={{
           width: '100%',
-          textAlign: alignment,
         }}
       >
         <img
@@ -106,6 +111,8 @@ export default function ImageComponent({
           alt={altText}
           ref={imageRef}
           style={{
+            display: 'block',
+            ...alignmentStyles,
             maxWidth: maxWidth,
             width: width === 'inherit' ? 'auto' : width,
             height: height === 'inherit' ? 'auto' : height,
