@@ -44,6 +44,8 @@ type FileTreeProps = {
   level: number;
 };
 
+type DropPreview = { parentId: string | null; index: number };
+
 const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   const dispatch = useAppDispatch();
   const expandedFolders = useAppSelector(
@@ -59,6 +61,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
+  const [dropPreview, setDropPreview] = useState<DropPreview | null>(null);
 
   // Get the item being dragged
   const activeItem = activeId ? findItemById(tree, activeId) : null;
@@ -137,6 +140,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     setActiveId(nextActiveId);
 
     const nextActiveItem = findItemById(tree, nextActiveId);
+    setDropPreview(null);
     if (nextActiveItem?.type === 'file') {
       const selected = selectedFileIds.includes(nextActiveId)
         ? selectedFileIds
@@ -153,8 +157,56 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { over } = event;
-    setOverId((over?.id as string) || null);
+    const { over, active } = event;
+    if (!over) {
+      setOverId(null);
+      setDropPreview(null);
+      return;
+    }
+
+    const rawOverId = String(over.id);
+    const activeItem = findItemById(tree, String(active.id));
+
+    if (activeItem?.type === 'file' && !rawOverId.endsWith('::content')) {
+      const overTarget = findItemById(tree, rawOverId);
+      if (overTarget?.type === 'folder') {
+        setOverId(`${overTarget.id}::content`);
+        const children = getChildrenForParent(tree, overTarget.id);
+        const pointerY = getPointerClientY(event);
+        const insertAtTop =
+          pointerY !== null &&
+          over.rect &&
+          pointerY <= over.rect.top + over.rect.height / 2;
+        setDropPreview({
+          parentId: overTarget.id,
+          index: insertAtTop ? 0 : children.length,
+        });
+        return;
+      }
+    }
+
+    setOverId(rawOverId);
+
+    if (!activeItem) {
+      setDropPreview(null);
+      return;
+    }
+
+    const selectedDragIds =
+      draggedFileIds.length > 0
+        ? draggedFileIds
+        : active?.id
+          ? [String(active.id)]
+          : [];
+    const preview = getDropPreviewFromOver({
+      tree,
+      overId: rawOverId,
+      overRect: over.rect,
+      pointerY: getPointerClientY(event),
+      selectedDragIds,
+      draggedType: activeItem.type,
+    });
+    setDropPreview(preview);
   };
 
   const { setNodeRef: setRootDropRef, isOver: isRootOver } = useDroppable({
@@ -172,6 +224,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     setActiveId(null);
     setOverId(null);
     setDraggedFileIds([]);
+    setDropPreview(null);
 
     if (!active.id) {
       return;
@@ -198,52 +251,117 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     });
 
     // Find target item
-    const overId = String(over.id);
-    const isFolderContentDrop = overId.endsWith('::content');
-    const contentFolderId = isFolderContentDrop
-      ? overId.replace('::content', '')
-      : null;
+    if (dropPreview) {
+      const destinationParentId = dropPreview.parentId;
+      const destinationIndex = dropPreview.index;
+      const draggedParentId = findParentId(tree, draggedItem.id, tree.id);
+      const draggedParentIds = selectedDragIds.map(id =>
+        findParentId(tree, id, tree.id)
+      );
+      const isSameParentForSelection = draggedParentIds.every(
+        parentId => parentId === draggedParentId
+      );
+      const isSameParentDrop =
+        isSameParentForSelection && draggedParentId === destinationParentId;
 
-    if (isFolderContentDrop && contentFolderId) {
-      const targetFolder = findItemById(tree, contentFolderId);
-      if (!targetFolder || targetFolder.type !== 'folder') {
-        console.error('❌ Could not find target folder for content drop');
-        return;
-      }
-
-      // Prevent dropping a folder into itself or its descendants
       if (
         draggedItem.type === 'folder' &&
-        isDescendant(draggedItem, targetFolder.id)
+        destinationParentId &&
+        isDescendant(draggedItem, destinationParentId)
       ) {
         console.log('⚠️ Cannot drop folder into itself or its descendants');
         return;
       }
 
-      console.log(
-        `📁 Moving ${draggedItem.name} (${draggedItem.type}) INTO folder ${targetFolder.name}`
-      );
+      if (isSameParentDrop) {
+        const siblings = getChildrenForParent(tree, destinationParentId);
+        const reordered = reorderChildrenByDropPosition(
+          siblings,
+          selectedDragIds,
+          destinationIndex
+        );
+        const hasOrderChange = reordered.some(
+          (item, index) => item.id !== siblings[index]?.id
+        );
+
+        if (!hasOrderChange) {
+          return;
+        }
+
+        const optimisticTree = replaceTreeChildrenAtParent(
+          tree,
+          destinationParentId,
+          reordered
+        );
+        if (optimisticTree !== tree) {
+          dispatch(setTree(optimisticTree as Tree));
+        }
+
+        try {
+          const items = reordered.map((child, index) => ({
+            id: child.id,
+            order: index,
+          }));
+          await dispatch(
+            reorderDocuments({
+              bundleId: extractedBundleId,
+              items,
+            })
+          ).unwrap();
+        } catch (error) {
+          console.error('❌ Error reordering:', error);
+        }
+
+        return;
+      }
 
       const optimisticTree = moveItemsToParentInTree(
         tree,
         selectedDragIds,
-        targetFolder.id
+        destinationParentId,
+        destinationIndex
       );
       if (optimisticTree !== tree) {
         dispatch(setTree(optimisticTree as Tree));
       }
 
       try {
-        await dispatch(
+        const moveResult = await dispatch(
           moveDocumentsBatch({
             bundleId: extractedBundleId,
             documentIds: selectedDragIds,
-            newParentId: targetFolder.id,
+            newParentId: destinationParentId,
+            skipApplyTree: true,
           })
         ).unwrap();
-        console.log('✅ Moved into folder successfully');
+
+        const parentChildren = getChildrenForParent(
+          moveResult.tree,
+          destinationParentId
+        );
+        const reordered = reorderChildrenByDropPosition(
+          parentChildren,
+          selectedDragIds,
+          destinationIndex
+        );
+        const hasOrderChange = reordered.some(
+          (item, index) => item.id !== parentChildren[index]?.id
+        );
+
+        if (hasOrderChange) {
+          const items = reordered.map((child, index) => ({
+            id: child.id,
+            order: index,
+          }));
+          await dispatch(
+            reorderDocuments({
+              bundleId: extractedBundleId,
+              items,
+            })
+          ).unwrap();
+        }
       } catch (error) {
-        console.error('❌ Error moving into folder:', error);
+        console.error('❌ Error moving file(s):', error);
       }
 
       return;
@@ -256,11 +374,11 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       return;
     }
 
-    const draggedParentId = findParentId(tree, draggedItem.id, tree.id);
-    const targetParentId = findParentId(tree, targetItem.id, tree.id);
-    const draggedParentIds = selectedDragIds.map(id =>
-      findParentId(tree, id, tree.id)
-    );
+      const draggedParentId = findParentId(tree, draggedItem.id, tree.id);
+      const targetParentId = findParentId(tree, targetItem.id, tree.id);
+      const draggedParentIds = selectedDragIds.map(id =>
+        findParentId(tree, id, tree.id)
+      );
 
     // NEW LOGIC: Check if we're trying to reorder at the same level
     const isSameParent = draggedParentId === targetParentId;
@@ -488,13 +606,14 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
               selectedFileIds={selectedFileIds}
               onFileSelect={handleFileSelect}
               onFolderSelect={handleFolderSelect}
+              dropPreview={dropPreview}
             />
           </div>
         )}
 
         <DragOverlay>
           {activeId && activeItem ? (
-            <div className="flex items-center bg-white shadow-xl rounded px-3 py-2 opacity-90 truncate">
+            <div className="pointer-events-none flex items-center bg-white shadow-xl rounded px-3 py-2 opacity-90 truncate">
               <button
                 className="mr-1 w-4 flex-shrink-0 cursor-grab border-0 bg-transparent p-0 active:cursor-grabbing"
                 type="button"
@@ -580,7 +699,8 @@ function moveGroupBeforeTarget(
 function moveItemsToParentInTree(
   tree: Tree | Children,
   itemIds: string[],
-  newParentId: string | null
+  newParentId: string | null,
+  targetIndex?: number
 ): Tree | Children {
   if (!tree.children || itemIds.length === 0) {
     return tree;
@@ -601,11 +721,25 @@ function moveItemsToParentInTree(
   }
 
   if (!newParentId) {
-    clonedTree.children = [...(clonedTree.children || []), ...movedItems];
+    const rootChildren = clonedTree.children || [];
+    const insertIndex =
+      typeof targetIndex === 'number'
+        ? Math.max(0, Math.min(targetIndex, rootChildren.length))
+        : rootChildren.length;
+    clonedTree.children = [
+      ...rootChildren.slice(0, insertIndex),
+      ...movedItems,
+      ...rootChildren.slice(insertIndex),
+    ];
     return clonedTree;
   }
 
-  const inserted = insertItemsIntoParent(clonedTree, newParentId, movedItems);
+  const inserted = insertItemsIntoParent(
+    clonedTree,
+    newParentId,
+    movedItems,
+    targetIndex
+  );
   if (!inserted) {
     clonedTree.children = [...(clonedTree.children || []), ...movedItems];
   }
@@ -641,7 +775,8 @@ function removeItemById(children: Children[], id: string): boolean {
 function insertItemsIntoParent(
   tree: Tree | Children,
   parentId: string,
-  items: Children[]
+  items: Children[],
+  targetIndex?: number
 ): boolean {
   if (!tree.children) {
     return false;
@@ -649,18 +784,180 @@ function insertItemsIntoParent(
 
   for (const child of tree.children) {
     if (child.id === parentId && child.type === 'folder') {
-      child.children = [...(child.children || []), ...items];
+      const existing = child.children || [];
+      const insertIndex =
+        typeof targetIndex === 'number'
+          ? Math.max(0, Math.min(targetIndex, existing.length))
+          : existing.length;
+      child.children = [
+        ...existing.slice(0, insertIndex),
+        ...items,
+        ...existing.slice(insertIndex),
+      ];
       return true;
     }
 
     if (child.type === 'folder' && child.children) {
-      if (insertItemsIntoParent(child, parentId, items)) {
+      if (insertItemsIntoParent(child, parentId, items, targetIndex)) {
         return true;
       }
     }
   }
 
   return false;
+}
+
+function getChildrenForParent(
+  tree: Tree | Children,
+  parentId: string | null
+): Children[] {
+  if (!tree.children) {
+    return [];
+  }
+
+  if (parentId === null) {
+    return tree.children;
+  }
+
+  const parent = findItemById(tree, parentId);
+  if (!parent || parent.type !== 'folder') {
+    return [];
+  }
+
+  return parent.children || [];
+}
+
+function reorderChildrenByDropPosition(
+  children: Children[],
+  draggedIds: string[],
+  targetIndex: number
+): Children[] {
+  if (draggedIds.length === 0) {
+    return children;
+  }
+
+  const draggedSet = new Set(draggedIds);
+  const dragged = children.filter(child => draggedSet.has(child.id));
+  const remaining = children.filter(child => !draggedSet.has(child.id));
+  const insertIndex = Math.max(0, Math.min(targetIndex, remaining.length));
+
+  return [
+    ...remaining.slice(0, insertIndex),
+    ...dragged,
+    ...remaining.slice(insertIndex),
+  ];
+}
+
+function getPointerClientY(event: DragOverEvent): number | null {
+  const activatorEvent = event.activatorEvent;
+  if (!activatorEvent) {
+    return null;
+  }
+
+  if ('clientY' in activatorEvent) {
+    return activatorEvent.clientY as number;
+  }
+
+  if ('touches' in activatorEvent) {
+    const touchEvent = activatorEvent as TouchEvent;
+    if (touchEvent.touches.length > 0) {
+      return touchEvent.touches[0].clientY;
+    }
+  }
+
+  return null;
+}
+
+function getDropPreviewFromOver({
+  tree,
+  overId,
+  overRect,
+  pointerY,
+  selectedDragIds,
+  draggedType,
+}: {
+  tree: Tree | Children;
+  overId: string;
+  overRect: { top: number; height: number } | null;
+  pointerY: number | null;
+  selectedDragIds: string[];
+  draggedType: 'file' | 'folder';
+}): DropPreview | null {
+  if (overId === 'ROOT') {
+    const rootChildren = getChildrenForParent(tree, null);
+    return {
+      parentId: null,
+      index: rootChildren.length,
+    };
+  }
+
+  if (overId.endsWith('::content')) {
+    const parentId = overId.replace('::content', '');
+    const children = getChildrenForParent(tree, parentId);
+    return {
+      parentId,
+      index: children.length,
+    };
+  }
+
+  const overItem = findItemById(tree, overId);
+  if (!overItem) {
+    return null;
+  }
+
+  if (overItem.type === 'folder') {
+    if (draggedType === 'file') {
+      const children = getChildrenForParent(tree, overItem.id);
+      return {
+        parentId: overItem.id,
+        index: children.length,
+      };
+    }
+
+    const parentId = findParentId(tree, overItem.id, tree.id);
+    const siblings = getChildrenForParent(tree, parentId);
+    const targetIndex = siblings.findIndex(child => child.id === overItem.id);
+
+    if (targetIndex === -1) {
+      return null;
+    }
+
+    let index = targetIndex;
+    if (
+      pointerY !== null &&
+      overRect &&
+      pointerY > overRect.top + overRect.height / 2
+    ) {
+      index = targetIndex + 1;
+    }
+
+    return { parentId, index };
+  }
+
+  const parentId = findParentId(tree, overItem.id, tree.id);
+  const siblings = getChildrenForParent(tree, parentId);
+  const targetIndex = siblings.findIndex(child => child.id === overItem.id);
+
+  if (targetIndex === -1) {
+    return null;
+  }
+
+  const draggedSet = new Set(selectedDragIds);
+  const sameTarget = draggedSet.has(overItem.id);
+  if (sameTarget) {
+    return null;
+  }
+
+  let index = targetIndex;
+  if (
+    pointerY !== null &&
+    overRect &&
+    pointerY > overRect.top + overRect.height / 2
+  ) {
+    index = targetIndex + 1;
+  }
+
+  return { parentId, index };
 }
 
 function getAllFileIds(node: Tree | Children): string[] {

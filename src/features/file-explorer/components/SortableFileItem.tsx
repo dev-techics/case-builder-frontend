@@ -54,10 +54,10 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
     isDragging,
   } = useSortable({ id: file.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1,
   };
 
   // Scroll into view when this file should be highlighted

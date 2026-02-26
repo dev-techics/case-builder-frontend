@@ -21,6 +21,7 @@ interface FileItemWrapperProps {
     modifiers?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }
   ) => void;
   onFolderSelect: (folderId: string) => void;
+  dropPreview: { parentId: string | null; index: number } | null;
 }
 
 const FileItemWrapper = ({
@@ -32,6 +33,7 @@ const FileItemWrapper = ({
   selectedFileIds,
   onFileSelect,
   onFolderSelect,
+  dropPreview,
 }: FileItemWrapperProps) => {
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
   const isCreating = useAppSelector(
@@ -41,6 +43,23 @@ const FileItemWrapper = ({
   const children = folder.children || [];
   const validChildren = children.filter(Boolean);
   const shouldShowCreateInput = isCreating && level === 0;
+  const currentParentId =
+    folder.id === 'root' || folder.id.startsWith('bundle-') ? null : folder.id;
+  const isContentHover =
+    currentParentId !== null && overId === `${currentParentId}::content`;
+  const effectiveDropPreview =
+    dropPreview?.parentId === currentParentId
+      ? dropPreview
+      : isContentHover
+        ? { parentId: currentParentId, index: validChildren.length }
+        : null;
+  const shouldShowDropPreview = Boolean(effectiveDropPreview);
+
+  const renderDropIndicator = (key: string) => (
+    <div key={key} className="my-1 px-2">
+      <div className="h-1 rounded-full bg-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.35)]" />
+    </div>
+  );
 
   return (
     <>
@@ -51,41 +70,51 @@ const FileItemWrapper = ({
         {/* ---- create new folder input ------ */}
         {shouldShowCreateInput && <CreateNewFolderInput parentId={null} />}
         {validChildren.length === 0 ? (
-          <div className="px-2 py-1 text-xs text-gray-400">No items yet</div>
+          <>
+            {shouldShowDropPreview && effectiveDropPreview?.index === 0
+              ? renderDropIndicator(`drop-empty-${currentParentId ?? 'root'}`)
+              : null}
+            <div className="px-2 py-1 text-xs text-gray-400">No items yet</div>
+          </>
         ) : (
-          validChildren.map(child => {
+          validChildren.map((child, index) => {
             const isOver = overId === child.id;
 
-            if (child.type === 'folder') {
-              return (
-                <SortableFolderItem
-                  key={child.id}
-                  onSelect={() => onFolderSelect(child.id)}
-                  folder={child}
-                  level={level + 1}
-                  isDropTarget={isOver && activeItem?.type === 'file'}
-                  activeId={activeId}
-                  overId={overId}
-                  activeItem={activeItem}
-                  selectedFileIds={selectedFileIds}
-                  onFileSelect={onFileSelect}
-                  onFolderSelect={onFolderSelect}
-                />
-              );
-            }
-
             return (
-              <SortableFileItem
-                key={child.id}
-                file={child}
-                isSelected={selectedFileIds.includes(child.id)}
-                level={level + 1}
-                onSelect={modifiers => onFileSelect(child.id, modifiers)}
-                shouldScrollIntoView={scrollToFileId === child.id}
-              />
+              <div key={child.id}>
+                {shouldShowDropPreview && effectiveDropPreview?.index === index
+                  ? renderDropIndicator(`drop-${currentParentId ?? 'root'}-${index}`)
+                  : null}
+                {child.type === 'folder' ? (
+                  <SortableFolderItem
+                    onSelect={() => onFolderSelect(child.id)}
+                    folder={child}
+                    level={level + 1}
+                    isDropTarget={isOver && activeItem?.type === 'file'}
+                    activeId={activeId}
+                    overId={overId}
+                    activeItem={activeItem}
+                    selectedFileIds={selectedFileIds}
+                    onFileSelect={onFileSelect}
+                    onFolderSelect={onFolderSelect}
+                    dropPreview={dropPreview}
+                  />
+                ) : (
+                  <SortableFileItem
+                    file={child}
+                    isSelected={selectedFileIds.includes(child.id)}
+                    level={level + 1}
+                    onSelect={modifiers => onFileSelect(child.id, modifiers)}
+                    shouldScrollIntoView={scrollToFileId === child.id}
+                  />
+                )}
+              </div>
             );
           })
         )}
+        {shouldShowDropPreview && effectiveDropPreview?.index === validChildren.length
+          ? renderDropIndicator(`drop-end-${currentParentId ?? 'root'}`)
+          : null}
       </SortableContext>
     </>
   );
