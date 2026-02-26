@@ -203,7 +203,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
         className={`
           select-none flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left 
           hover:bg-gray-200 transition-colors
-          ${showDropIndicator ? 'bg-blue-100 border-l-4 border-blue-500' : ''}
+          
         `}
         onClick={handleFolderClick}
         onKeyDown={handleKeyDown}

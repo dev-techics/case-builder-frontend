@@ -51,13 +51,13 @@ const FileItemWrapper = ({
     dropPreview?.parentId === currentParentId
       ? dropPreview
       : isContentHover
-        ? { parentId: currentParentId, index: validChildren.length }
+        ? { parentId: currentParentId, index: 0 }
         : null;
   const shouldShowDropPreview = Boolean(effectiveDropPreview);
 
   const renderDropIndicator = (key: string) => (
-    <div key={key} className="my-1 px-2">
-      <div className="h-1 rounded-full bg-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.35)]" />
+    <div key={key} className="relative h-0">
+      <div className="absolute -top-px left-2 right-2 h-1 rounded-full bg-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.35)] transition-all duration-150 ease-out" />
     </div>
   );
 

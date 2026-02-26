@@ -63,6 +63,22 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
   const [dropPreview, setDropPreview] = useState<DropPreview | null>(null);
 
+  const setDropPreviewIfChanged = useCallback((next: DropPreview | null) => {
+    setDropPreview(prev => {
+      if (
+        prev?.parentId === next?.parentId &&
+        prev?.index === next?.index
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, []);
+
+  const setOverIdIfChanged = useCallback((next: string | null) => {
+    setOverId(prev => (prev === next ? prev : next));
+  }, []);
+
   // Get the item being dragged
   const activeItem = activeId ? findItemById(tree, activeId) : null;
   const activeDragCount =
@@ -156,11 +172,11 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     setDraggedFileIds([]);
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, active } = event;
     if (!over) {
-      setOverId(null);
-      setDropPreview(null);
+      setOverIdIfChanged(null);
+      setDropPreviewIfChanged(null);
       return;
     }
 
@@ -170,25 +186,20 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     if (activeItem?.type === 'file' && !rawOverId.endsWith('::content')) {
       const overTarget = findItemById(tree, rawOverId);
       if (overTarget?.type === 'folder') {
-        setOverId(`${overTarget.id}::content`);
-        const children = getChildrenForParent(tree, overTarget.id);
-        const pointerY = getPointerClientY(event);
-        const insertAtTop =
-          pointerY !== null &&
-          over.rect &&
-          pointerY <= over.rect.top + over.rect.height / 2;
-        setDropPreview({
+        setOverIdIfChanged(`${overTarget.id}::content`);
+        setDropPreviewIfChanged({
           parentId: overTarget.id,
-          index: insertAtTop ? 0 : children.length,
+          // Hovering folder row means "drop at top inside folder"
+          index: 0,
         });
         return;
       }
     }
 
-    setOverId(rawOverId);
+    setOverIdIfChanged(rawOverId);
 
     if (!activeItem) {
-      setDropPreview(null);
+      setDropPreviewIfChanged(null);
       return;
     }
 
@@ -206,8 +217,8 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       selectedDragIds,
       draggedType: activeItem.type,
     });
-    setDropPreview(preview);
-  };
+    setDropPreviewIfChanged(preview);
+  }, [draggedFileIds, setDropPreviewIfChanged, setOverIdIfChanged, tree]);
 
   const { setNodeRef: setRootDropRef, isOver: isRootOver } = useDroppable({
     id: 'ROOT',
@@ -893,10 +904,10 @@ function getDropPreviewFromOver({
 
   if (overId.endsWith('::content')) {
     const parentId = overId.replace('::content', '');
-    const children = getChildrenForParent(tree, parentId);
     return {
       parentId,
-      index: children.length,
+      // Hovering folder content target should default to top insertion preview.
+      index: 0,
     };
   }
 
