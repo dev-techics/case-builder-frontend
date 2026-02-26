@@ -26,8 +26,8 @@ export class CoverPageApi {
   static async updateMetadata(
     bundleId: string,
     metadata: {
-      front_cover_page_id?: string;
-      back_cover_page_id?: string;
+      front_cover_page_id?: string | null;
+      back_cover_page_id?: string | null;
       header_left?: string;
       header_right?: string;
       footer?: string;
