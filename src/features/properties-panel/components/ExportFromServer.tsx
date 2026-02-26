@@ -92,7 +92,7 @@ function Exports() {
         }
       );
 
-      const exportId = data.export_id;
+      const exportId = data.exportId;
       setExportMessage('Processing PDF on server...');
 
       // Step 2: Poll until ready
