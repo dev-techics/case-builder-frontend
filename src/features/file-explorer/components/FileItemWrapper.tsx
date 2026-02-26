@@ -5,13 +5,8 @@ import {
 } from '@dnd-kit/sortable';
 import SortableFileItem from './SortableFileItem';
 import SortableFolderItem from './SortableFolderItem';
-import {
-  selectFile,
-  selectFolder,
-  type Tree,
-  type Children,
-} from '../redux/fileTreeSlice';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { type Tree, type Children } from '../redux/fileTreeSlice';
+import { useAppSelector } from '@/app/hooks';
 import CreateNewFolderInput from './CreateNewFolderInput';
 
 interface FileItemWrapperProps {
@@ -20,6 +15,12 @@ interface FileItemWrapperProps {
   activeItem: Children | null;
   overId?: string | null;
   activeId: string | null;
+  selectedFileIds: string[];
+  onFileSelect: (
+    fileId: string,
+    modifiers?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }
+  ) => void;
+  onFolderSelect: (folderId: string) => void;
 }
 
 const FileItemWrapper = ({
@@ -28,21 +29,14 @@ const FileItemWrapper = ({
   activeItem,
   overId,
   activeId,
+  selectedFileIds,
+  onFileSelect,
+  onFolderSelect,
 }: FileItemWrapperProps) => {
-  const dispatch = useAppDispatch();
-  const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
   const isCreating = useAppSelector(
     state => state.fileTree.isCreatingNewFolder
   );
-
-  const handleFileSelect = (fileId: string) => {
-    dispatch(selectFile(fileId));
-  };
-
-  const handleFolderSelect = (folderId: string) => {
-    dispatch(selectFolder(folderId));
-  };
 
   const children = folder.children || [];
   const validChildren = children.filter(Boolean);
@@ -66,13 +60,16 @@ const FileItemWrapper = ({
               return (
                 <SortableFolderItem
                   key={child.id}
-                  onSelect={() => handleFolderSelect(child.id)}
+                  onSelect={() => onFolderSelect(child.id)}
                   folder={child}
                   level={level + 1}
                   isDropTarget={isOver && activeItem?.type === 'file'}
                   activeId={activeId}
                   overId={overId}
                   activeItem={activeItem}
+                  selectedFileIds={selectedFileIds}
+                  onFileSelect={onFileSelect}
+                  onFolderSelect={onFolderSelect}
                 />
               );
             }
@@ -81,9 +78,9 @@ const FileItemWrapper = ({
               <SortableFileItem
                 key={child.id}
                 file={child}
-                isSelected={selectedFile === child.id}
+                isSelected={selectedFileIds.includes(child.id)}
                 level={level + 1}
-                onSelect={() => handleFileSelect(child.id)}
+                onSelect={modifiers => onFileSelect(child.id, modifiers)}
                 shouldScrollIntoView={scrollToFileId === child.id}
               />
             );

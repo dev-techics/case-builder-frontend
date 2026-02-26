@@ -27,6 +27,12 @@ type SortableFolderItemProps = {
   activeId: string | null;
   overId?: string | null;
   activeItem: Children | null;
+  selectedFileIds: string[];
+  onFileSelect: (
+    fileId: string,
+    modifiers?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }
+  ) => void;
+  onFolderSelect: (folderId: string) => void;
 };
 
 const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
@@ -36,6 +42,9 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   activeId,
   overId,
   activeItem,
+  selectedFileIds,
+  onFileSelect,
+  onFolderSelect,
 }) => {
   const folderRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -186,7 +195,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
       <div
         ref={folderRef}
         className={`
-          flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left 
+          select-none flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left 
           hover:bg-gray-200 transition-colors
           ${showDropIndicator ? 'bg-blue-100 border-l-4 border-blue-500' : ''}
         `}
@@ -234,11 +243,11 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
               onKeyDown={handleRenameKeyDown}
               onBlur={handleRenameBlur}
               onClick={handleInputClick}
-              className="truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
+              className="select-text truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
             />
           ) : (
             <span
-              className="truncate text-gray-800 text-sm font-medium"
+              className="select-none truncate text-gray-800 text-sm font-medium"
               title={folder.name}
             >
               {folder.name}
@@ -271,6 +280,9 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
                 activeItem={activeItem}
                 overId={overId}
                 activeId={activeId}
+                selectedFileIds={selectedFileIds}
+                onFileSelect={onFileSelect}
+                onFolderSelect={onFolderSelect}
               />
             </div>
           ) : (
@@ -280,6 +292,9 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
               activeItem={activeItem}
               overId={overId}
               activeId={activeId}
+              selectedFileIds={selectedFileIds}
+              onFileSelect={onFileSelect}
+              onFolderSelect={onFolderSelect}
             />
           )}
         </div>

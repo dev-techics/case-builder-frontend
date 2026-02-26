@@ -337,6 +337,43 @@ export const moveDocument = createAsyncThunk(
   }
 );
 
+/**
+ * Move multiple documents and refresh tree once
+ */
+export const moveDocumentsBatch = createAsyncThunk(
+  'fileTree/moveDocumentsBatch',
+  async (
+    {
+      bundleId,
+      documentIds,
+      newParentId,
+    }: {
+      bundleId: string;
+      documentIds: string[];
+      newParentId: string | null;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      for (const documentId of documentIds) {
+        await DocumentApiService.moveDocument(documentId, newParentId);
+      }
+
+      const treeResponse = await DocumentApiService.fetchTree(bundleId);
+
+      return {
+        success: true,
+        tree: treeResponse,
+      };
+    } catch (error: any) {
+      console.error('❌ Error moving documents:', error);
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to move documents'
+      );
+    }
+  }
+);
+
 /*=============================================
 =            Redux Slice                      =
 =============================================*/
@@ -626,6 +663,20 @@ const fileTreeSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
         console.error('❌ Move failed:', action.payload);
+      })
+      .addCase(moveDocumentsBatch.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(moveDocumentsBatch.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload.tree) {
+          state.tree = action.payload.tree;
+        }
+      })
+      .addCase(moveDocumentsBatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
