@@ -101,6 +101,9 @@ const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
   const tree = useAppSelector(state => state.fileTree.tree);
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
+  const fileSelectionVersion = useAppSelector(
+    state => state.fileTree.fileSelectionVersion
+  );
   const bundleId = useParams().bundleId;
   const lastSaved = useAppSelector(state => state.propertiesPanel.lastSaved);
   const scale = useAppSelector(state => state.editor.scale);
@@ -126,6 +129,7 @@ const PDFViewer: React.FC = () => {
   const loadingDirectionRef = useRef<'prev' | 'next' | null>(null);
   const pendingScrollAdjustRef = useRef<number | null>(null);
   const pageWidthsRef = useRef<Map<string, number>>(new Map());
+  const suppressAutoLoadUntilRef = useRef<number>(0);
 
   const cacheBuster = useMemo(
     () => lastSaved ?? Date.now(),
@@ -339,13 +343,16 @@ const PDFViewer: React.FC = () => {
     pendingScrollAdjustRef.current = null;
 
     if (containerRef.current) {
-      lastScrollTopRef.current = containerRef.current.scrollTop;
+      containerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+      lastScrollTopRef.current = 0;
     }
+    setShowScrollTop(false);
+    suppressAutoLoadUntilRef.current = performance.now() + 300;
 
     console.log(
       `🎯 Selected file changed to: ${allFiles.find(f => f.id === selectedFile)?.name}`
     );
-  }, [selectedFile, allFiles]);
+  }, [selectedFile, fileSelectionVersion, allFiles]);
 
   const requestLoadNext = useCallback(() => {
     if (!visibleRange || allFiles.length === 0) {
@@ -472,6 +479,14 @@ const PDFViewer: React.FC = () => {
     }
 
     const { scrollTop, scrollHeight, clientHeight } = container;
+    const suppressAutoLoad = performance.now() < suppressAutoLoadUntilRef.current;
+
+    if (suppressAutoLoad) {
+      lastScrollTopRef.current = scrollTop;
+      setShowScrollTop(scrollTop > SCROLL_TOP_SHOW_THRESHOLD);
+      return;
+    }
+
     if (scrollTop === lastScrollTopRef.current) {
       return;
     }

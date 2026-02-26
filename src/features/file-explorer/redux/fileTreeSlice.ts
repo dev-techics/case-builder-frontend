@@ -28,6 +28,7 @@ interface FileTreeState {
   expandedFolders: string[];
   isCreatingNewFolder: boolean;
   selectedFile: string | null;
+  fileSelectionVersion: number;
   selectedFolderId: string | null;
   scrollToFileId: string | null;
   loading: boolean;
@@ -50,6 +51,7 @@ const initialState: FileTreeState = {
   expandedFolders: [],
   isCreatingNewFolder: false,
   selectedFile: null,
+  fileSelectionVersion: 0,
   selectedFolderId: null,
   scrollToFileId: null,
   loading: false,
@@ -360,6 +362,7 @@ const fileTreeSlice = createSlice({
 
     selectFile: (state, action: PayloadAction<string | null>) => {
       state.selectedFile = action.payload;
+      state.fileSelectionVersion += 1;
       if (action.payload) {
         state.selectedFolderId = null;
       }
