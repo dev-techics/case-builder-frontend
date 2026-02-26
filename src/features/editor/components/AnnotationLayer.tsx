@@ -53,6 +53,12 @@ const AnnotationLayer = ({
   const activeTool = useAppSelector(state => state.toolbar.activeTool);
   const redactionStyle = useAppSelector(state => state.toolbar.redactionStyle);
   const bundleId = useAppSelector(state => state.fileTree.tree.id);
+  const { headerLeft, headerRight, footer } = useAppSelector(
+    state => state.propertiesPanel.headersFooter
+  );
+  const documentInfo = useAppSelector(
+    state => state.propertiesPanel.documentInfo
+  );
   const isRedactMode = activeTool === 'redact';
   const dragStartRef = useRef<DragPoint | null>(null);
   const [draftRect, setDraftRect] = useState<DraftRect | null>(null);
@@ -176,6 +182,29 @@ const AnnotationLayer = ({
     ? 'absolute inset-0 cursor-crosshair pointer-events-auto'
     : 'pointer-events-none absolute inset-0';
 
+  const headerLeftText =
+    typeof headerLeft === 'string' ? headerLeft : headerLeft.text || '';
+  const headerRightText =
+    typeof headerRight === 'string' ? headerRight : headerRight.text || '';
+  const footerText =
+    typeof footer === 'string' ? footer : footer.text || '';
+  const pageCount = documentInfo[fileId]?.numPages ?? null;
+  const headerFooterStyles = {
+    left: 50 * scale,
+    top: 25 * scale,
+    bottom: 25 * scale,
+  };
+  const headerFooterRightX = pageInfo
+    ? (pageInfo.width - 120) * scale
+    : 0;
+
+  const resolveTextStyle = (color: string | undefined, size: number | undefined) => ({
+    color: color || '#4b5563',
+    fontSize: `${(size || 10) * scale}px`,
+    lineHeight: 1,
+    whiteSpace: 'nowrap' as const,
+  });
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
       {pageInfo && (
@@ -215,6 +244,75 @@ const AnnotationLayer = ({
             border: `${redactionStyle.borderWidth}px solid ${redactionStyle.borderHex}`,
           }}
         />
+      )}
+
+      {pageInfo && (headerLeftText || headerRightText || footerText || pageCount) && (
+        <div className="pointer-events-none absolute inset-0">
+          {headerLeftText && (
+            <div
+              style={{
+                position: 'absolute',
+                left: headerFooterStyles.left,
+                top: headerFooterStyles.top,
+                ...resolveTextStyle(
+                  typeof headerLeft === 'string' ? undefined : headerLeft.color,
+                  typeof headerLeft === 'string' ? undefined : headerLeft.size
+                ),
+              }}
+            >
+              {headerLeftText}
+            </div>
+          )}
+          {headerRightText && (
+            <div
+              style={{
+                position: 'absolute',
+                left: headerFooterRightX,
+                top: headerFooterStyles.top,
+                ...resolveTextStyle(
+                  typeof headerRight === 'string' ? undefined : headerRight.color,
+                  typeof headerRight === 'string' ? undefined : headerRight.size
+                ),
+              }}
+            >
+              {headerRightText}
+            </div>
+          )}
+          {(footerText || pageCount) && (
+            <>
+              {footerText && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: headerFooterStyles.left,
+                    bottom: headerFooterStyles.bottom,
+                    ...resolveTextStyle(
+                      typeof footer === 'string' ? undefined : footer.color,
+                      typeof footer === 'string' ? undefined : footer.size
+                    ),
+                  }}
+                >
+                  {footerText}
+                </div>
+              )}
+              {pageCount && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: headerFooterRightX,
+                    bottom: headerFooterStyles.bottom,
+                    ...resolveTextStyle(
+                      typeof footer === 'string' ? undefined : footer.color,
+                      typeof footer === 'string' ? undefined : footer.size
+                    ),
+                  }}
+                >
+                  Page {pageNumber} of {pageCount}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       <div

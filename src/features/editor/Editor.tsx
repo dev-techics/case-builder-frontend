@@ -102,7 +102,6 @@ const PDFViewer: React.FC = () => {
   const tree = useAppSelector(state => state.fileTree.tree);
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const bundleId = useParams().bundleId;
-  const lastSaved = useAppSelector(state => state.propertiesPanel.lastSaved);
   const scale = useAppSelector(state => state.editor.scale);
   const maxScale = useAppSelector(state => state.editor.maxScale);
 
@@ -126,11 +125,6 @@ const PDFViewer: React.FC = () => {
   const loadingDirectionRef = useRef<'prev' | 'next' | null>(null);
   const pendingScrollAdjustRef = useRef<number | null>(null);
   const pageWidthsRef = useRef<Map<string, number>>(new Map());
-
-  const cacheBuster = useMemo(
-    () => lastSaved ?? Date.now(),
-    [lastSaved]
-  );
 
   const handleScrollToTop = useCallback(() => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -453,13 +447,13 @@ const PDFViewer: React.FC = () => {
     return allFiles.slice(visibleRange.start, visibleRange.end + 1);
   }, [visibleRange, allFiles]);
 
-  // Create files with URLs and cache busting
+  // Create files with URLs (always stream the original PDF)
   const filesWithUrls = useMemo(() => {
     return visibleFiles.map(file => ({
       ...file,
-      url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?v=${cacheBuster}`,
+      url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true`,
     }));
-  }, [visibleFiles, cacheBuster]);
+  }, [visibleFiles]);
 
   const hasPreviousFiles = visibleRange ? visibleRange.start > 0 : false;
   const hasNextFiles = visibleRange

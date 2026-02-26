@@ -18,6 +18,8 @@ interface CoverPageState {
   backHtml: string;
   frontLexicalJson: string | null;
   backLexicalJson: string | null;
+  frontName: string;
+  backName: string;
 
   isEditing: boolean;
   isSaving: boolean;
@@ -36,6 +38,8 @@ const initialState: CoverPageState = {
   backHtml: '',
   frontLexicalJson: null,
   backLexicalJson: null,
+  frontName: '',
+  backName: '',
   isEditing: false,
   isSaving: false,
   currentBundleId: null,
@@ -114,6 +118,8 @@ export const saveCoverPageData = createAsyncThunk(
       backTemplateKey,
       frontCoverPageId,
       backCoverPageId,
+      frontName,
+      backName,
       templates,
     } = state.coverPage;
 
@@ -127,13 +133,17 @@ export const saveCoverPageData = createAsyncThunk(
     );
     const fallbackName =
       type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
+    const resolvedName =
+      (type === 'front' ? frontName : backName).trim() ||
+      selectedTemplate?.name ||
+      fallbackName;
 
     const payload = {
       templateKey: templateKey,
       html: html,
       lexicalJson: lexicalJson || undefined,
       type: type,
-      name: selectedTemplate?.name || fallbackName,
+      name: resolvedName,
       description: selectedTemplate?.description,
     };
 
@@ -150,6 +160,29 @@ export const saveCoverPageData = createAsyncThunk(
     }
 
     return { type, response };
+  }
+);
+
+// Delete a cover page template
+export const deleteCoverPage = createAsyncThunk(
+  'coverPage/deleteCoverPage',
+  async ({ id }: { id: string }, { getState }) => {
+    const state = getState() as any;
+    const { currentBundleId, frontCoverPageId, backCoverPageId } =
+      state.coverPage;
+
+    await CoverPageApi.deleteCoverPage(id);
+
+    if (currentBundleId && (id === frontCoverPageId || id === backCoverPageId)) {
+      await CoverPageApi.updateMetadata(currentBundleId, {
+        ...(id === frontCoverPageId
+          ? { front_cover_page_id: null }
+          : {}),
+        ...(id === backCoverPageId ? { back_cover_page_id: null } : {}),
+      });
+    }
+
+    return { id };
   }
 );
 
@@ -175,16 +208,22 @@ const coverPageSlice = createSlice({
     ) => {
       const { type, templateKey } = action.payload;
 
-      if (type === 'front') {
-        state.frontTemplateKey = templateKey;
-      } else {
-        state.backTemplateKey = templateKey;
-      }
-
       // Find template and load default HTML if available
       const selectedTemplate = state.templates.find(
         template => template.templateKey === templateKey
       );
+
+      const fallbackName =
+        type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
+      const nextName = selectedTemplate?.name || fallbackName;
+
+      if (type === 'front') {
+        state.frontTemplateKey = templateKey;
+        state.frontName = nextName;
+      } else {
+        state.backTemplateKey = templateKey;
+        state.backName = nextName;
+      }
 
       const templateHtml = selectedTemplate?.html || '';
 
@@ -236,6 +275,18 @@ const coverPageSlice = createSlice({
       }
     },
 
+    setCoverPageName: (
+      state,
+      action: PayloadAction<{ type: 'front' | 'back'; name: string }>
+    ) => {
+      const { type, name } = action.payload;
+      if (type === 'front') {
+        state.frontName = name;
+      } else {
+        state.backName = name;
+      }
+    },
+
     setIsEditing: (state, action: PayloadAction<boolean>) => {
       state.isEditing = action.payload;
     },
@@ -263,18 +314,25 @@ const coverPageSlice = createSlice({
         id: string;
         html: string;
         lexicalJson?: string | null;
+        name?: string;
       }>
     ) => {
-      const { type, id, html, lexicalJson } = action.payload;
+      const { type, id, html, lexicalJson, name } = action.payload;
 
       if (type === 'front') {
         state.frontCoverPageId = id;
         state.frontHtml = html || '';
         state.frontLexicalJson = lexicalJson || null;
+        if (typeof name === 'string') {
+          state.frontName = name;
+        }
       } else {
         state.backCoverPageId = id;
         state.backHtml = html || '';
         state.backLexicalJson = lexicalJson || null;
+        if (typeof name === 'string') {
+          state.backName = name;
+        }
       }
     },
 
@@ -289,11 +347,13 @@ const coverPageSlice = createSlice({
         state.frontCoverPageId = null;
         state.frontHtml = '';
         state.frontLexicalJson = null;
+        state.frontName = '';
       } else {
         state.backEnabled = false;
         state.backCoverPageId = null;
         state.backHtml = '';
         state.backLexicalJson = null;
+        state.backName = '';
       }
     },
 
@@ -331,6 +391,9 @@ const coverPageSlice = createSlice({
           if (frontTemplate?.isDefault && !state.frontHtml) {
             state.frontHtml = frontTemplate.html;
           }
+          if (!state.frontName) {
+            state.frontName = frontTemplate?.name || 'Front Cover Page';
+          }
 
           // Initialize back cover HTML
           const backTemplate =
@@ -341,6 +404,9 @@ const coverPageSlice = createSlice({
 
           if (backTemplate?.isDefault && !state.backHtml) {
             state.backHtml = backTemplate.html;
+          }
+          if (!state.backName) {
+            state.backName = backTemplate?.name || 'Back Cover Page';
           }
         }
       })
@@ -385,8 +451,73 @@ const coverPageSlice = createSlice({
             state.backCoverPageId = response.id;
           }
         }
+        if (response?.name) {
+          if (type === 'front') {
+            state.frontName = response.name;
+          } else {
+            state.backName = response.name;
+          }
+        }
+        if (response?.templateKey || response?.id) {
+          const index = state.templates.findIndex(
+            template =>
+              template.templateKey === response.templateKey ||
+              template.id === response.id
+          );
+          if (index >= 0) {
+            state.templates[index] = {
+              ...state.templates[index],
+              name: response.name ?? state.templates[index].name,
+              description:
+                response.description ?? state.templates[index].description,
+            };
+          }
+        }
       })
       .addCase(saveCoverPageData.rejected, state => {
+        state.isSaving = false;
+      })
+      // Delete cover page
+      .addCase(deleteCoverPage.pending, state => {
+        state.isSaving = true;
+      })
+      .addCase(deleteCoverPage.fulfilled, (state, action) => {
+        state.isSaving = false;
+        const { id } = action.payload;
+        const removed = state.templates.find(template => template.id === id);
+
+        state.templates = state.templates.filter(
+          template => template.id !== id
+        );
+
+        if (state.frontCoverPageId === id) {
+          state.frontCoverPageId = null;
+        }
+        if (state.backCoverPageId === id) {
+          state.backCoverPageId = null;
+        }
+
+        if (
+          removed?.type === 'front' &&
+          state.frontTemplateKey === removed.templateKey
+        ) {
+          state.frontTemplateKey = '';
+          state.frontHtml = '';
+          state.frontLexicalJson = null;
+          state.frontName = '';
+        }
+
+        if (
+          removed?.type === 'back' &&
+          state.backTemplateKey === removed.templateKey
+        ) {
+          state.backTemplateKey = '';
+          state.backHtml = '';
+          state.backLexicalJson = null;
+          state.backName = '';
+        }
+      })
+      .addCase(deleteCoverPage.rejected, state => {
         state.isSaving = false;
       });
   },
@@ -397,6 +528,7 @@ export const {
   setTemplate,
   setCoverPageHtml,
   setCoverPageLexicalJson,
+  setCoverPageName,
   setIsEditing,
   setBundleId,
   setCoverPageId,

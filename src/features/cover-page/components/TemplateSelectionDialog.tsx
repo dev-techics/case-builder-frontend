@@ -4,7 +4,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useAppSelector } from '@/app/hooks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { Trash2 } from 'lucide-react';
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
+import type { Template } from '../types';
+import { deleteCoverPage } from '../redux/coverPageSlice';
 
 interface TemplateSelectionDialogProps {
   open: boolean;
@@ -21,10 +35,15 @@ const TemplateSelectionDialog = ({
   onCreate,
   type,
 }: TemplateSelectionDialogProps) => {
+  const dispatch = useAppDispatch();
   const { frontTemplateKey, backTemplateKey } = useAppSelector(
     state => state.coverPage
   );
   const templates = useAppSelector(state => state.coverPage.templates);
+  const isSaving = useAppSelector(state => state.coverPage.isSaving);
+
+  const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const currentTemplateKey =
     type === 'Front' ? frontTemplateKey : backTemplateKey;
@@ -38,6 +57,40 @@ const TemplateSelectionDialog = ({
 
   const handleSelectTemplate = (id: string, key: string) => {
     onSelect(id, key);
+  };
+
+  const handleRequestDelete = (
+    event: MouseEvent<HTMLButtonElement>,
+    template: Template
+  ) => {
+    event.stopPropagation();
+    setDeleteTarget(template);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+    try {
+      await dispatch(deleteCoverPage({ id: deleteTarget.id })).unwrap();
+    } catch (error) {
+      console.error('Failed to delete cover page:', error);
+    } finally {
+      setShowDeleteDialog(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleTemplateKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    id: string,
+    key: string
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleSelectTemplate(id, key);
+    }
   };
 
   return (
@@ -66,9 +119,11 @@ const TemplateSelectionDialog = ({
 
           {filteredTemplates.length > 0 ? (
             filteredTemplates.map(template => (
-              <button
-                key={template.id}
-                className={`group rounded-lg border-2 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 ${
+              <div
+                key={template.id || template.templateKey}
+                role="button"
+                tabIndex={0}
+                className={`group relative rounded-lg border-2 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 ${
                   template.templateKey === currentTemplateKey
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200'
@@ -76,8 +131,27 @@ const TemplateSelectionDialog = ({
                 onClick={() =>
                   handleSelectTemplate(template.id, template.templateKey)
                 }
+                onKeyDown={event =>
+                  handleTemplateKeyDown(
+                    event,
+                    template.id,
+                    template.templateKey
+                  )
+                }
               >
-                <div className="mb-2 flex items-center justify-between">
+                {template.id && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 rounded-md p-1 text-gray-400 transition hover:bg-white hover:text-red-600"
+                  onClick={event => handleRequestDelete(event, template)}
+                  aria-label={`Delete ${template.name}`}
+                  disabled={isSaving}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                )}
+
+                <div className="mb-2 flex items-center justify-between pr-6">
                   <h3 className="font-semibold text-gray-900 text-sm">
                     {template.name}
                   </h3>
@@ -88,7 +162,7 @@ const TemplateSelectionDialog = ({
                   )}
                 </div>
                 <p className="text-gray-600 text-xs">{template.description}</p>
-              </button>
+              </div>
             ))
           ) : (
             <div className="col-span-full text-center py-8">
@@ -98,6 +172,26 @@ const TemplateSelectionDialog = ({
             </div>
           )}
         </div>
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Cover Page</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{deleteTarget?.name}"? This
+                action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmDelete}
+                disabled={isSaving}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );

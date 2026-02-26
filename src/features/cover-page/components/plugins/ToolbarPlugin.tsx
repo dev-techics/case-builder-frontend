@@ -59,7 +59,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { INSERT_IMAGE_COMMAND } from './ImagePlugin';
 import { $isImageNode, type ImageAlignment } from '../nodes/ImageNode';
 import { Input } from '@/components/ui/input';
@@ -181,7 +180,12 @@ type SelectedImage = {
 };
 
 function Divider() {
-  return <Separator orientation="vertical" className="h-6 mx-1" />;
+  return (
+    <span
+      aria-hidden="true"
+      className="mx-1 hidden h-6 w-px shrink-0 bg-gray-200 sm:block"
+    />
+  );
 }
 
 function BlockFormatDropDown({
@@ -281,7 +285,7 @@ function BlockFormatDropDown({
         }
       }}
     >
-      <SelectTrigger className="w-[140px] h-8 text-xs">
+      <SelectTrigger className="h-8 w-[120px] text-xs sm:w-[140px]">
         <SelectValue>{blockTypeToBlockName[blockType] || 'Normal'}</SelectValue>
       </SelectTrigger>
       <SelectContent>
@@ -535,7 +539,7 @@ export default function ToolbarPlugin() {
 
   return (
     <div
-      className="toolbar border-b border-gray-200 p-2 flex items-center gap-1 flex-wrap bg-gray-50"
+      className="toolbar flex items-center gap-1 overflow-x-auto border-b border-gray-200 bg-gray-50 p-2 sm:flex-wrap sm:overflow-visible"
       ref={toolbarRef}
     >
       {/* ------- Undo -------*/}
@@ -573,7 +577,7 @@ export default function ToolbarPlugin() {
         onValueChange={handleFontFamilyChange}
         disabled={!!selectedImage}
       >
-        <SelectTrigger className="w-[160px] h-8 text-xs">
+        <SelectTrigger className="h-8 w-[120px] text-xs sm:w-[160px]">
           <SelectValue placeholder="Font" />
         </SelectTrigger>
         <SelectContent>
@@ -588,7 +592,7 @@ export default function ToolbarPlugin() {
         <Input
           type="number"
           min={8}
-          className="h-8 w-16 px-2 text-xs"
+          className="h-8 w-14 px-2 text-xs sm:w-16"
           value={fontSize}
           onChange={event => handleFontSizeChange(event.target.value)}
           placeholder="Size"
@@ -742,7 +746,7 @@ export default function ToolbarPlugin() {
             <Input
               type="number"
               min={50}
-              className="h-8 w-20 px-2 text-xs"
+              className="h-8 w-16 px-2 text-xs sm:w-20"
               value={imageWidthValue}
               onChange={event => {
                 const nextValue = event.target.value;

@@ -68,4 +68,11 @@ export class CoverPageApi {
     const payload = response.data;
     return payload.coverPage ?? payload;
   }
+
+  /**
+   * Delete a cover page
+   */
+  static async deleteCoverPage(coverPageId: string): Promise<void> {
+    await axiosInstance.delete(`/api/cover-pages/${coverPageId}`);
+  }
 }

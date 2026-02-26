@@ -32,8 +32,10 @@ import { ImageNode } from './nodes/ImageNode';
 import {
   setCoverPageHtml,
   setCoverPageLexicalJson,
+  setCoverPageName,
 } from '../redux/coverPageSlice';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import CoverPagePreviewHtml from './CoverPagePreviewHtml';
 
 interface LexicalCoverPageEditorProps {
@@ -311,12 +313,15 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
     frontTemplateKey,
     backTemplateKey,
     templates,
+    frontName,
+    backName,
   } = useAppSelector(state => state.coverPage);
 
   const html = type === 'front' ? frontHtml : backHtml;
   const lexicalJson = type === 'front' ? frontLexicalJson : backLexicalJson;
   const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
   const template = templates.find(t => t.templateKey === templateKey);
+  const coverPageName = type === 'front' ? frontName : backName;
 
   const [showPreview, setShowPreview] = useState(false);
 
@@ -326,6 +331,10 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
 
   const handleLexicalChange = (lexicalState: string) => {
     dispatch(setCoverPageLexicalJson({ type, lexicalJson: lexicalState }));
+  };
+
+  const handleNameChange = (value: string) => {
+    dispatch(setCoverPageName({ type, name: value }));
   };
 
   const initialConfig = {
@@ -359,10 +368,10 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
   }
 
   return (
-    <div className="grid h-full min-h-0 gap-6 lg:grid-cols-6">
+    <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-6 lg:gap-6">
       {/* ----------- Left: Editor ------------ */}
-      <div className="order-1 overflow-hidden flex flex-col col-span-4">
-        <div className="mb-3 flex items-center justify-between">
+      <div className="order-1 col-span-1 flex min-h-0 min-w-0 flex-col overflow-hidden lg:col-span-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <h3 className="font-semibold text-gray-900 text-sm">
             Edit {type === 'front' ? 'Front' : 'Back'} Cover Page
           </h3>
@@ -374,8 +383,23 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
             {showPreview ? 'Hide Preview' : 'Show Preview'}
           </Button>
         </div>
+        <div className="mb-3 flex flex-col gap-1">
+          <label
+            className="text-xs font-semibold text-gray-700"
+            htmlFor={`${type}-cover-page-name`}
+          >
+            Cover Page Name
+          </label>
+          <Input
+            id={`${type}-cover-page-name`}
+            value={coverPageName}
+            onChange={event => handleNameChange(event.target.value)}
+            placeholder={`e.g., ${type === 'front' ? 'Main' : 'Back'} Cover Page`}
+            className="h-9"
+          />
+        </div>
 
-        <div className="flex-1 overflow-hidden border border-gray-200 rounded-lg bg-white">
+        <div className="flex-1 min-h-[280px] overflow-hidden rounded-lg border border-gray-200 bg-white">
           <LexicalComposer initialConfig={initialConfig}>
             <div className="editor-container h-full flex flex-col">
               <ToolbarPlugin />
@@ -415,13 +439,13 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
       </div>
 
       {/* -----------Right: Preview------------- */}
-      <div className="order-2 lg:order-2 col-span-2">
+      <div className="order-2 col-span-1 min-w-0 lg:order-2 lg:col-span-2">
         {showPreview && (
-          <div className="sticky top-6">
+          <div className="lg:sticky lg:top-6">
             <h3 className="mb-3 font-semibold text-gray-900 text-sm">
               Live Preview (A4)
             </h3>
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-auto max-h-[800px]">
+            <div className="max-h-[60vh] overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm lg:max-h-[800px]">
               <CoverPagePreviewHtml type={type} html={html || ''} />
             </div>
             <p className="mt-2 text-gray-500 text-xs">
