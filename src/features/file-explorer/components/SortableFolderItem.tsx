@@ -27,6 +27,13 @@ type SortableFolderItemProps = {
   activeId: string | null;
   overId?: string | null;
   activeItem: Children | null;
+  selectedFileIds: string[];
+  onFileSelect: (
+    fileId: string,
+    modifiers?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }
+  ) => void;
+  onFolderSelect: (folderId: string) => void;
+  dropPreview: { parentId: string | null; index: number } | null;
 };
 
 const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
@@ -36,6 +43,9 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   activeId,
   overId,
   activeItem,
+  selectedFileIds,
+  onFileSelect,
+  onFolderSelect,
 }) => {
   const folderRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +57,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const [renameValue, setRenameValue] = useState(folder.name);
 
   const isExpanded = expandedFolders.includes(folder.id);
+  const isFileDragActive = activeItem?.type === 'file';
 
   const {
     attributes,
@@ -61,6 +72,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
       type: 'folder',
       folder: folder,
     },
+    disabled: isFileDragActive,
   });
 
   const { setNodeRef: setDropRef, isOver: isOverDroppable } = useDroppable({
@@ -82,10 +94,10 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     }
   );
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1,
   };
 
   useEffect(() => {
@@ -158,7 +170,10 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
 
   // Show drop indicator when hovering
   const showDropIndicator =
-    isOverDroppable && activeItem?.id !== folder.id && !isDragging;
+    (isOverDroppable || overId === `${folder.id}::content`) &&
+    activeItem?.id !== folder.id &&
+    !isDragging;
+  const isInsideContentHover = overId === `${folder.id}::content`;
 
   useEffect(() => {
     if (!activeId || isExpanded || !isOverDroppable) {
@@ -186,9 +201,9 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
       <div
         ref={folderRef}
         className={`
-          flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left 
+          select-none flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left 
           hover:bg-gray-200 transition-colors
-          ${showDropIndicator ? 'bg-blue-100 border-l-4 border-blue-500' : ''}
+          
         `}
         onClick={handleFolderClick}
         onKeyDown={handleKeyDown}
@@ -234,11 +249,11 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
               onKeyDown={handleRenameKeyDown}
               onBlur={handleRenameBlur}
               onClick={handleInputClick}
-              className="truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
+              className="select-text truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
             />
           ) : (
             <span
-              className="truncate text-gray-800 text-sm font-medium"
+              className="select-none truncate text-gray-800 text-sm font-medium"
               title={folder.name}
             >
               {folder.name}
@@ -254,6 +269,13 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
         {/* Action Menu */}
         <ActionMenu file={folder} onRenameClick={handleRenameClick} />
       </div>
+
+      {/* Fallback inside-drop indicator for collapsed/empty folders */}
+      {isInsideContentHover && (!isExpanded || isEmpty) ? (
+        <div className="px-4 py-1">
+          <div className="h-1 rounded-full bg-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.35)]" />
+        </div>
+      ) : null}
 
       {/* Nested Children */}
       {isExpanded && (
@@ -271,6 +293,10 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
                 activeItem={activeItem}
                 overId={overId}
                 activeId={activeId}
+                selectedFileIds={selectedFileIds}
+                onFileSelect={onFileSelect}
+                onFolderSelect={onFolderSelect}
+                dropPreview={null}
               />
             </div>
           ) : (
@@ -280,6 +306,10 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
               activeItem={activeItem}
               overId={overId}
               activeId={activeId}
+              selectedFileIds={selectedFileIds}
+              onFileSelect={onFileSelect}
+              onFolderSelect={onFolderSelect}
+              dropPreview={null}
             />
           )}
         </div>

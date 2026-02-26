@@ -25,7 +25,11 @@ type SortableFileItemProps = {
   level: number;
   isSelected: boolean;
   shouldScrollIntoView: boolean;
-  onSelect: () => void;
+  onSelect: (modifiers?: {
+    shiftKey?: boolean;
+    ctrlKey?: boolean;
+    metaKey?: boolean;
+  }) => void;
 };
 
 const SortableFileItem: React.FC<SortableFileItemProps> = ({
@@ -50,10 +54,10 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
     isDragging,
   } = useSortable({ id: file.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1,
   };
 
   // Scroll into view when this file should be highlighted
@@ -124,13 +128,21 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
     e.stopPropagation();
   };
 
+  const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    onSelect({
+      shiftKey: e.shiftKey,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+    });
+  };
+
   return (
     <div
       aria-pressed={isSelected}
-      className={`flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left hover:bg-gray-200 ${
-        isSelected ? 'bg-gray-300' : ''
+      className={`select-none flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left hover:bg-gray-200 ${
+        isSelected ? 'bg-blue-100 ring-1 ring-inset ring-blue-300' : ''
       }`}
-      onClick={onSelect}
+      onClick={handleRowClick}
       onKeyDown={handleKeyDown}
       ref={node => {
         setNodeRef(node);
@@ -167,11 +179,11 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
             onKeyDown={handleRenameKeyDown}
             onBlur={handleRenameBlur}
             onClick={handleInputClick}
-            className="truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
+            className="select-text truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
           />
         ) : (
           <span
-            className="truncate text-gray-800 text-sm"
+            className="select-none truncate text-gray-800 text-sm"
             title={file.name}
           >
             {file.name}

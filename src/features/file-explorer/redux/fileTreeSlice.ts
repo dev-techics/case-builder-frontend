@@ -28,6 +28,7 @@ interface FileTreeState {
   expandedFolders: string[];
   isCreatingNewFolder: boolean;
   selectedFile: string | null;
+  fileSelectionVersion: number;
   selectedFolderId: string | null;
   scrollToFileId: string | null;
   loading: boolean;
@@ -40,6 +41,12 @@ interface FileTreeState {
   };
 }
 
+type NodeLocation = {
+  parentId: string | null;
+  siblings: Children[];
+  index: number;
+};
+
 const initialState: FileTreeState = {
   tree: {
     id: 'root',
@@ -50,6 +57,7 @@ const initialState: FileTreeState = {
   expandedFolders: [],
   isCreatingNewFolder: false,
   selectedFile: null,
+  fileSelectionVersion: 0,
   selectedFolderId: null,
   scrollToFileId: null,
   loading: false,
@@ -111,6 +119,119 @@ const findNodeById = (children: Children[], id: string): Children | null => {
     }
   }
   return null;
+};
+
+const findNodeLocation = (
+  children: Children[],
+  id: string,
+  parentId: string | null
+): NodeLocation | null => {
+  for (let index = 0; index < children.length; index++) {
+    const child = children[index];
+    if (child.id === id) {
+      return { parentId, siblings: children, index };
+    }
+    if (child.type === 'folder' && child.children) {
+      const found = findNodeLocation(child.children, id, child.id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+};
+
+const insertUploadedFiles = (state: FileTreeState, files: FileNode[]) => {
+  if (files.length === 0) {
+    return;
+  }
+
+  const uploadParentId = files[0]?.parentId ?? null;
+
+  if (state.selectedFile) {
+    const selectedLocation = findNodeLocation(
+      state.tree.children,
+      state.selectedFile,
+      null
+    );
+
+    if (
+      selectedLocation &&
+      selectedLocation.parentId === uploadParentId
+    ) {
+      selectedLocation.siblings.splice(selectedLocation.index + 1, 0, ...files);
+      return;
+    }
+  }
+
+  if (!uploadParentId) {
+    state.tree.children = [...state.tree.children, ...files];
+    return;
+  }
+
+  const addToParent = (children: Children[]): boolean => {
+    for (const child of children) {
+      if (child.id === uploadParentId && child.type === 'folder') {
+        child.children = [...(child.children || []), ...files];
+        return true;
+      }
+      if (child.type === 'folder' && child.children) {
+        if (addToParent(child.children)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  if (!addToParent(state.tree.children)) {
+    state.tree.children = [...state.tree.children, ...files];
+  }
+};
+
+const insertCreatedFolder = (state: FileTreeState, folder: Children) => {
+  const folderParentId = folder.parentId ?? null;
+  const selectedTargetId = state.selectedFile ?? state.selectedFolderId;
+
+  if (selectedTargetId) {
+    const selectedLocation = findNodeLocation(
+      state.tree.children,
+      selectedTargetId,
+      null
+    );
+
+    if (
+      selectedLocation &&
+      selectedLocation.parentId === folderParentId
+    ) {
+      selectedLocation.siblings.splice(selectedLocation.index + 1, 0, folder);
+      return;
+    }
+  }
+
+  if (!folderParentId) {
+    state.tree.children = [...state.tree.children, folder];
+    return;
+  }
+
+  const addToParent = (children: Children[]): boolean => {
+    for (const child of children) {
+      if (child.id === folderParentId && child.type === 'folder') {
+        child.children = [...(child.children || []), folder];
+        return true;
+      }
+      if (child.type === 'folder' && child.children) {
+        if (addToParent(child.children)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  if (!addToParent(state.tree.children)) {
+    state.tree.children = [...state.tree.children, folder];
+  }
 };
 
 /*=============================================
@@ -335,6 +456,46 @@ export const moveDocument = createAsyncThunk(
   }
 );
 
+/**
+ * Move multiple documents and refresh tree once
+ */
+export const moveDocumentsBatch = createAsyncThunk(
+  'fileTree/moveDocumentsBatch',
+  async (
+    {
+      bundleId,
+      documentIds,
+      newParentId,
+      skipApplyTree = false,
+    }: {
+      bundleId: string;
+      documentIds: string[];
+      newParentId: string | null;
+      skipApplyTree?: boolean;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      for (const documentId of documentIds) {
+        await DocumentApiService.moveDocument(documentId, newParentId);
+      }
+
+      const treeResponse = await DocumentApiService.fetchTree(bundleId);
+
+      return {
+        success: true,
+        tree: treeResponse,
+        skipApplyTree,
+      };
+    } catch (error: any) {
+      console.error('❌ Error moving documents:', error);
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to move documents'
+      );
+    }
+  }
+);
+
 /*=============================================
 =            Redux Slice                      =
 =============================================*/
@@ -360,6 +521,7 @@ const fileTreeSlice = createSlice({
 
     selectFile: (state, action: PayloadAction<string | null>) => {
       state.selectedFile = action.payload;
+      state.fileSelectionVersion += 1;
       if (action.payload) {
         state.selectedFolderId = null;
       }
@@ -375,35 +537,7 @@ const fileTreeSlice = createSlice({
 
     // Local-only actions (optimistic updates)
     addFiles: (state, action: PayloadAction<FileNode[]>) => {
-      const parentId = action.payload[0]?.parentId;
-
-      // If no parentId, add to root
-      if (!parentId) {
-        state.tree.children = [...state.tree.children, ...action.payload];
-        return;
-      }
-
-      // Find the parent folder recursively and add files there
-      const addToParent = (children: Children[]): boolean => {
-        for (const child of children) {
-          if (child.id === parentId && child.type === 'folder') {
-            child.children = [...(child.children || []), ...action.payload];
-            return true;
-          }
-          if (child.type === 'folder' && child.children) {
-            if (addToParent(child.children)) {
-              return true;
-            }
-          }
-        }
-        return false;
-      };
-
-      // Try to add to parent, if not found add to root as fallback
-      if (!addToParent(state.tree.children)) {
-        console.warn(`Parent folder ${parentId} not found, adding to root`);
-        state.tree.children = [...state.tree.children, ...action.payload];
-      }
+      insertUploadedFiles(state, action.payload);
     },
     removeFile: (state, action: PayloadAction<string>) => {
       const rootIndex = state.tree.children.findIndex(
@@ -558,8 +692,7 @@ const fileTreeSlice = createSlice({
         state.error = null;
       })
       .addCase(uploadFiles.fulfilled, (state, action) => {
-        // Add uploaded files to tree
-        state.tree.children = [...state.tree.children, ...action.payload];
+        insertUploadedFiles(state, action.payload);
         state.operationsInProgress.uploading = false;
       })
       .addCase(uploadFiles.rejected, (state, action) => {
@@ -572,8 +705,7 @@ const fileTreeSlice = createSlice({
     -------------------*/
     builder
       .addCase(createFolder.fulfilled, (state, action) => {
-        // Add folder to tree
-        state.tree.children = [...state.tree.children, action.payload];
+        insertCreatedFolder(state, action.payload);
       })
       .addCase(createFolder.rejected, (state, action) => {
         state.error = action.payload || 'Failed to create folder';
@@ -623,6 +755,20 @@ const fileTreeSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
         console.error('❌ Move failed:', action.payload);
+      })
+      .addCase(moveDocumentsBatch.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(moveDocumentsBatch.fulfilled, (state, action) => {
+        state.loading = false;
+        if (!action.meta.arg.skipApplyTree && action.payload.tree) {
+          state.tree = action.payload.tree;
+        }
+      })
+      .addCase(moveDocumentsBatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
