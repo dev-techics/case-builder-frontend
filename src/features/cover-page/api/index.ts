@@ -1,6 +1,28 @@
 import axiosInstance from '@/api/axiosInstance';
 import type { Template } from '../types';
 
+type CoverPagePayload = {
+  templateKey?: string;
+  values?: Record<string, any>;
+  html?: string;
+  lexicalJson?: string;
+  type?: string;
+  name?: string;
+  description?: string;
+  isDefault?: boolean;
+};
+
+const toSnakeCoverPagePayload = (data: CoverPagePayload) => ({
+  template_key: data.templateKey,
+  values: data.values,
+  html_content: data.html,
+  lexical_json: data.lexicalJson,
+  type: data.type,
+  name: data.name,
+  description: data.description,
+  is_default: data.isDefault,
+});
+
 export class CoverPageApi {
   /**
    * *Create a new cover page (coming soon feature)
@@ -15,7 +37,10 @@ export class CoverPageApi {
     description?: string;
     isDefault?: boolean;
   }) {
-    const response = await axiosInstance.post('/api/cover-pages', data);
+    const response = await axiosInstance.post(
+      '/api/cover-pages',
+      toSnakeCoverPagePayload(data)
+    );
     const payload = response.data;
     return payload.coverPage ?? payload;
   }
@@ -51,19 +76,11 @@ export class CoverPageApi {
    */
   static async updateCoverPage(
     coverPageId: string,
-    data: {
-      templateKey?: any;
-      html?: string;
-      lexicalJson?: string;
-      type?: string;
-      name?: string;
-      description?: string;
-      isDefault?: boolean;
-    }
+    data: CoverPagePayload
   ): Promise<Template> {
     const response = await axiosInstance.patch(
       `/api/cover-pages/${coverPageId}`,
-      data
+      toSnakeCoverPagePayload(data)
     );
     const payload = response.data;
     return payload.coverPage ?? payload;
