@@ -13,7 +13,7 @@ const axiosInstance = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  timeout: 86400000, // Increased timeout for PDF processing
+  timeout: 0, // Increased timeout for PDF processing - 86400000
 });
 
 /*------------------------------------
