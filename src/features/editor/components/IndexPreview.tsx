@@ -30,8 +30,8 @@ const A4 = {
   pageWidthMm: 210,
 
   // Rendered pixel size (96 dpi: 1 mm ≈ 3.7795 px)
-  pageHeightPx: 1123,
-  pageWidthPx: 794,
+  pageHeightPx: 929,
+  pageWidthPx: 600,
 
   // Margins / chrome (mm)
   topMarginMm: 20,
@@ -235,8 +235,7 @@ const A4Page = ({
   children: React.ReactNode;
   scale?: number;
 }) => {
-  const safeScale =
-    Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
   const scaledWidth = A4.pageWidthPx * safeScale;
   const scaledHeight = A4.pageHeightPx * safeScale;
   const topPadding = A4.topMarginMm * MM_TO_PX;

@@ -43,7 +43,7 @@ function DocumentSettings() {
 
     const fetchFileSize = async () => {
       try {
-        const response = await axiosInstance.head(currentFile.url);
+        const response = await axiosInstance.head(currentFile.url!);
         const contentLength = response.headers['content-length'];
         const bytes = Number.parseInt(contentLength, 10);
 
