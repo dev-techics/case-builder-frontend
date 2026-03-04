@@ -31,15 +31,8 @@ const PDFDocument = ({
       return undefined;
     }
 
-    const token = localStorage.getItem('access_token');
-
     return {
       url: file.url,
-      httpHeaders: token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : undefined,
     };
   }, [file.url]);
 

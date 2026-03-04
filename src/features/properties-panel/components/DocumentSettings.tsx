@@ -1,8 +1,8 @@
 import { Calendar, FileCog, FileText, HardDrive } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
-import axiosInstance from '@/api/axiosInstance';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
+import axiosInstance from '@/api/axiosInstance';
 
 function DocumentSettings() {
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
@@ -16,10 +16,7 @@ function DocumentSettings() {
   const currentFile = useMemo(() => {
     if (!selectedFile) return null;
 
-    const findFileById = (
-      nodes: Children[],
-      id: string
-    ): Children | null => {
+    const findFileById = (nodes: Children[], id: string): Children | null => {
       for (const node of nodes) {
         if (node.id === id) return node;
         if (node.type === 'folder' && node.children) {
@@ -37,7 +34,7 @@ function DocumentSettings() {
     Get the size of the document
   -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   useEffect(() => {
-    if (!selectedFile) {
+    if (!currentFile?.url) {
       setFileSize(null);
       return;
     }
@@ -46,9 +43,7 @@ function DocumentSettings() {
 
     const fetchFileSize = async () => {
       try {
-        const response = await axiosInstance.head(
-          `/api/documents/${selectedFile}/stream?original=true`
-        );
+        const response = await axiosInstance.head(currentFile.url);
         const contentLength = response.headers['content-length'];
         const bytes = Number.parseInt(contentLength, 10);
 
@@ -71,7 +66,7 @@ function DocumentSettings() {
     return () => {
       isActive = false;
     };
-  }, [selectedFile]);
+  }, [currentFile?.url]);
 
   if (!currentFile) {
     return (

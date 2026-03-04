@@ -15,7 +15,6 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import PDFDocument from './components/Document';
 import UploadFile from './components/UploadFile';
 import { loadComments } from '../toolbar/redux';
-import { DocumentApiService } from '@/api/axiosInstance';
 import {
   clearDocumentInfo,
   loadMetadataFromBackend,
@@ -28,12 +27,7 @@ import Fallback from '@/components/Fallback';
 import IndexPreview from './components/IndexPreview';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
-import {
-  setMaxScale,
-  setScale,
-  zoomIn,
-  zoomOut,
-} from './redux/editorSlice';
+import { setMaxScale, setScale, zoomIn, zoomOut } from './redux/editorSlice';
 
 // Component that only renders PDF when visible
 const LazyPDFRenderer: React.FC<{
@@ -212,7 +206,7 @@ const PDFViewer: React.FC = () => {
     const targetWidth =
       scaledDocumentWidth && baseWidth
         ? Math.max(scaledDocumentWidth, baseWidth)
-        : scaledDocumentWidth ?? (baseWidth || null);
+        : (scaledDocumentWidth ?? (baseWidth || null));
 
     if (!targetWidth) {
       return undefined;
@@ -270,7 +264,7 @@ const PDFViewer: React.FC = () => {
   }, [tree.id, dispatch]);
 
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Get all files from tree (flatten the tree structure)
+    Get all files objects from tree (flatten the tree structure)
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   const getAllFiles = useCallback((children: any[]): any[] => {
     const files: any[] = [];
@@ -288,6 +282,7 @@ const PDFViewer: React.FC = () => {
     return files;
   }, []);
 
+  // store all the file objects from tree
   const allFiles = useMemo(
     () => getAllFiles(tree.children),
     [tree.children, getAllFiles]
@@ -454,11 +449,11 @@ const PDFViewer: React.FC = () => {
     return allFiles.slice(visibleRange.start, visibleRange.end + 1);
   }, [visibleRange, allFiles]);
 
-  // Create files with URLs (always stream the original PDF)
+  // Create files with URLs (use the direct URL from tree, e.g., S3)
   const filesWithUrls = useMemo(() => {
     return visibleFiles.map(file => ({
       ...file,
-      url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true`,
+      url: file.url,
     }));
   }, [visibleFiles]);
 
@@ -474,7 +469,8 @@ const PDFViewer: React.FC = () => {
     }
 
     const { scrollTop, scrollHeight, clientHeight } = container;
-    const suppressAutoLoad = performance.now() < suppressAutoLoadUntilRef.current;
+    const suppressAutoLoad =
+      performance.now() < suppressAutoLoadUntilRef.current;
 
     if (suppressAutoLoad) {
       lastScrollTopRef.current = scrollTop;
@@ -486,8 +482,7 @@ const PDFViewer: React.FC = () => {
       return;
     }
 
-    const direction =
-      scrollTop > lastScrollTopRef.current ? 'down' : 'up';
+    const direction = scrollTop > lastScrollTopRef.current ? 'down' : 'up';
     lastScrollTopRef.current = scrollTop;
 
     // Show/hide scroll-to-top button
@@ -504,7 +499,13 @@ const PDFViewer: React.FC = () => {
     if (direction === 'up' && nearTop && hasPreviousFiles) {
       requestLoadPrev();
     }
-  }, [hasNextFiles, hasPreviousFiles, requestLoadNext, requestLoadPrev, visibleRange]);
+  }, [
+    hasNextFiles,
+    hasPreviousFiles,
+    requestLoadNext,
+    requestLoadPrev,
+    visibleRange,
+  ]);
 
   const hasFiles = allFiles.length > 0;
   const shouldShowIndex = hasFiles && !hasPreviousFiles;
@@ -628,14 +629,14 @@ const PDFViewer: React.FC = () => {
           {/* End of files indicator */}
           {visibleFiles.length === allFiles.length &&
             visibleFiles.length > 1 && (
-            <div className="flex items-center justify-center py-8">
-              <div className="rounded-full bg-gray-200 px-4 py-2">
-                <p className="text-gray-600 text-sm font-medium">
-                  All files loaded ({visibleFiles.length} files)
-                </p>
+              <div className="flex items-center justify-center py-8">
+                <div className="rounded-full bg-gray-200 px-4 py-2">
+                  <p className="text-gray-600 text-sm font-medium">
+                    All files loaded ({visibleFiles.length} files)
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
 

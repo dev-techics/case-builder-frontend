@@ -20,7 +20,6 @@ export interface Tree {
   projectName: string;
   type: 'folder';
   children: Children[];
-  indexUrl?: string;
 }
 
 interface FileTreeState {
@@ -41,11 +40,11 @@ interface FileTreeState {
   };
 }
 
-type NodeLocation = {
+interface NodeLocation {
   parentId: string | null;
   siblings: Children[];
   index: number;
-};
+}
 
 const initialState: FileTreeState = {
   tree: {
@@ -155,10 +154,7 @@ const insertUploadedFiles = (state: FileTreeState, files: FileNode[]) => {
       null
     );
 
-    if (
-      selectedLocation &&
-      selectedLocation.parentId === uploadParentId
-    ) {
+    if (selectedLocation && selectedLocation.parentId === uploadParentId) {
       selectedLocation.siblings.splice(selectedLocation.index + 1, 0, ...files);
       return;
     }
@@ -200,10 +196,7 @@ const insertCreatedFolder = (state: FileTreeState, folder: Children) => {
       null
     );
 
-    if (
-      selectedLocation &&
-      selectedLocation.parentId === folderParentId
-    ) {
+    if (selectedLocation && selectedLocation.parentId === folderParentId) {
       selectedLocation.siblings.splice(selectedLocation.index + 1, 0, folder);
       return;
     }
