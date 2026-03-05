@@ -1,0 +1,37 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - object-storage-integration
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/object-storage-integration'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGGING_SERVER_HOST }}
+          username: ${{ secrets.STAGGING_SERVER_USER }}
+          key: ${{ secrets.STAGGING_SERVER_SSH_KEY }}
+          source: dist/**
+          strip_components: 1
+          target: ${{ secrets.STAGGING_SERVER_PATH }}
