@@ -30,14 +30,16 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GripVertical } from 'lucide-react';
 import {
-  moveDocumentsBatch,
-  reorderDocuments,
   selectFile,
   selectFolder,
   setTree,
 } from '../redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
 import { arrayMove } from '@dnd-kit/sortable';
+import {
+  useMoveDocumentsBatchMutation,
+  useReorderDocumentsMutation,
+} from '../api/api';
 
 type FileTreeProps = {
   tree: Tree | Children;
@@ -62,6 +64,8 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
   const [dropPreview, setDropPreview] = useState<DropPreview | null>(null);
+  const [reorderDocuments] = useReorderDocumentsMutation();
+  const [moveDocumentsBatch] = useMoveDocumentsBatchMutation();
 
   const setDropPreviewIfChanged = useCallback((next: DropPreview | null) => {
     setDropPreview(prev => {
@@ -313,12 +317,10 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
             id: child.id,
             order: index,
           }));
-          await dispatch(
-            reorderDocuments({
-              bundleId: extractedBundleId,
-              items,
-            })
-          ).unwrap();
+          await reorderDocuments({
+            bundleId: extractedBundleId,
+            items,
+          }).unwrap();
         } catch (error) {
           console.error('❌ Error reordering:', error);
         }
@@ -337,14 +339,12 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       }
 
       try {
-        const moveResult = await dispatch(
-          moveDocumentsBatch({
-            bundleId: extractedBundleId,
-            documentIds: selectedDragIds,
-            newParentId: destinationParentId,
-            skipApplyTree: true,
-          })
-        ).unwrap();
+        const moveResult = await moveDocumentsBatch({
+          bundleId: extractedBundleId,
+          documentIds: selectedDragIds,
+          newParentId: destinationParentId,
+          skipApplyTree: true,
+        }).unwrap();
 
         const parentChildren = getChildrenForParent(
           moveResult.tree,
@@ -364,12 +364,10 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
             id: child.id,
             order: index,
           }));
-          await dispatch(
-            reorderDocuments({
-              bundleId: extractedBundleId,
-              items,
-            })
-          ).unwrap();
+          await reorderDocuments({
+            bundleId: extractedBundleId,
+            items,
+          }).unwrap();
         }
       } catch (error) {
         console.error('❌ Error moving file(s):', error);
@@ -430,13 +428,11 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       }
 
       try {
-        await dispatch(
-          moveDocumentsBatch({
-            bundleId: extractedBundleId,
-            documentIds: selectedDragIds,
-            newParentId: destinationFolderId,
-          })
-        ).unwrap();
+        await moveDocumentsBatch({
+          bundleId: extractedBundleId,
+          documentIds: selectedDragIds,
+          newParentId: destinationFolderId,
+        }).unwrap();
         console.log('✅ Moved into folder successfully');
       } catch (error) {
         console.error('❌ Error moving into folder:', error);
@@ -497,12 +493,10 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
 
       // Send to backend
       try {
-        await dispatch(
-          reorderDocuments({
-            bundleId: extractedBundleId,
-            items,
-          })
-        ).unwrap();
+        await reorderDocuments({
+          bundleId: extractedBundleId,
+          items,
+        }).unwrap();
 
         console.log('✅ Reorder saved successfully');
       } catch (error) {
@@ -540,13 +534,11 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       }
 
       try {
-        await dispatch(
-          moveDocumentsBatch({
-            bundleId: extractedBundleId,
-            documentIds: selectedDragIds,
-            newParentId: targetItem.id,
-          })
-        ).unwrap();
+        await moveDocumentsBatch({
+          bundleId: extractedBundleId,
+          documentIds: selectedDragIds,
+          newParentId: targetItem.id,
+        }).unwrap();
         console.log('✅ Moved into folder successfully');
       } catch (error) {
         console.error('❌ Error moving into folder:', error);
@@ -571,13 +563,11 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       }
 
       try {
-        await dispatch(
-          moveDocumentsBatch({
-            bundleId: extractedBundleId,
-            documentIds: selectedDragIds,
-            newParentId: targetParentId,
-          })
-        ).unwrap();
+        await moveDocumentsBatch({
+          bundleId: extractedBundleId,
+          documentIds: selectedDragIds,
+          newParentId: targetParentId,
+        }).unwrap();
         console.log('✅ Moved to target parent successfully');
       } catch (error) {
         console.error('❌ Error moving to target parent:', error);

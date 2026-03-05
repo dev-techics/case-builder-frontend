@@ -12,13 +12,10 @@ import { GripVertical } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import ActionMenu from './FileActionMenu';
-import { useAppDispatch } from '@/app/hooks';
-import {
-  renameDocument,
-  type Children,
-} from '@/features/file-explorer/redux/fileTreeSlice';
+import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import { File02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { useRenameDocumentMutation } from '../api/api';
 
 type SortableFileItemProps = {
   file: Children;
@@ -40,7 +37,7 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
 }) => {
   const fileRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dispatch = useAppDispatch();
+  const [renameDocument] = useRenameDocumentMutation();
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(file.name);
@@ -98,7 +95,7 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
   const handleRenameSubmit = () => {
     const trimmedValue = renameValue.trim();
     if (trimmedValue && trimmedValue !== file.name) {
-      dispatch(renameDocument({ documentId: file.id, newName: trimmedValue }));
+      renameDocument({ documentId: file.id, newName: trimmedValue });
     }
     setIsRenaming(false);
   };

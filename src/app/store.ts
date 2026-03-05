@@ -6,9 +6,11 @@ import fileTreeReducer from '../features/file-explorer/redux/fileTreeSlice';
 import bundlesListReducer from '@/features/bundles-list/redux/bundlesListSlice';
 import authReducer from '@/features/auth/redux/authSlice';
 import CoverPageReducer from '@/features/cover-page/redux/coverPageSlice';
+import { fileExplorerApi } from '@/features/file-explorer/api/api';
 
 const store = configureStore({
   reducer: {
+    [fileExplorerApi.reducerPath]: fileExplorerApi.reducer,
     auth: authReducer,
     fileTree: fileTreeReducer,
     editor: editorReducer,
@@ -17,6 +19,8 @@ const store = configureStore({
     bundleList: bundlesListReducer,
     coverPage: CoverPageReducer,
   },
+  middleware: getDefaultMiddleware =>
+    getDefaultMiddleware().concat(fileExplorerApi.middleware),
 });
 
 export default store;

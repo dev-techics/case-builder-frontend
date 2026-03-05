@@ -1,19 +1,22 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import FilesTree from './components/FilesTree';
-import { loadTreeFromBackend } from './redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
 import { loadHighlights, loadRedactions } from '../toolbar/redux';
+import { useGetFileTreeQuery } from './api/api';
+import { skipToken } from '@reduxjs/toolkit/query';
 
 const FileTree: React.FC = () => {
   const tree = useAppSelector(state => state.fileTree.tree);
-
   const dispatch = useAppDispatch();
   const { bundleId } = useParams<{ bundleId: string }>();
+  useGetFileTreeQuery(bundleId ?? skipToken);
 
+  /*---------------------------
+      Fetch bundle meta data
+   ----------------------------*/
   useEffect(() => {
     if (!bundleId) return;
-    dispatch(loadTreeFromBackend(Number(bundleId)));
     dispatch(loadHighlights({ bundleId: bundleId }));
     dispatch(loadRedactions({ bundleId: bundleId }));
   }, [bundleId, dispatch]);

@@ -10,12 +10,14 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useAppSelector } from '@/app/hooks';
 import {
-  deleteDocument,
-  renameDocument,
   selectIsRenaming,
 } from '@/features/file-explorer/redux/fileTreeSlice';
+import {
+  useDeleteDocumentMutation,
+  useRenameDocumentMutation,
+} from '@/features/file-explorer/api/api';
 
 type PdfHeaderProps = {
   file: any;
@@ -42,8 +44,9 @@ const PdfHeader = ({
   const [isRenamingLocal, setIsRenamingLocal] = useState(false);
   const [renameValue, setRenameValue] = useState(file.name);
   const renameInputRef = useRef<HTMLInputElement>(null);
-  const dispatch = useAppDispatch();
   const isRenaming = useAppSelector(state => selectIsRenaming(state, file.id));
+  const [deleteDocument] = useDeleteDocumentMutation();
+  const [renameDocument] = useRenameDocumentMutation();
 
   useEffect(() => {
     setRenameValue(file.name);
@@ -58,7 +61,7 @@ const PdfHeader = ({
 
   const handleFileDelete = async () => {
     try {
-      await dispatch(deleteDocument({ documentId: file.id })).unwrap();
+      await deleteDocument({ documentId: file.id }).unwrap();
       console.log('File deleted successfully');
       setShowDeleteDialog(false);
     } catch (err: any) {
@@ -84,9 +87,7 @@ const PdfHeader = ({
     }
 
     try {
-      await dispatch(
-        renameDocument({ documentId: file.id, newName: trimmedValue })
-      ).unwrap();
+      await renameDocument({ documentId: file.id, newName: trimmedValue }).unwrap();
     } catch (err) {
       console.log(err);
     } finally {

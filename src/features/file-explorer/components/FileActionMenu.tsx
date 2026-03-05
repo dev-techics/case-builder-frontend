@@ -17,8 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAppDispatch } from '@/app/hooks';
-import { deleteDocument, type Children } from '../redux/fileTreeSlice';
+import type { Children } from '../redux/fileTreeSlice';
 import { useState } from 'react';
 import {
   Delete03Icon,
@@ -27,6 +26,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import DeleteAlertDialog from './DeleteAlertDialog';
+import { useDeleteDocumentMutation } from '../api/api';
 
 interface FileActionMenuProps {
   file: Children;
@@ -34,8 +34,8 @@ interface FileActionMenuProps {
 }
 
 const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
-  const dispatch = useAppDispatch();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteDocument] = useDeleteDocumentMutation();
   // const bundleId = useParams<{ bundleId: string }>().bundleId || '';
 
   const handleRename = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -50,9 +50,14 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
     setShowDeleteDialog(true);
   };
 
-  const handleConfirmDelete = () => {
-    dispatch(deleteDocument({ documentId: file.id }));
-    setShowDeleteDialog(false);
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteDocument({ documentId: file.id }).unwrap();
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    } finally {
+      setShowDeleteDialog(false);
+    }
   };
 
   return (
