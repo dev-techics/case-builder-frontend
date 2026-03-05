@@ -43,7 +43,9 @@ const axiosBaseQuery =
   };
 
 const fetchTree = async (bundleId: string): Promise<Tree> => {
-  const response = await axiosInstance.get(`/api/bundles/${bundleId}/documents`);
+  const response = await axiosInstance.get(
+    `/api/bundles/${bundleId}/documents`
+  );
   return response.data as Tree;
 };
 
@@ -59,11 +61,15 @@ const toQueryError = (error: unknown): AxiosBaseQueryError => {
 export const fileExplorerApi = createApi({
   reducerPath: 'fileExplorerApi',
   baseQuery: axiosBaseQuery(),
+  tagTypes: ['FileTree'],
   endpoints: build => ({
     getFileTree: build.query<Tree, string | number>({
       query: bundleId => ({
         url: `/api/bundles/${bundleId}/documents`,
       }),
+      providesTags: (_result, _error, bundleId) => [
+        { type: 'FileTree', id: String(bundleId) },
+      ],
     }),
     deleteDocument: build.mutation<void, { documentId: string }>({
       query: ({ documentId }) => ({
@@ -111,9 +117,12 @@ export const fileExplorerApi = createApi({
     >({
       async queryFn({ bundleId, items }) {
         try {
-          await axiosInstance.post(`/api/bundles/${bundleId}/documents/reorder`, {
-            items,
-          });
+          await axiosInstance.post(
+            `/api/bundles/${bundleId}/documents/reorder`,
+            {
+              items,
+            }
+          );
           const tree = await fetchTree(String(bundleId));
           return { data: { tree } };
         } catch (error) {

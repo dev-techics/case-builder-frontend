@@ -11,6 +11,23 @@ import { getTextSelectionCoordinates } from '@/lib/pdfCoordinateUtils';
 import { ScreenToPdfCoordinates } from '../helpers';
 import AnnotationLayer from './AnnotationLayer';
 import type { TextHighlightableDocumentProps } from '../types/types';
+import { useParams } from 'react-router-dom';
+import { fileExplorerApi } from '@/features/file-explorer/api/api';
+
+const REFRESH_COOLDOWN_MS = 30_000;
+
+const isLikely403 = (error: unknown): boolean => {
+  const err = error as {
+    status?: number;
+    response?: { status?: number };
+    message?: string;
+  };
+  const status = err?.status ?? err?.response?.status;
+  if (status === 403) {
+    return true;
+  }
+  return Boolean(err?.message && err.message.includes('403'));
+};
 
 const PDFDocument = ({
   file,
@@ -21,9 +38,11 @@ const PDFDocument = ({
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const maxWidthReportedRef = useRef<number>(0);
+  const lastRefetchAtRef = useRef(0);
   const dispatch = useAppDispatch();
   const scale = useAppSelector(states => states.editor.scale);
   const activeTool = useAppSelector(states => states.toolbar.activeTool);
+  const { bundleId } = useParams<{ bundleId: string }>();
 
   // Memoize the file configuration - ONLY depends on file.url
   const fileConfig = useMemo(() => {
@@ -212,6 +231,21 @@ const PDFDocument = ({
         }
         onLoadError={error => {
           console.error('PDF load error:', error);
+          if (!bundleId || !isLikely403(error)) {
+            return;
+          }
+
+          const now = Date.now();
+          if (now - lastRefetchAtRef.current < REFRESH_COOLDOWN_MS) {
+            return;
+          }
+
+          lastRefetchAtRef.current = now;
+          dispatch(
+            fileExplorerApi.util.invalidateTags([
+              { type: 'FileTree', id: String(bundleId) },
+            ])
+          );
         }}
         onLoadSuccess={onDocumentLoadSuccess}
       >
