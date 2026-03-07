@@ -39,15 +39,15 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
   bundleId = useParams<{ bundleId: string }>().bundleId || bundleId;
 
   // Supported file types
-  const SUPPORTED_FORMATS = {
-    pdf: '.pdf',
-    images: '.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp',
-    documents: '.doc,.docx,.txt,.rtf,.odt',
-    presentations: '.ppt,.pptx,.odp',
-    spreadsheets: '.xls,.xlsx,.ods',
-  };
+  // const SUPPORTED_FORMATS = {
+  //   pdf: '.pdf',
+  //   images: '.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp',
+  //   documents: '.doc,.docx,.txt,.rtf,.odt',
+  //   presentations: '.ppt,.pptx,.odp',
+  //   spreadsheets: '.xls,.xlsx,.ods',
+  // };
 
-  const ALL_SUPPORTED_FORMATS = Object.values(SUPPORTED_FORMATS).join(',');
+  // const ALL_SUPPORTED_FORMATS = Object.values(SUPPORTED_FORMATS).join(',');
 
   const handleClose = () => {
     setIsUploading(false);
