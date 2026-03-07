@@ -187,6 +187,25 @@ export class DocumentApiService {
     );
     return response.data;
   }
+
+  /**
+   * Rotate a document on the server
+   * rotation is absolute degrees in {0, 90, 180, 270}
+   */
+  static async rotateDocument(
+    documentId: string,
+    rotation: number,
+    bundleId?: string
+  ): Promise<any> {
+    const response = await axiosInstance.post(
+      `/api/documents/${documentId}/rotate`,
+      {
+        rotation,
+        bundle_id: bundleId,
+      }
+    );
+    return response.data;
+  }
 }
 
 export class BundleApiService {

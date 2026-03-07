@@ -14,6 +14,7 @@ import type { TextHighlightableDocumentProps } from '../types/types';
 
 const PDFDocument = ({
   file,
+  rotation = 0,
   onPageMetrics,
 }: TextHighlightableDocumentProps) => {
   const [numPages, setNumPages] = useState<number>(0);
@@ -61,7 +62,7 @@ const PDFDocument = ({
    * Handle page load to get page dimensions
    */
   const onPageLoadSuccess = (pageNumber: number) => (page: any) => {
-    const viewport = page.getViewport({ scale: 1 });
+    const viewport = page.getViewport({ scale: 1, rotation });
 
     setPageInfo(prev => {
       const newMap = new Map(prev);
@@ -243,6 +244,7 @@ const PDFDocument = ({
                 pageNumber={pageNumber}
                 renderAnnotationLayer={true}
                 renderTextLayer={true}
+                rotate={rotation}
                 scale={scale}
                 onLoadSuccess={onPageLoadSuccess(pageNumber)}
               />

@@ -148,7 +148,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     })
   );
 
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++
   | Drag and Drop Handlers Start  |
   -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
   const handleDragStart = (event: any) => {

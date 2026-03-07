@@ -37,6 +37,7 @@ interface FileTreeState {
   operationsInProgress: {
     deleting: string[];
     renaming: string[];
+    rotating: string[];
     uploading: boolean;
   };
 }
@@ -65,6 +66,7 @@ const initialState: FileTreeState = {
   operationsInProgress: {
     deleting: [],
     renaming: [],
+    rotating: [],
     uploading: false,
   },
 };
@@ -299,6 +301,28 @@ export const renameDocument = createAsyncThunk<
         err.response?.data?.message ||
         err.message ||
         'Failed to rename document';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+/**
+ * Rotate document
+ */
+export const rotateDocument = createAsyncThunk<
+  { documentId: string; rotation: number },
+  { documentId: string; rotation: number; bundleId?: string },
+  { rejectValue: string }
+>(
+  'fileTree/rotateDocument',
+  async ({ documentId, rotation, bundleId }, { rejectWithValue }) => {
+    try {
+      await DocumentApiService.rotateDocument(documentId, rotation, bundleId);
+      return { documentId, rotation };
+    } catch (err: any) {
+      console.error('Failed to rotate document:', err);
+      const errorMessage =
+        err.response?.data?.message || err.message || 'Failed to rotate document';
       return rejectWithValue(errorMessage);
     }
   }
@@ -684,6 +708,27 @@ const fileTreeSlice = createSlice({
       });
 
     /*-------------------
+      Rotate Document
+    -------------------*/
+    builder
+      .addCase(rotateDocument.pending, (state, action) => {
+        const documentId = action.meta.arg.documentId;
+        state.operationsInProgress.rotating.push(documentId);
+        state.error = null;
+      })
+      .addCase(rotateDocument.fulfilled, (state, action) => {
+        const { documentId } = action.payload;
+        state.operationsInProgress.rotating =
+          state.operationsInProgress.rotating.filter(id => id !== documentId);
+      })
+      .addCase(rotateDocument.rejected, (state, action) => {
+        const documentId = action.meta.arg.documentId;
+        state.error = action.payload || 'Failed to rotate document';
+        state.operationsInProgress.rotating =
+          state.operationsInProgress.rotating.filter(id => id !== documentId);
+      });
+
+    /*-------------------
       Upload Files
     -------------------*/
     builder
@@ -815,6 +860,14 @@ export const selectIsRenaming = (
   documentId: string
 ): boolean => {
   return state.fileTree.operationsInProgress.renaming.includes(documentId);
+};
+
+// Check if a document is being rotated
+export const selectIsRotating = (
+  state: { fileTree: FileTreeState },
+  documentId: string
+): boolean => {
+  return state.fileTree.operationsInProgress.rotating.includes(documentId);
 };
 
 // Check if files are being uploaded

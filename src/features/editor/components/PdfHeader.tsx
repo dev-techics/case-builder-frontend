@@ -3,8 +3,9 @@ import {
   Check,
   FileText,
   Pencil,
-  RotateCcw,
   Trash2,
+  RotateCcw,
+  RotateCw,
   X,
   ZoomIn,
   ZoomOut,
@@ -15,10 +16,12 @@ import {
   deleteDocument,
   renameDocument,
   selectIsRenaming,
+  selectIsRotating,
 } from '@/features/file-explorer/redux/fileTreeSlice';
 
 type PdfHeaderProps = {
   file: any;
+  rotation: number;
   scale: number;
   canZoomIn: boolean;
   canZoomOut: boolean;
@@ -26,10 +29,13 @@ type PdfHeaderProps = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetZoom: () => void;
+  onRotateLeft: () => void;
+  onRotateRight: () => void;
 };
 
 const PdfHeader = ({
   file,
+  rotation,
   scale,
   canZoomIn,
   canZoomOut,
@@ -37,6 +43,8 @@ const PdfHeader = ({
   onZoomIn,
   onZoomOut,
   onResetZoom,
+  onRotateLeft,
+  onRotateRight,
 }: PdfHeaderProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [isRenamingLocal, setIsRenamingLocal] = useState(false);
@@ -44,6 +52,7 @@ const PdfHeader = ({
   const renameInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useAppDispatch();
   const isRenaming = useAppSelector(state => selectIsRenaming(state, file.id));
+  const isRotating = useAppSelector(state => selectIsRotating(state, file.id));
 
   useEffect(() => {
     setRenameValue(file.name);
@@ -157,34 +166,25 @@ const PdfHeader = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-md border bg-white px-2 py-1">
             <button
-              aria-label="Zoom out"
+              aria-label="Rotate left"
               className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canZoomOut}
-              onClick={onZoomOut}
-              type="button"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </button>
-            <span className="min-w-[56px] text-center font-semibold text-gray-700 text-xs">
-              {Math.round(scale * 100)}%
-            </span>
-            <button
-              aria-label="Zoom in"
-              className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canZoomIn}
-              onClick={onZoomIn}
-              type="button"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </button>
-            <button
-              aria-label="Reset zoom"
-              className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canResetZoom}
-              onClick={onResetZoom}
+              disabled={isRotating}
+              onClick={onRotateLeft}
               type="button"
             >
               <RotateCcw className="h-4 w-4" />
+            </button>
+            <span className="min-w-[44px] text-center text-gray-600 text-xs font-medium">
+              {rotation}deg
+            </span>
+            <button
+              aria-label="Rotate right"
+              className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isRotating}
+              onClick={onRotateRight}
+              type="button"
+            >
+              <RotateCw className="h-4 w-4" />
             </button>
           </div>
           {/* -------- Delete Button---------- */}
