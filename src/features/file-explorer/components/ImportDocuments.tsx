@@ -151,7 +151,8 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
           )}
 
           <input
-            accept={ALL_SUPPORTED_FORMATS}
+            // accept={ALL_SUPPORTED_FORMATS}
+            accept="*"
             className="hidden"
             multiple
             onChange={handleFileUpload}
