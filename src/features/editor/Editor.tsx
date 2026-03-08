@@ -21,7 +21,10 @@ import {
   loadMetadataFromBackend,
   setCurrentBundleId,
 } from '../properties-panel/redux/propertiesPanelSlice';
-import { selectFile } from '../file-explorer/redux/fileTreeSlice';
+import {
+  rotateDocument,
+  selectFile,
+} from '../file-explorer/redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
@@ -38,9 +41,10 @@ import {
 // Component that only renders PDF when visible
 const LazyPDFRenderer: React.FC<{
   file: any;
+  rotation: number;
   onVisible?: () => void;
   onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
-}> = ({ file, onVisible, onPageMetrics }) => {
+}> = ({ file, rotation, onVisible, onPageMetrics }) => {
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +81,11 @@ const LazyPDFRenderer: React.FC<{
     >
       {isVisible ? (
         <ErrorBoundary FallbackComponent={Fallback} resetKeys={[file.url]}>
-          <PDFDocument file={file} onPageMetrics={onPageMetrics} />
+          <PDFDocument
+            file={file}
+            onPageMetrics={onPageMetrics}
+            rotation={rotation}
+          />
         </ErrorBoundary>
       ) : (
         <div className="flex h-96 w-full items-center justify-center">
@@ -96,6 +104,10 @@ const LOAD_COOLDOWN_MS = 400;
 const PDF_CONTAINER_HORIZONTAL_PADDING = 32;
 const DEFAULT_MAX_SCALE = 3.0;
 const SCROLL_TOP_SHOW_THRESHOLD = 300;
+const ROTATION_STEP_DEGREES = 90;
+
+const normalizeRotation = (rotation: number) =>
+  ((rotation % 360) + 360) % 360;
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -105,6 +117,8 @@ const PDFViewer: React.FC = () => {
     state => state.fileTree.fileSelectionVersion
   );
   const bundleId = useParams().bundleId;
+  const resolvedBundleId =
+    bundleId || (tree.id.startsWith('bundle-') ? tree.id.split('-')[1] : '');
   const scale = useAppSelector(state => state.editor.scale);
   const maxScale = useAppSelector(state => state.editor.maxScale);
 
@@ -119,6 +133,9 @@ const PDFViewer: React.FC = () => {
   const [maxBaseWidth, setMaxBaseWidth] = useState<number | null>(null);
   const [contentWidth, setContentWidth] = useState<number>(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [fileRotations, setFileRotations] = useState<Record<string, number>>(
+    {}
+  );
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,6 +146,7 @@ const PDFViewer: React.FC = () => {
   const pendingScrollAdjustRef = useRef<number | null>(null);
   const pageWidthsRef = useRef<Map<string, number>>(new Map());
   const suppressAutoLoadUntilRef = useRef<number>(0);
+  const streamSessionKeyRef = useRef<number>(Date.now());
 
   const handleScrollToTop = useCallback(() => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -162,8 +180,41 @@ const PDFViewer: React.FC = () => {
   useEffect(() => {
     pageWidthsRef.current.clear();
     setMaxBaseWidth(null);
+    setFileRotations({});
+    streamSessionKeyRef.current = Date.now();
     dispatch(setScale(1));
   }, [bundleId, dispatch]);
+
+  const handleRotateFile = useCallback(
+    (fileId: string, delta: number) => {
+      let nextRotation = 0;
+
+      setFileRotations(prev => {
+        const currentRotation = prev[fileId] ?? 0;
+        nextRotation = normalizeRotation(currentRotation + delta);
+        return {
+          ...prev,
+          [fileId]: nextRotation,
+        };
+      });
+
+      dispatch(
+        rotateDocument({
+          documentId: fileId,
+          rotation: nextRotation,
+          bundleId: resolvedBundleId || undefined,
+        })
+      )
+        .unwrap()
+        .catch(error => {
+          console.warn(
+            'Rotate API call failed. Local rotation remains applied.',
+            error
+          );
+        });
+    },
+    [dispatch, resolvedBundleId]
+  );
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -458,7 +509,7 @@ const PDFViewer: React.FC = () => {
   const filesWithUrls = useMemo(() => {
     return visibleFiles.map(file => ({
       ...file,
-      url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true`,
+      url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKeyRef.current}`,
     }));
   }, [visibleFiles]);
 
@@ -589,6 +640,7 @@ const PDFViewer: React.FC = () => {
               <ErrorBoundary FallbackComponent={Fallback}>
                 <PdfHeader
                   file={fileWithUrl}
+                  rotation={fileRotations[fileWithUrl.id] ?? 0}
                   scale={scale}
                   canZoomIn={canZoomIn}
                   canZoomOut={canZoomOut}
@@ -596,12 +648,19 @@ const PDFViewer: React.FC = () => {
                   onZoomIn={handleZoomIn}
                   onZoomOut={handleZoomOut}
                   onResetZoom={handleResetZoom}
+                  onRotateLeft={() =>
+                    handleRotateFile(fileWithUrl.id, -ROTATION_STEP_DEGREES)
+                  }
+                  onRotateRight={() =>
+                    handleRotateFile(fileWithUrl.id, ROTATION_STEP_DEGREES)
+                  }
                 />
               </ErrorBoundary>
 
               {/* PDF Content Area - LAZY LOADED */}
               <LazyPDFRenderer
                 file={fileWithUrl}
+                rotation={fileRotations[fileWithUrl.id] ?? 0}
                 onPageMetrics={handlePageMetrics}
               />
             </div>
