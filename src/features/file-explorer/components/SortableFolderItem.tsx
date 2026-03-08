@@ -205,7 +205,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
           hover:bg-gray-200 transition-colors
           
         `}
-        onClick={handleFolderClick}
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
@@ -226,9 +225,15 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
 
           {/* Expand/Collapse Icon */}
           {isExpanded ? (
-            <ChevronDown className="mr-1 h-4 w-4 flex-shrink-0 text-gray-600" />
+            <ChevronDown
+              onClick={handleFolderClick}
+              className="mr-1 h-4 w-4 flex-shrink-0 text-gray-600"
+            />
           ) : (
-            <ChevronRight className="mr-1 h-4 w-4 flex-shrink-0 text-gray-600" />
+            <ChevronRight
+              onClick={handleFolderClick}
+              className="mr-1 h-4 w-4 flex-shrink-0 text-gray-600"
+            />
           )}
 
           {/* Folder Icon */}

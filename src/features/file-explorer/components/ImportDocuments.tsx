@@ -135,32 +135,34 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
 
   return (
     <>
-      <div className="p-2 cursor-pointer hover:bg-gray-200 rounded-lg">
-        <label
-          className={`text-sm ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          title="Import Document"
-        >
-          {parentId ? (
-            <HugeiconsIcon
-              onClick={e => e.stopPropagation()}
-              icon={PlusSignIcon}
-              className="mr-2 h-4 w-4 flex-shrink-0 text-slate-900"
-            />
-          ) : (
-            <HugeiconsIcon icon={FileImportIcon} size={18} />
-          )}
-
-          <input
-            // accept={ALL_SUPPORTED_FORMATS}
-            accept="*"
-            className="hidden"
-            multiple
-            onChange={handleFileUpload}
-            type="file"
-            disabled={isUploading}
+      <label
+        className={`block rounded-lg p-2 text-sm hover:bg-gray-200 ${
+          isUploading
+            ? 'cursor-not-allowed opacity-50'
+            : 'cursor-pointer'
+        }`}
+        onClick={e => e.stopPropagation()}
+        title="Import Document"
+      >
+        {parentId ? (
+          <HugeiconsIcon
+            icon={PlusSignIcon}
+            className="mr-2 h-4 w-4 flex-shrink-0 text-slate-900"
           />
-        </label>
-      </div>
+        ) : (
+          <HugeiconsIcon icon={FileImportIcon} size={18} />
+        )}
+
+        <input
+          // accept={ALL_SUPPORTED_FORMATS}
+          accept="*"
+          className="hidden"
+          multiple
+          onChange={handleFileUpload}
+          type="file"
+          disabled={isUploading}
+        />
+      </label>
 
       {isUploading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
