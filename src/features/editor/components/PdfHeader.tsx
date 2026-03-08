@@ -7,8 +7,6 @@ import {
   RotateCcw,
   RotateCw,
   X,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
@@ -36,13 +34,6 @@ type PdfHeaderProps = {
 const PdfHeader = ({
   file,
   rotation,
-  scale,
-  canZoomIn,
-  canZoomOut,
-  canResetZoom,
-  onZoomIn,
-  onZoomOut,
-  onResetZoom,
   onRotateLeft,
   onRotateRight,
 }: PdfHeaderProps) => {
@@ -156,7 +147,10 @@ const PdfHeader = ({
               onClick={startRename}
               type="button"
             >
-              <span className="truncate font-medium text-gray-700" title={file.name}>
+              <span
+                className="truncate font-medium text-gray-700"
+                title={file.name}
+              >
                 {file.name}
               </span>
               <Pencil className="h-3.5 w-3.5 text-gray-500 opacity-0 transition-opacity group-hover:opacity-100" />
