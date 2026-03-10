@@ -18,20 +18,31 @@ import {
 } from '@hugeicons/core-free-icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { logout } from '@/features/auth/redux/authSlice';
+import { setUser } from '@/features/auth/redux/authSlice';
+import { useLogoutMutation } from '@/features/auth/api';
 
 const SidebarFooterMenu = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const user = useAppSelector(state => state.auth.user);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [logout] = useLogoutMutation();
 
-  const handleLogout = () => {
-    return () => {
-      // Dispatch logout action or call logout function here
-      console.log('Logout clicked');
-      dispatch(logout());
-    };
+  const handleLogout = async () => {
+    if (!user) {
+      dispatch(setUser(null));
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await logout(user).unwrap();
+    } finally {
+      dispatch(setUser(null));
+      navigate('/login');
+    }
   };
 
   return (
@@ -97,7 +108,7 @@ const SidebarFooterMenu = () => {
             <span>Settings</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout()}>
+          <DropdownMenuItem onClick={handleLogout}>
             <HugeiconsIcon icon={LogoutCircle01FreeIcons} />
             <span>Sign out</span>
           </DropdownMenuItem>

@@ -10,7 +10,7 @@ import NotFound from '@/components/NotFound';
 import SignInPage from '@/pages/auth/SignInPage';
 import SignUpPage from '@/pages/auth/SignUpPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
-import ProtectedRoute from './ProtectedRoutes';
+import ProtectedRoute, { PublicRoute } from './ProtectedRoutes';
 import useAuthInit from '@/features/auth/hooks/useAuthInit';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 
@@ -19,8 +19,10 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* Public routes - Landing page */}
-      <Route element={<LandingLayout />}>
-        <Route element={<LandingPage />} path="/" />
+      <Route element={<PublicRoute />}>
+        <Route element={<LandingLayout />}>
+          <Route index element={<LandingPage />} path="/" />
+        </Route>
       </Route>
 
       {/* Auth routes - Redirect to dashboard if already logged in */}

@@ -2,7 +2,8 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { logout, selectUser } from '../redux/authSlice';
+import { selectUser, setUser } from '../redux/authSlice';
+import { useLogoutMutation } from '../api';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,10 +19,16 @@ const UserDropdown = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector(selectUser);
+  const [logout] = useLogoutMutation();
 
   const handleLogout = async () => {
-    await dispatch(logout());
-    navigate('/login');
+    if (!user) return;
+    try {
+      await logout(user).unwrap();
+    } finally {
+      dispatch(setUser(null));
+      navigate('/login');
+    }
   };
 
   if (!user) return null;

@@ -4,9 +4,6 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  emailVerifiedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface AuthState {
@@ -16,7 +13,7 @@ export interface AuthState {
   error: string | null;
 }
 
-export interface LoginCredentials {
+export interface AuthCredentials {
   email: string;
   password: string;
 }
@@ -28,6 +25,14 @@ export interface RegisterCredentials {
   password_confirmation: string;
 }
 
+/**
+ * Authentication response returned from the login endpoint.
+ *
+ * @property `user` - Authenticated user details
+ * @property `accessToken` - JWT access token for API authentication
+ * @property `tokenType` - Token type used in Authorization header
+ * @property `message` - Optional message from the backend
+ */
 export interface AuthResponse {
   user: User;
   message?: string;

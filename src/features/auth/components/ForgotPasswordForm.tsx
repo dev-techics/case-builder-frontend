@@ -1,40 +1,20 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import { authApi } from '../api/authApi';
+import useForgotPasswordForm from '../hooks/useForgotPasswordForm';
 
 const ForgotPasswordForm = () => {
-  const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    try {
-      await authApi.requestPasswordReset(email);
-      setSubmitted(true);
-      toast.success(
-        'If an account exists for this email, a reset link has been sent.'
-      );
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        err?.message ||
-        'Unable to send reset email. Please try again.';
-      setError(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const {
+    email,
+    setEmail,
+    submitted,
+    handleSubmit,
+    isSubmitting,
+    error,
+  } = useForgotPasswordForm();
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -70,15 +50,7 @@ const ForgotPasswordForm = () => {
             type="email"
             placeholder="name@example.com"
             value={email}
-            onChange={e => {
-              setEmail(e.target.value);
-              if (submitted) {
-                setSubmitted(false);
-              }
-              if (error) {
-                setError(null);
-              }
-            }}
+            onChange={e => setEmail(e.target.value)}
             required
             disabled={isSubmitting}
           />

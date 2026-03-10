@@ -3,65 +3,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
-import { authApi } from '../api/authApi';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import useResetPasswordForm from '../hooks/useResetPasswordForm';
 
 const ResetPassword = () => {
-  const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
-  const [newPassword, setNewPassword] = useState<string>('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState<string>('');
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-  const email = searchParams.get('email');
-
-  const handleResetPassword = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!newPassword || !confirmNewPassword) {
-      setError('All fields are required.');
-      return;
-    }
-
-    if (newPassword !== confirmNewPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    if (email == null || token == null) {
-      setError('Invalid token');
-      return;
-    }
-    try {
-      setLoading(true);
-
-      const response = await authApi.resetPassword(
-        email,
-        token,
-        newPassword,
-        confirmNewPassword
-      );
-
-      setSuccess(response.message); // success message
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message || 'Reset link is invalid or expired'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    error,
+    success,
+    loading,
+    showPassword,
+    setShowPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    newPassword,
+    setNewPassword,
+    confirmNewPassword,
+    setConfirmNewPassword,
+    handleSubmit,
+  } = useResetPasswordForm();
 
   return (
     <div className="w-full min-h-screen flex items-center">
@@ -83,7 +41,7 @@ const ResetPassword = () => {
           </Alert>
         )}
         {/* -------- Reset form ---------- */}
-        <form className="flex flex-col gap-6" onSubmit={handleResetPassword}>
+        <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
           <Label>New Password</Label>
           <div className="relative">
             <Input

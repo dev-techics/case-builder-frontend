@@ -1,17 +1,25 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/app/hooks';
-import { fetchUser } from '../redux/authSlice';
-import { authApi } from '../api/authApi';
+import { isAuthenticated } from '../utils';
+import { useGetUserQuery } from '../api';
+import { setUser } from '../redux/authSlice';
 
 const useAuthInit = () => {
   const dispatch = useAppDispatch();
+  const hasToken = isAuthenticated();
+  const { data, isError } = useGetUserQuery(undefined, {
+    skip: !hasToken,
+  });
 
   useEffect(() => {
-    // If token exists in localStorage, fetch user data
-    if (authApi.isAuthenticated()) {
-      dispatch(fetchUser());
+    if (data?.user) {
+      dispatch(setUser(data.user));
     }
-  }, [dispatch]);
+
+    if (isError) {
+      dispatch(setUser(null));
+    }
+  }, [data, isError, dispatch]);
 };
 
 export default useAuthInit;

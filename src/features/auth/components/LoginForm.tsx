@@ -1,26 +1,34 @@
-// features/auth/components/LoginForm.tsx
-
-import { useEffect, useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  login,
-  clearError,
-  selectAuthLoading,
-  selectAuthError,
-} from '../redux/authSlice';
+/**
+ * Login Form
+ *
+ * Responsibility: Login form UI
+ *
+ * Author: Anik Dey
+ *
+ */
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import useLoginForm from '../hooks/useLoginForm';
 
 const LoginForm = () => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const isLoading = useAppSelector(selectAuthLoading);
-  const error = useAppSelector(selectAuthError);
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
+    handleSubmit,
+    isLoading,
+    error,
+  } = useLoginForm();
+
   const location = useLocation();
 
   useEffect(() => {
@@ -28,28 +36,6 @@ const LoginForm = () => {
       toast.success('Registration successful! Please log in.');
     }
   }, []);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    dispatch(clearError());
-
-    const result = await dispatch(login(formData));
-    if (login.fulfilled.match(result)) {
-      navigate('/dashboard');
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -64,6 +50,9 @@ const LoginForm = () => {
         </Alert>
       )}
 
+      {/*------------------- 
+            Login form
+      ----------------------*/}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -72,8 +61,8 @@ const LoginForm = () => {
             name="email"
             type="email"
             placeholder="name@example.com"
-            value={formData.email}
-            onChange={handleChange}
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             required
             disabled={isLoading}
           />
@@ -87,8 +76,8 @@ const LoginForm = () => {
               name="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
               required
               disabled={isLoading}
             />

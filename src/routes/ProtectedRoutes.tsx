@@ -1,14 +1,25 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { selectIsAuthenticated } from '@/features/auth/redux/authSlice';
-import { authApi } from '@/features/auth/api/authApi';
 import { useAppSelector } from '@/app/hooks';
+import { isAuthenticated } from '@/features/auth/utils';
 
 const ProtectedRoute = () => {
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const hasToken = authApi.isAuthenticated();
+  const isUserAuthenticated = useAppSelector(selectIsAuthenticated);
+  const hasToken = isAuthenticated();
 
-  if (!isAuthenticated && !hasToken) {
+  if (!isUserAuthenticated && !hasToken) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+};
+
+export const PublicRoute = () => {
+  const isUserAuthenticated = useAppSelector(selectIsAuthenticated);
+  const hasToken = isAuthenticated();
+
+  if (isUserAuthenticated || hasToken) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;

@@ -1,53 +1,24 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  register,
-  clearError,
-  selectAuthLoading,
-  selectAuthError,
-} from '../redux/authSlice';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import useRegister from '../hooks/useRegister';
 
 const RegisterForm = () => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const isLoading = useAppSelector(selectAuthLoading);
-  const error = useAppSelector(selectAuthError);
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    dispatch(clearError());
-
-    if (formData.password !== formData.password_confirmation) {
-      return;
-    }
-
-    const result = await dispatch(register(formData));
-    if (register.fulfilled.match(result)) {
-      navigate('/login', { state: { fromRegister: true } });
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const {
+    formData,
+    handleChange,
+    showPassword,
+    setShowPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    handleSubmit,
+    isLoading,
+    error,
+    showPasswordMismatch,
+  } = useRegister();
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -139,17 +110,14 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        {formData.password !== formData.password_confirmation &&
-          formData.password_confirmation && (
-            <p className="text-sm text-red-500">Passwords do not match</p>
-          )}
+        {showPasswordMismatch && (
+          <p className="text-sm text-red-500">Passwords do not match</p>
+        )}
 
         <Button
           type="submit"
           className="w-full"
-          disabled={
-            isLoading || formData.password !== formData.password_confirmation
-          }
+          disabled={isLoading || showPasswordMismatch}
         >
           {isLoading ? (
             <>
