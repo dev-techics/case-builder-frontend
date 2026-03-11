@@ -7,10 +7,12 @@ import bundlesListReducer from '@/features/bundles-list/redux/bundlesListSlice';
 import authReducer from '@/features/auth/redux/authSlice';
 import CoverPageReducer from '@/features/cover-page/redux/coverPageSlice';
 import authApi from '@/features/auth/api';
+import coverPageApi from '@/features/cover-page/api';
 
 const store = configureStore({
   reducer: {
     [authApi.reducerPath]: authApi.reducer,
+    [coverPageApi.reducerPath]: coverPageApi.reducer,
     auth: authReducer,
     fileTree: fileTreeReducer,
     editor: editorReducer,
@@ -20,7 +22,7 @@ const store = configureStore({
     coverPage: CoverPageReducer,
   },
   middleware: getDefaultMiddleware =>
-    getDefaultMiddleware().concat(authApi.middleware),
+    getDefaultMiddleware().concat(authApi.middleware, coverPageApi.middleware),
 });
 
 export default store;

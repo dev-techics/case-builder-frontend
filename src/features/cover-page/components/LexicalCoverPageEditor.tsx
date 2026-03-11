@@ -38,10 +38,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CoverPagePreviewHtml from './CoverPagePreviewHtml';
 
-interface LexicalCoverPageEditorProps {
-  type: 'front' | 'back';
-}
-
 // Lexical theme configuration
 const theme = {
   ltr: 'ltr',
@@ -303,25 +299,16 @@ function OnChangeCoverPagePlugin({
   return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />;
 }
 
-const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
+const LexicalCoverPageEditor = () => {
   const dispatch = useAppDispatch();
-  const {
-    frontHtml,
-    backHtml,
-    frontLexicalJson,
-    backLexicalJson,
-    frontTemplateKey,
-    backTemplateKey,
-    templates,
-    frontName,
-    backName,
-  } = useAppSelector(state => state.coverPage);
+  const { frontCoverPage, backCoverPage } = useAppSelector(
+    state => state.coverPage
+  );
 
-  const html = type === 'front' ? frontHtml : backHtml;
-  const lexicalJson = type === 'front' ? frontLexicalJson : backLexicalJson;
-  const templateKey = type === 'front' ? frontTemplateKey : backTemplateKey;
-  const template = templates.find(t => t.templateKey === templateKey);
-  const coverPageName = type === 'front' ? frontName : backName;
+  const html = frontCoverPage?.html;
+  const lexicalJson = frontCoverPage?.lexicalJson;
+  const template = frontCoverPage;
+  const coverPageName = frontCoverPage?.name;
 
   const [showPreview, setShowPreview] = useState(false);
 
@@ -373,7 +360,7 @@ const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
       <div className="order-1 col-span-1 flex min-h-0 min-w-0 flex-col overflow-hidden lg:col-span-4">
         <div className="mb-3 flex items-start justify-between gap-3">
           <h3 className="font-semibold text-gray-900 text-sm">
-            Edit {type === 'front' ? 'Front' : 'Back'} Cover Page
+            Edit Cover Page
           </h3>
           <Button
             variant="outline"

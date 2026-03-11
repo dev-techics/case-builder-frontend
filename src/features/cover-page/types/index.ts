@@ -3,7 +3,6 @@ export interface Template {
   name: string;
   description: string;
   type: 'front' | 'back';
-  templateKey: string;
   isDefault: boolean;
   html: string;
   lexicalJson: any;

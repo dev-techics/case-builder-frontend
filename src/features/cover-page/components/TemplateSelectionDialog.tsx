@@ -19,11 +19,12 @@ import { Trash2 } from 'lucide-react';
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import type { Template } from '../types';
 import { deleteCoverPage } from '../redux/coverPageSlice';
+import { useGetTemplatesQuery } from '../api';
 
 interface TemplateSelectionDialogProps {
   open: boolean;
   onOpen: (open: boolean) => void;
-  onSelect: (id: string, key: string) => void;
+  onSelect: (id: string) => void;
   onCreate: () => void;
   type: 'Front' | 'Back';
 }
@@ -36,27 +37,24 @@ const TemplateSelectionDialog = ({
   type,
 }: TemplateSelectionDialogProps) => {
   const dispatch = useAppDispatch();
-  const { frontTemplateKey, backTemplateKey } = useAppSelector(
+
+  const { data, isLoading, isError, refetch } = useGetTemplatesQuery();
+  const templates = data ?? [];
+  const { frontCoverPage, backCoverPage, isSaving } = useAppSelector(
     state => state.coverPage
   );
-  const templates = useAppSelector(state => state.coverPage.templates);
-  const isSaving = useAppSelector(state => state.coverPage.isSaving);
 
   const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const currentTemplateKey =
-    type === 'Front' ? frontTemplateKey : backTemplateKey;
-
   // Filter templates based on type
-  const filteredTemplates = templates.filter(template => {
-    // Assuming templates have a 'type' property that matches 'front' or 'back'
-    // If your template structure is different, adjust this filter accordingly
-    return template.type === type.toLowerCase();
-  });
+  const coverType = type.toLowerCase() as 'front' | 'back';
+  const filteredTemplates = templates.filter(
+    template => template.type === coverType
+  );
 
-  const handleSelectTemplate = (id: string, key: string) => {
-    onSelect(id, key);
+  const handleSelectTemplate = (id: string) => {
+    onSelect(id);
   };
 
   const handleRequestDelete = (
@@ -74,6 +72,7 @@ const TemplateSelectionDialog = ({
     }
     try {
       await dispatch(deleteCoverPage({ id: deleteTarget.id })).unwrap();
+      refetch();
     } catch (error) {
       console.error('Failed to delete cover page:', error);
     } finally {
@@ -84,12 +83,11 @@ const TemplateSelectionDialog = ({
 
   const handleTemplateKeyDown = (
     event: KeyboardEvent<HTMLDivElement>,
-    id: string,
-    key: string
+    id: string
   ) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      handleSelectTemplate(id, key);
+      handleSelectTemplate(id);
     }
   };
 
@@ -100,6 +98,9 @@ const TemplateSelectionDialog = ({
           <DialogTitle>Choose {type} Cover Page Template</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4 md:grid-cols-3 sm:grid-cols-2">
+          {/*----------------------- 
+            Create new cover page
+          --------------------------*/}
           <button
             className="group rounded-lg border-2 border-dashed border-gray-300 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50"
             onClick={onCreate}
@@ -117,45 +118,48 @@ const TemplateSelectionDialog = ({
             </p>
           </button>
 
-          {filteredTemplates.length > 0 ? (
+          {isLoading ? (
+            <div className="col-span-full text-center py-8">
+              <p className="text-gray-500 text-sm">Loading templates...</p>
+            </div>
+          ) : isError ? (
+            <div className="col-span-full text-center py-8">
+              <p className="text-gray-500 text-sm">Failed to load templates.</p>
+            </div>
+          ) : filteredTemplates.length > 0 ? (
             filteredTemplates.map(template => (
+              /*------------------------
+                  Cover page tempalte
+              --------------------------*/
               <div
-                key={template.id || template.templateKey}
+                key={template.id}
                 role="button"
                 tabIndex={0}
                 className={`group relative rounded-lg border-2 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 ${
-                  template.templateKey === currentTemplateKey
+                  template.id === frontCoverPage?.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200'
                 }`}
-                onClick={() =>
-                  handleSelectTemplate(template.id, template.templateKey)
-                }
-                onKeyDown={event =>
-                  handleTemplateKeyDown(
-                    event,
-                    template.id,
-                    template.templateKey
-                  )
-                }
+                onClick={() => handleSelectTemplate(template.id)}
+                onKeyDown={event => handleTemplateKeyDown(event, template.id)}
               >
                 {template.id && (
-                <button
-                  type="button"
-                  className="absolute right-2 top-2 rounded-md p-1 text-gray-400 transition hover:bg-white hover:text-red-600"
-                  onClick={event => handleRequestDelete(event, template)}
-                  aria-label={`Delete ${template.name}`}
-                  disabled={isSaving}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                  <button
+                    type="button"
+                    className="absolute right-2 top-2 rounded-md p-1 text-gray-400 transition hover:bg-white hover:text-red-600"
+                    onClick={event => handleRequestDelete(event, template)}
+                    aria-label={`Delete ${template.name}`}
+                    disabled={isSaving}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 )}
 
                 <div className="mb-2 flex items-center justify-between pr-6">
                   <h3 className="font-semibold text-gray-900 text-sm">
                     {template.name}
                   </h3>
-                  {template.templateKey === currentTemplateKey && (
+                  {template.id === frontCoverPage?.id && (
                     <div className="rounded-full bg-blue-500 px-2 py-1 font-medium text-white text-xs">
                       Active
                     </div>

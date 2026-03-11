@@ -4,105 +4,30 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from '@reduxjs/toolkit';
-import { CoverPageApi } from '../api';
 import type { Template } from '../types';
 
-interface CoverPageState {
-  frontEnabled: boolean;
-  backEnabled: boolean;
-  templates: Template[];
-  //! why are we storing template keys in the state? We can directly store the selected template id and find the template details from the templates array when needed. This will simplify the state and reduce redundancy.
-  frontTemplateKey: string;
-  backTemplateKey: string;
-  frontHtml: string;
-  backHtml: string;
-  frontLexicalJson: string | null;
-  backLexicalJson: string | null;
-  frontName: string;
-  backName: string;
+interface SelectedCoverPage {
+  id: string;
+  name: string;
+  html: string;
+  lexicalJson: string;
+}
 
+interface CoverPageState {
+  frontCoverPage: SelectedCoverPage | null;
+  backCoverPage: SelectedCoverPage | null;
   isEditing: boolean;
   isSaving: boolean;
   currentBundleId: string | null;
-  frontCoverPageId: string | null;
-  backCoverPageId: string | null;
 }
 
 const initialState: CoverPageState = {
-  frontEnabled: false,
-  backEnabled: false,
-  templates: [],
-  frontTemplateKey: 'legal_cover_v1',
-  backTemplateKey: 'legal_back_cover_v1',
-  frontHtml: '',
-  backHtml: '',
-  frontLexicalJson: null,
-  backLexicalJson: null,
-  frontName: '',
-  backName: '',
+  frontCoverPage: null,
+  backCoverPage: null,
   isEditing: false,
   isSaving: false,
   currentBundleId: null,
-  frontCoverPageId: null,
-  backCoverPageId: null,
 };
-
-// Load cover page templates
-export const loadCoverPageTemplates = createAsyncThunk(
-  'coverPage/loadCoverPageTemplates',
-  async () => {
-    const response = await CoverPageApi.getCoverPages();
-    console.log('API response for cover pages:', response);
-    return response;
-  }
-);
-
-// Save cover page id in bundle metadata
-export const saveCoverPageIdInMetadata = createAsyncThunk(
-  'coverPage/saveId',
-  async (
-    { type, coverPageId }: { type: 'front' | 'back'; coverPageId: string },
-    { getState }
-  ) => {
-    const state = getState() as any;
-    const { currentBundleId } = state.coverPage;
-
-    if (!currentBundleId) {
-      throw new Error('No bundle ID set');
-    }
-
-    const metadataKey =
-      type === 'front' ? 'front_cover_page_id' : 'back_cover_page_id';
-
-    const response = await CoverPageApi.updateMetadata(currentBundleId, {
-      [metadataKey]: coverPageId.toString(),
-    });
-
-    return { type, response };
-  }
-);
-
-// Remove cover page id from bundle metadata
-export const removeCoverPageIdFromMetadata = createAsyncThunk(
-  'coverPage/removeId',
-  async (type: 'front' | 'back', { getState }) => {
-    const state = getState() as any;
-    const { currentBundleId } = state.coverPage;
-
-    if (!currentBundleId) {
-      throw new Error('No bundle ID set');
-    }
-
-    const metadataKey =
-      type === 'front' ? 'front_cover_page_id' : 'back_cover_page_id';
-
-    const response = await CoverPageApi.updateMetadata(currentBundleId, {
-      [metadataKey]: null,
-    });
-
-    return { type, response };
-  }
-);
 
 // Save/update cover page data with HTML
 export const saveCoverPageData = createAsyncThunk(
@@ -173,11 +98,12 @@ export const deleteCoverPage = createAsyncThunk(
 
     await CoverPageApi.deleteCoverPage(id);
 
-    if (currentBundleId && (id === frontCoverPageId || id === backCoverPageId)) {
+    if (
+      currentBundleId &&
+      (id === frontCoverPageId || id === backCoverPageId)
+    ) {
       await CoverPageApi.updateMetadata(currentBundleId, {
-        ...(id === frontCoverPageId
-          ? { front_cover_page_id: null }
-          : {}),
+        ...(id === frontCoverPageId ? { front_cover_page_id: null } : {}),
         ...(id === backCoverPageId ? { back_cover_page_id: null } : {}),
       });
     }
@@ -201,50 +127,24 @@ const coverPageSlice = createSlice({
         state.backEnabled = enabled;
       }
     },
+    /*---------------------------------------
+      Set selected cover page to redux state
+    -----------------------------------------*/
+    setTemplate: (state, action: PayloadAction<{ template: Template }>) => {
+      const { template } = action.payload;
 
-    setTemplate: (
-      state,
-      action: PayloadAction<{ type: 'front' | 'back'; templateKey: string }>
-    ) => {
-      const { type, templateKey } = action.payload;
-
-      // Find template and load default HTML if available
-      const selectedTemplate = state.templates.find(
-        template => template.templateKey === templateKey
-      );
-
-      const fallbackName =
-        type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
-      const nextName = selectedTemplate?.name || fallbackName;
-
-      if (type === 'front') {
-        state.frontTemplateKey = templateKey;
-        state.frontName = nextName;
-      } else {
-        state.backTemplateKey = templateKey;
-        state.backName = nextName;
-      }
-
-      const templateHtml = selectedTemplate?.html || '';
-
-      const rawLexical = selectedTemplate?.lexicalJson || null;
-
-      const normalizedLexical =
-        rawLexical && typeof rawLexical !== 'string'
-          ? JSON.stringify(rawLexical)
-          : rawLexical;
-
-      if (type === 'front') {
-        state.frontHtml = templateHtml;
-        state.frontLexicalJson = normalizedLexical;
-        state.frontCoverPageId = selectedTemplate?.id || null;
-      } else {
-        state.backHtml = templateHtml;
-        state.backLexicalJson = normalizedLexical;
-        state.backCoverPageId = selectedTemplate?.id || null;
-      }
+      template.type === 'front'
+        ? (state.frontCoverPage = template)
+        : (state.backCoverPage = template);
     },
-
+    /*---------------------------------------
+      Deselect Cover page from export option
+    -----------------------------------------*/
+    deSelectCoverPage: (state, action: PayloadAction<string>) => {
+      const type = action.payload;
+      if (type === 'Front') state.frontCoverPage = null;
+      if (type === 'Back') state.backCoverPage = null;
+    },
     setCoverPageHtml: (
       state,
       action: PayloadAction<{
@@ -375,67 +275,6 @@ const coverPageSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      // Load templates
-      .addCase(loadCoverPageTemplates.fulfilled, (state, action) => {
-        state.templates = action.payload;
-
-        // Initialize HTML when templates are loaded
-        if (action.payload.length > 0) {
-          // Initialize front cover HTML
-          const frontTemplate =
-            action.payload.find(
-              (t: any) =>
-                t.templateKey === state.frontTemplateKey && t.type === 'front'
-            ) || action.payload.find((t: any) => t.type === 'front');
-
-          if (frontTemplate?.isDefault && !state.frontHtml) {
-            state.frontHtml = frontTemplate.html;
-          }
-          if (!state.frontName) {
-            state.frontName = frontTemplate?.name || 'Front Cover Page';
-          }
-
-          // Initialize back cover HTML
-          const backTemplate =
-            action.payload.find(
-              (t: any) =>
-                t.templateKey === state.backTemplateKey && t.type === 'back'
-            ) || action.payload.find((t: any) => t.type === 'back');
-
-          if (backTemplate?.isDefault && !state.backHtml) {
-            state.backHtml = backTemplate.html;
-          }
-          if (!state.backName) {
-            state.backName = backTemplate?.name || 'Back Cover Page';
-          }
-        }
-      })
-      // Save cover page ID in metadata
-      .addCase(saveCoverPageIdInMetadata.pending, state => {
-        state.isSaving = true;
-      })
-      .addCase(saveCoverPageIdInMetadata.fulfilled, state => {
-        state.isSaving = false;
-      })
-      .addCase(saveCoverPageIdInMetadata.rejected, state => {
-        state.isSaving = false;
-      })
-      // Remove cover page ID from metadata
-      .addCase(removeCoverPageIdFromMetadata.pending, state => {
-        state.isSaving = true;
-      })
-      .addCase(removeCoverPageIdFromMetadata.fulfilled, (state, action) => {
-        state.isSaving = false;
-        const { type } = action.payload;
-        if (type === 'front') {
-          state.frontCoverPageId = null;
-        } else {
-          state.backCoverPageId = null;
-        }
-      })
-      .addCase(removeCoverPageIdFromMetadata.rejected, state => {
-        state.isSaving = false;
-      })
       // Save/update cover page data
       .addCase(saveCoverPageData.pending, state => {
         state.isSaving = true;
@@ -535,6 +374,7 @@ export const {
   loadExistingCoverPageData,
   resetCoverPage,
   upsertTemplate,
+  deSelectCoverPage,
 } = coverPageSlice.actions;
 
 export default coverPageSlice.reducer;

@@ -13,6 +13,7 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ProtectedRoute, { PublicRoute } from './ProtectedRoutes';
 import useAuthInit from '@/features/auth/hooks/useAuthInit';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
+import { CoverPageEditor } from '@/features/cover-page/components/CoverPageEditor';
 
 export default function AppRoutes() {
   useAuthInit();
@@ -42,6 +43,8 @@ export default function AppRoutes() {
           <Route element={<DashboardPage />} path="/dashboard" />
           <Route element={<BundlesPage />} path="/dashboard/bundles" />
         </Route>
+
+        <Route element={<CoverPageEditor />} path="/cover-page-editor/:id" />
       </Route>
 
       {/* 404 Not Found */}

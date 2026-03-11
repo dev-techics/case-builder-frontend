@@ -6,10 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 import axiosInstance from '@/api/axiosInstance';
 import CoverPage from '../../cover-page';
-import {
-  loadCoverPageTemplates,
-  setBundleId,
-} from '../../cover-page/redux/coverPageSlice';
+import { setBundleId } from '../../cover-page/redux/coverPageSlice';
 
 /**
  * Recursively collects all PDF files from the tree structure
@@ -36,8 +33,8 @@ function Exports() {
     states => states.propertiesPanel.headersFooter
   );
 
-  // Get cover page state
-  const { frontEnabled, backEnabled } = useAppSelector(
+  // select the front and back cover page from redux state
+  const { frontCoverPage, backCoverPage } = useAppSelector(
     state => state.coverPage
   );
 
@@ -64,7 +61,6 @@ function Exports() {
   useEffect(() => {
     if (bundleId) {
       dispatch(setBundleId(bundleId));
-      dispatch(loadCoverPageTemplates());
     }
   }, [bundleId, dispatch]);
 
@@ -229,7 +225,7 @@ function Exports() {
           Export Options
         </p>
         <div className="space-y-2 text-blue-800 text-xs">
-          {frontEnabled && (
+          {frontCoverPage && (
             <label className="flex cursor-pointer items-center gap-2">
               <input
                 checked={includeFrontCover}
@@ -241,7 +237,7 @@ function Exports() {
               <span>Include front cover page</span>
             </label>
           )}
-          {backEnabled && (
+          {backCoverPage && (
             <label className="flex cursor-pointer items-center gap-2">
               <input
                 checked={includeBackCover}
