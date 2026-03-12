@@ -1,5 +1,5 @@
 // components/LexicalCoverPageEditor.tsx
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
@@ -32,10 +32,7 @@ import { ImageNode } from './nodes/ImageNode';
 import {
   setCoverPageHtml,
   setCoverPageLexicalJson,
-  setCoverPageName,
 } from '../redux/coverPageSlice';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import CoverPagePreviewHtml from './CoverPagePreviewHtml';
 
 // Lexical theme configuration
@@ -299,18 +296,23 @@ function OnChangeCoverPagePlugin({
   return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />;
 }
 
-const LexicalCoverPageEditor = () => {
+interface LexicalCoverPageEditorProps {
+  type: 'front' | 'back';
+  showPreview: boolean;
+}
+
+const LexicalCoverPageEditor = ({
+  type,
+  showPreview,
+}: LexicalCoverPageEditorProps) => {
   const dispatch = useAppDispatch();
   const { frontCoverPage, backCoverPage } = useAppSelector(
     state => state.coverPage
   );
 
-  const html = frontCoverPage?.html;
-  const lexicalJson = frontCoverPage?.lexicalJson;
-  const template = frontCoverPage;
-  const coverPageName = frontCoverPage?.name;
-
-  const [showPreview, setShowPreview] = useState(false);
+  const template = type === 'front' ? frontCoverPage : backCoverPage;
+  const html = template?.html;
+  const lexicalJson = template?.lexicalJson;
 
   const handleHtmlChange = (newHtml: string) => {
     dispatch(setCoverPageHtml({ type, html: newHtml }));
@@ -318,10 +320,6 @@ const LexicalCoverPageEditor = () => {
 
   const handleLexicalChange = (lexicalState: string) => {
     dispatch(setCoverPageLexicalJson({ type, lexicalJson: lexicalState }));
-  };
-
-  const handleNameChange = (value: string) => {
-    dispatch(setCoverPageName({ type, name: value }));
   };
 
   const initialConfig = {
@@ -355,93 +353,67 @@ const LexicalCoverPageEditor = () => {
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-6 lg:gap-6">
-      {/* ----------- Left: Editor ------------ */}
-      <div className="order-1 col-span-1 flex min-h-0 min-w-0 flex-col overflow-hidden lg:col-span-4">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <h3 className="font-semibold text-gray-900 text-sm">
-            Edit Cover Page
-          </h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowPreview(!showPreview)}
-          >
-            {showPreview ? 'Hide Preview' : 'Show Preview'}
-          </Button>
-        </div>
-        <div className="mb-3 flex flex-col gap-1">
-          <label
-            className="text-xs font-semibold text-gray-700"
-            htmlFor={`${type}-cover-page-name`}
-          >
-            Cover Page Name
-          </label>
-          <Input
-            id={`${type}-cover-page-name`}
-            value={coverPageName}
-            onChange={event => handleNameChange(event.target.value)}
-            placeholder={`e.g., ${type === 'front' ? 'Main' : 'Back'} Cover Page`}
-            className="h-9"
-          />
-        </div>
-
-        <div className="flex-1 min-h-[280px] overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <LexicalComposer initialConfig={initialConfig}>
-            <div className="editor-container h-full flex flex-col">
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <LexicalComposer initialConfig={initialConfig}>
+          <div className="editor-container flex h-full min-h-0 flex-col">
+            <div className="bg-gray-50/80">
               <ToolbarPlugin />
+            </div>
 
-              <div className="editor-inner flex-1 overflow-auto relative">
-                <RichTextPlugin
-                  contentEditable={
-                    <ContentEditable className="editor-input min-h-full p-4 outline-none" />
-                  }
-                  placeholder={
-                    <div className="editor-placeholder absolute top-4 left-4 text-gray-400 pointer-events-none">
-                      Start typing your cover page content...
-                    </div>
-                  }
-                  ErrorBoundary={LexicalErrorBoundary}
-                />
-                <OnChangeCoverPagePlugin
-                  onHtmlChange={handleHtmlChange}
-                  onLexicalChange={handleLexicalChange}
-                />
-                <LoadHtmlPlugin html={html || ''} lexicalJson={lexicalJson} />
-                <HistoryPlugin />
-                <AutoFocusPlugin />
-                <LinkPlugin />
-                <ListPlugin />
-                <ImagePlugin />
-                <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+            <div className="editor-inner flex-1 overflow-auto bg-gray-100/70">
+              <div className="mx-auto w-full max-w-[820px] px-4 py-8">
+                <div className="relative min-h-[1123px] w-full rounded-md border border-gray-200 bg-white shadow-sm">
+                  <RichTextPlugin
+                    contentEditable={
+                      <ContentEditable className="editor-input min-h-[1123px] w-full p-10 text-[15px] leading-6 outline-none sm:p-12" />
+                    }
+                    placeholder={
+                      <div className="editor-placeholder pointer-events-none absolute left-10 top-10 text-gray-400 sm:left-12 sm:top-12">
+                        Start typing your cover page content...
+                      </div>
+                    }
+                    ErrorBoundary={LexicalErrorBoundary}
+                  />
+                  <OnChangeCoverPagePlugin
+                    onHtmlChange={handleHtmlChange}
+                    onLexicalChange={handleLexicalChange}
+                  />
+                  <LoadHtmlPlugin html={html || ''} lexicalJson={lexicalJson} />
+                  <HistoryPlugin />
+                  <AutoFocusPlugin />
+                  <LinkPlugin />
+                  <ListPlugin />
+                  <ImagePlugin />
+                  <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+                </div>
               </div>
             </div>
-          </LexicalComposer>
-        </div>
-
-        <p className="mt-2 text-gray-500 text-xs">
-          Use the toolbar to format your cover page. Images and styles will be
-          preserved in the PDF.
-        </p>
+          </div>
+        </LexicalComposer>
       </div>
 
-      {/* -----------Right: Preview------------- */}
-      <div className="order-2 col-span-1 min-w-0 lg:order-2 lg:col-span-2">
-        {showPreview && (
-          <div className="lg:sticky lg:top-6">
-            <h3 className="mb-3 font-semibold text-gray-900 text-sm">
+      {showPreview && (
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+            <h3 className="font-semibold text-gray-900 text-sm">
               Live Preview (A4)
             </h3>
-            <div className="max-h-[60vh] overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm lg:max-h-[800px]">
+            <span className="text-xs text-gray-500">
+              {type === 'front' ? 'Front' : 'Back'} cover page
+            </span>
+          </div>
+          <div className="max-h-[70vh] overflow-auto bg-gray-50/70 p-6">
+            <div className="mx-auto w-full max-w-[794px] rounded-md border border-gray-200 bg-white shadow-sm">
               <CoverPagePreviewHtml type={type} html={html || ''} />
             </div>
-            <p className="mt-2 text-gray-500 text-xs">
-              This preview shows how your {type} cover page will appear in the
-              final PDF
-            </p>
           </div>
-        )}
-      </div>
+          <p className="px-4 pb-4 text-gray-500 text-xs">
+            This preview shows how your {type} cover page will appear in the
+            final PDF.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

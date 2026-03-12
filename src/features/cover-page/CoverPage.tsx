@@ -1,14 +1,5 @@
-import { useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
-import {
-  setTemplate,
-  setIsEditing,
-  upsertTemplate,
-  saveCoverPageData,
-  deSelectCoverPage,
-} from './redux/coverPageSlice';
-import LexicalCoverPageEditor from './components/LexicalCoverPageEditor';
 import TemplateSelectionDialog from './components/TemplateSelectionDialog';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -16,90 +7,35 @@ import {
   RemoveCircleIcon,
   ViewIcon,
 } from '@hugeicons/core-free-icons';
-import { useLazyGetTemplateQuery } from './api';
 import { useNavigate } from 'react-router-dom';
+import { useCoverPageHandlers } from './hook';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import CoverPagePreview from './components/CoverPagePreview';
+import { useState } from 'react';
 
 interface CoverPageProps {
-  type: 'Front' | 'Back';
+  type: 'front' | 'back';
 }
 
 const CoverPage = ({ type }: CoverPageProps) => {
-  const dispatch = useAppDispatch();
+  const [showPreview, setShowPreview] = useState<boolean>(false);
   const navigate = useNavigate();
-  const [fetchTemplateById] = useLazyGetTemplateQuery();
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const {
+    isTemplateDialogOpen: showTemplateDialog,
+    setTemplateDialogOpen: setShowTemplateDialog,
+    handleSelectTemplate,
+    handleCreateTemplate,
+    handleRemoveTemplate,
+  } = useCoverPageHandlers(type);
   const { frontCoverPage, backCoverPage } = useAppSelector(
     state => state.coverPage
   );
-  /*--------------------------------------------------
-    Select template and save the id in bundle metadata 
-    and also save in the local state
-   ---------------------------------------------------*/
-  const handleSelectTemplate = async (id: string) => {
-    const coverType = type.toLowerCase() as 'front' | 'back';
-    try {
-      const template = await fetchTemplateById(id).unwrap();
-      dispatch(setTemplate({ template }));
-
-      setShowTemplateDialog(false);
-    } catch (error) {
-      console.error('Failed to load cover page template:', error);
-    }
-  };
-
-  const handleCreateTemplate = () => {
-    const coverType = type.toLowerCase() as 'front' | 'back';
-    const templateKey = `custom_${coverType}_${Date.now()}`;
-
-    dispatch(
-      upsertTemplate({
-        templateKey,
-        name: `Custom ${type} Cover Page`,
-        description: 'Custom template',
-        type: coverType,
-        html: '',
-        lexicalJson: null,
-      })
-    );
-
-    dispatch(setTemplate({ type: coverType, templateKey }));
-    setShowTemplateDialog(false);
-    setShowEditor(true);
-    dispatch(setIsEditing(true));
-  };
-
-  const handleOpenEditor = () => {
-    setShowEditor(true);
-    dispatch(setIsEditing(true));
-  };
-
-  const handleSave = async () => {
-    try {
-      const coverType = type.toLowerCase() as 'front' | 'back';
-
-      // First save the cover page data (creates/updates the cover page)
-      const result = await dispatch(saveCoverPageData(coverType)).unwrap();
-      console.log(result);
-      // Then save the cover page ID in the bundle metadata
-      const coverPageId = result?.response?.id;
-      if (coverPageId) {
-        await dispatch(
-          saveCoverPageIdInMetadata({
-            type: coverType,
-            coverPageId,
-          })
-        ).unwrap();
-      } else {
-        console.warn('Cover page saved without an id in the response.', result);
-      }
-
-      handleCloseEditor();
-    } catch (error) {
-      console.error('Failed to save cover page:', error);
-      // You could add toast notification here
-    }
-  };
-
+  const selectedTemplateId =
+    type === 'front' ? frontCoverPage?.id : backCoverPage?.id;
+  const selectedTemplateName =
+    type === 'front' ? frontCoverPage?.name : backCoverPage?.name;
+  const hasSelection = Boolean(selectedTemplateId);
+  const displayName = selectedTemplateName?.trim() || 'Not Selected';
   return (
     <>
       {/*-------------------------
@@ -113,17 +49,13 @@ const CoverPage = ({ type }: CoverPageProps) => {
             {/*---------------------------------- 
               Cover page name based on the type 
               -----------------------------------*/}
-            {type === 'Front' && frontCoverPage
-              ? frontCoverPage.name
-              : type === 'Back' && backCoverPage
-                ? backCoverPage.name
-                : 'Not Selected'}
+            {displayName}
           </p>
           <div className="min-h-5 min-w-5">
             {/*--------------------------------- 
               Select Cover page If not selected
             ------------------------------------*/}
-            {type === 'Front' && !frontCoverPage ? (
+            {!hasSelection ? (
               <Button
                 variant={'ghost'}
                 size={'sm'}
@@ -141,24 +73,26 @@ const CoverPage = ({ type }: CoverPageProps) => {
                 <span
                   title="View"
                   className="hover:bg-gray-300 p-1 rounded-full cursor-pointer"
+                  onClick={() => setShowPreview(true)}
                 >
                   <HugeiconsIcon className="h-5 w-5" icon={ViewIcon} />
                 </span>
                 <span
                   title="Edit"
                   className=" hover:bg-gray-300 p-1 rounded-full cursor-pointer"
-                  onClick={() =>
-                    navigate(
-                      `/cover-page-editor/${type === 'Front' ? frontCoverPage?.id : backCoverPage?.id}`
-                    )
-                  }
+                  onClick={() => {
+                    if (!selectedTemplateId) {
+                      return;
+                    }
+                    navigate(`/cover-page-editor/${selectedTemplateId}`);
+                  }}
                 >
                   <HugeiconsIcon className="h-4 w-4" icon={Edit03Icon} />
                 </span>
                 <span
                   title="Remove"
                   className=" hover:bg-gray-300 rounded-full cursor-pointer p-1"
-                  onClick={() => dispatch(deSelectCoverPage(type))}
+                  onClick={handleRemoveTemplate}
                 >
                   <HugeiconsIcon
                     className="h-4 w-4 text-red-500"
@@ -182,9 +116,14 @@ const CoverPage = ({ type }: CoverPageProps) => {
         type={type}
       />
 
-      {/*--------------------------------- 
-        Cover Page Editor Dialog (Lexical) 
-        ----------------------------------*/}
+      {/*------------------------------ 
+        View selected cover page dialog
+      ---------------------------------*/}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent>
+          <CoverPagePreview type={type} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

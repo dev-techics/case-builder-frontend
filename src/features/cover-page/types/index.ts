@@ -1,5 +1,7 @@
 export interface Template {
   id: string;
+  templateKey?: string;
+  values?: Record<string, unknown>;
   name: string;
   description: string;
   type: 'front' | 'back';

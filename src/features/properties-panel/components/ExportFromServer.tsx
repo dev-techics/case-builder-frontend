@@ -37,6 +37,8 @@ function Exports() {
   const { frontCoverPage, backCoverPage } = useAppSelector(
     state => state.coverPage
   );
+  const frontEnabled = Boolean(frontCoverPage);
+  const backEnabled = Boolean(backCoverPage);
 
   // Get highlights from toolbar slice
   const highlights = useAppSelector(state => state.toolbar.highlights);
@@ -187,7 +189,7 @@ function Exports() {
   return (
     <div className="space-y-4">
       {/* Front Cover Page Manager */}
-      <CoverPage type="Front" />
+      <CoverPage type="front" />
 
       {/* Export Summary */}
       <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
@@ -217,7 +219,7 @@ function Exports() {
       </div>
 
       {/* Back Cover Page Manager */}
-      <CoverPage type="Back" />
+      <CoverPage type="back" />
 
       {/* Export Options */}
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">

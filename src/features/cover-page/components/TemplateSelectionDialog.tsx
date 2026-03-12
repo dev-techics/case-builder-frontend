@@ -18,15 +18,19 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Trash2 } from 'lucide-react';
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import type { Template } from '../types';
-import { deleteCoverPage } from '../redux/coverPageSlice';
-import { useGetTemplatesQuery } from '../api';
+import { deSelectCoverPage } from '../redux/coverPageSlice';
+import {
+  useDeleteCoverPageMutation,
+  useGetTemplatesQuery,
+  useUpdateBundleMetadataMutation,
+} from '../api';
 
 interface TemplateSelectionDialogProps {
   open: boolean;
   onOpen: (open: boolean) => void;
   onSelect: (id: string) => void;
   onCreate: () => void;
-  type: 'Front' | 'Back';
+  type: 'front' | 'back';
 }
 
 const TemplateSelectionDialog = ({
@@ -38,9 +42,14 @@ const TemplateSelectionDialog = ({
 }: TemplateSelectionDialogProps) => {
   const dispatch = useAppDispatch();
 
-  const { data, isLoading, isError, refetch } = useGetTemplatesQuery();
+  const { data, isLoading, isError } = useGetTemplatesQuery(undefined, {
+    skip: !open,
+  });
+  const [deleteCoverPage, { isLoading: isDeleting }] =
+    useDeleteCoverPageMutation();
+  const [updateBundleMetadata] = useUpdateBundleMetadataMutation();
   const templates = data ?? [];
-  const { frontCoverPage, backCoverPage, isSaving } = useAppSelector(
+  const { frontCoverPage, backCoverPage, currentBundleId } = useAppSelector(
     state => state.coverPage
   );
 
@@ -52,6 +61,8 @@ const TemplateSelectionDialog = ({
   const filteredTemplates = templates.filter(
     template => template.type === coverType
   );
+  const selectedId =
+    coverType === 'front' ? frontCoverPage?.id : backCoverPage?.id;
 
   const handleSelectTemplate = (id: string) => {
     onSelect(id);
@@ -71,8 +82,21 @@ const TemplateSelectionDialog = ({
       return;
     }
     try {
-      await dispatch(deleteCoverPage({ id: deleteTarget.id })).unwrap();
-      refetch();
+      await deleteCoverPage(deleteTarget.id).unwrap();
+
+      if (selectedId === deleteTarget.id) {
+        dispatch(deSelectCoverPage(type));
+
+        if (currentBundleId) {
+          await updateBundleMetadata({
+            bundleId: currentBundleId,
+            metadata:
+              coverType === 'front'
+                ? { front_cover_page_id: null }
+                : { back_cover_page_id: null },
+          }).unwrap();
+        }
+      }
     } catch (error) {
       console.error('Failed to delete cover page:', error);
     } finally {
@@ -136,7 +160,7 @@ const TemplateSelectionDialog = ({
                 role="button"
                 tabIndex={0}
                 className={`group relative rounded-lg border-2 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 ${
-                  template.id === frontCoverPage?.id
+                  template.id === selectedId
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200'
                 }`}
@@ -149,7 +173,7 @@ const TemplateSelectionDialog = ({
                     className="absolute right-2 top-2 rounded-md p-1 text-gray-400 transition hover:bg-white hover:text-red-600"
                     onClick={event => handleRequestDelete(event, template)}
                     aria-label={`Delete ${template.name}`}
-                    disabled={isSaving}
+                    disabled={isDeleting}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -159,7 +183,7 @@ const TemplateSelectionDialog = ({
                   <h3 className="font-semibold text-gray-900 text-sm">
                     {template.name}
                   </h3>
-                  {template.id === frontCoverPage?.id && (
+                  {template.id === selectedId && (
                     <div className="rounded-full bg-blue-500 px-2 py-1 font-medium text-white text-xs">
                       Active
                     </div>
@@ -186,10 +210,12 @@ const TemplateSelectionDialog = ({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeleting}>
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleConfirmDelete}
-                disabled={isSaving}
+                disabled={isDeleting}
               >
                 Delete
               </AlertDialogAction>
