@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Template } from '../types';
+import type { Template } from '../../types';
 import type { Dispatch, SetStateAction } from 'react';
 
 interface CoverPageEditorHeaderProps {

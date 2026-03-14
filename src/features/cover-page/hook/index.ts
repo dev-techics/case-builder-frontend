@@ -116,3 +116,5 @@ export const useCoverPageHandlers = (type: CoverPageSide) => {
     handleRemoveTemplate,
   };
 };
+
+export * from './useToolbarHandlers';

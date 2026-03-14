@@ -127,4 +127,33 @@
     display: block;
     width: 100%;
   }
+
+  .editor-text-bold {
+    font-weight: 700;
+  }
+
+  .editor-text-italic {
+    font-style: italic;
+  }
+
+  .editor-text-underline {
+    text-decoration: underline;
+  }
+
+  .editor-text-strikethrough {
+    text-decoration: line-through;
+  }
+
+  .editor-text-code {
+    font-family:
+      ui-monospace,
+      SFMono-Regular,
+      Menlo,
+      Monaco,
+      Consolas,
+      'Liberation Mono',
+      'Courier New',
+      monospace;
+    font-size: 0.9em;
+  }
 }

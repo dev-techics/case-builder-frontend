@@ -10,7 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useCoverPageHandlers } from './hook';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import CoverPagePreview from './components/CoverPagePreview';
+import CoverPagePreview from './components/preview/CoverPagePreview';
 import { useState } from 'react';
 
 interface CoverPageProps {

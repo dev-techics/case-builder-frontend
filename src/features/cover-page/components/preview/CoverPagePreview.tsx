@@ -9,8 +9,7 @@ const CoverPagePreview = ({ type }: CoverPagePreviewProps) => {
   const { frontCoverPage, backCoverPage } = useAppSelector(
     state => state.coverPage
   );
-  const html =
-    type === 'front' ? frontCoverPage?.html : backCoverPage?.html;
+  const html = type === 'front' ? frontCoverPage?.html : backCoverPage?.html;
 
   if (!html) {
     return (

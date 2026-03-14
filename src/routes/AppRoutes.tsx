@@ -13,7 +13,7 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ProtectedRoute, { PublicRoute } from './ProtectedRoutes';
 import useAuthInit from '@/features/auth/hooks/useAuthInit';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
-import { CoverPageEditor } from '@/features/cover-page/components/CoverPageEditor';
+import { CoverPageEditor } from '@/features/cover-page/components/editor/CoverPageEditor';
 
 export default function AppRoutes() {
   useAuthInit();

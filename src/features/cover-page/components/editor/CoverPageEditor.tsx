@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import LexicalCoverPageEditor from './LexicalCoverPageEditor';
-import { setCoverPageName, setTemplate } from '../redux/coverPageSlice';
+import { setCoverPageName, setTemplate } from '../../redux/coverPageSlice';
 import {
   useCreateCoverPageMutation,
   useGetTemplateQuery,
   useUpdateBundleMetadataMutation,
   useUpdateCoverPageMutation,
-} from '../api';
+} from '../../api';
 import CoverPageEditorHeader from './CoverPageEditorHeader';
 
 const resolveCoverPageName = (type: 'front' | 'back', name?: string) => {

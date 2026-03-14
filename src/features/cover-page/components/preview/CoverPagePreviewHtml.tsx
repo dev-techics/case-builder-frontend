@@ -1,5 +1,10 @@
 // components/CoverPagePreviewHtml.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
+import {
+  DEFAULT_PAGE_SETUP,
+  extractPageSetupFromHtml,
+  getPageDimensions,
+} from '../../utils/pageSetup';
 
 interface CoverPagePreviewHtmlProps {
   type: 'front' | 'back';
@@ -11,10 +16,16 @@ const CoverPagePreviewHtml: React.FC<CoverPagePreviewHtmlProps> = ({
   html,
 }) => {
   const hasInlineWrapper = /data-cover-page=['"]content['"]/.test(html);
-  // A4 dimensions in pixels at 96 DPI (standard screen resolution)
-  // A4 is 210mm x 297mm = 793px x 1122px at 96 DPI
-  const pageWidth = 793;
-  const pageHeight = 1122;
+  const pageSetup = useMemo(
+    () =>
+      extractPageSetupFromHtml(html, '[data-cover-page=\"content\"]') ??
+      DEFAULT_PAGE_SETUP,
+    [html]
+  );
+  const { widthCm, heightCm } = getPageDimensions(pageSetup);
+  const pxPerCm = 96 / 2.54;
+  const pageWidth = widthCm * pxPerCm;
+  const pageHeight = heightCm * pxPerCm;
   const scale = 0.6; // Scale down for preview
 
   return (
@@ -30,10 +41,11 @@ const CoverPagePreviewHtml: React.FC<CoverPagePreviewHtmlProps> = ({
     >
       {/* A4 Page Background */}
       <div
-        className="absolute inset-0 bg-white shadow-lg overflow-hidden"
+        className="absolute inset-0 shadow-lg overflow-hidden"
         style={{
           width: `${pageWidth}px`,
           height: `${pageHeight}px`,
+          backgroundColor: pageSetup.backgroundColor,
         }}
       >
         {/* Rendered HTML content */}

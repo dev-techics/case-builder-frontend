@@ -1,5 +1,5 @@
 // components/LexicalCoverPageEditor.tsx
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
@@ -24,16 +24,26 @@ import {
   $insertNodes,
   type EditorState,
   type LexicalEditor,
+  type SerializedEditorState,
+  type SerializedLexicalNode,
 } from 'lexical';
 
-import ToolbarPlugin from './plugins/ToolbarPlugin';
-import { ImagePlugin } from './plugins/ImagePlugin';
-import { ImageNode } from './nodes/ImageNode';
+import ToolbarPlugin from '../plugins/ToolbarPlugin';
+import { ImagePlugin } from '../plugins/ImagePlugin';
+import { ImageNode } from '../nodes/ImageNode';
 import {
   setCoverPageHtml,
   setCoverPageLexicalJson,
-} from '../redux/coverPageSlice';
-import CoverPagePreviewHtml from './CoverPagePreviewHtml';
+} from '../../redux/coverPageSlice';
+import {
+  DEFAULT_PAGE_SETUP,
+  extractPageSetupFromHtml,
+  getPageSetupAttributes,
+  getPageDimensions,
+  getPageSetupStyle,
+  normalizePageSetup,
+  type PageSetup,
+} from '../../utils/pageSetup';
 
 // Lexical theme configuration
 const theme = {
@@ -102,6 +112,7 @@ const theme = {
 
 const COVER_PAGE_WRAPPER_ATTR = 'data-cover-page';
 const COVER_PAGE_WRAPPER_VALUE = 'content';
+const COVER_PAGE_WRAPPER_SELECTOR = `[${COVER_PAGE_WRAPPER_ATTR}="${COVER_PAGE_WRAPPER_VALUE}"]`;
 const COVER_PAGE_BASE_STYLE = [
   'box-sizing:border-box',
   'width:100%',
@@ -193,7 +204,7 @@ const applyMpdfImageAlignment = (dom: Document) => {
   });
 };
 
-const inlineCoverPageHtml = (html: string) => {
+const inlineCoverPageHtml = (html: string, pageSetup: PageSetup) => {
   const parser = new DOMParser();
   const dom = parser.parseFromString(html || '', 'text/html');
   dom.body.querySelectorAll('*').forEach(element => {
@@ -209,7 +220,14 @@ const inlineCoverPageHtml = (html: string) => {
 
   const wrapper = dom.createElement('div');
   wrapper.setAttribute(COVER_PAGE_WRAPPER_ATTR, COVER_PAGE_WRAPPER_VALUE);
-  wrapper.setAttribute('style', COVER_PAGE_BASE_STYLE);
+  wrapper.setAttribute(
+    'style',
+    mergeInlineStyles(COVER_PAGE_BASE_STYLE, getPageSetupStyle(pageSetup))
+  );
+  const pageSetupAttributes = getPageSetupAttributes(pageSetup);
+  Object.entries(pageSetupAttributes).forEach(([key, value]) => {
+    wrapper.setAttribute(key, value);
+  });
   wrapper.innerHTML = dom.body.innerHTML;
   return wrapper.outerHTML;
 };
@@ -220,33 +238,112 @@ const extractCoverPageHtml = (html: string) => {
   }
   const parser = new DOMParser();
   const dom = parser.parseFromString(html, 'text/html');
-  const wrapper = dom.querySelector(
-    `[${COVER_PAGE_WRAPPER_ATTR}="${COVER_PAGE_WRAPPER_VALUE}"]`
-  );
+  const wrapper = dom.querySelector(COVER_PAGE_WRAPPER_SELECTOR);
   return wrapper ? wrapper.innerHTML : html;
+};
+
+const buildCoverPageLexicalPayload = (
+  editorState: EditorState,
+  pageSetup: PageSetup
+) =>
+  JSON.stringify({
+    editorState: editorState.toJSON(),
+    pageSetup,
+  });
+
+type ParsedCoverPageLexicalPayload = {
+  editorState:
+    | string
+    | SerializedEditorState<SerializedLexicalNode>
+    | null;
+  pageSetup: PageSetup | null;
+};
+
+const isSerializedEditorState = (
+  value: unknown
+): value is SerializedEditorState<SerializedLexicalNode> => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const root = (value as { root?: unknown }).root;
+  if (!root || typeof root !== 'object') {
+    return false;
+  }
+
+  return (root as { type?: unknown }).type === 'root';
+};
+
+const parseCoverPageLexicalPayload = (
+  lexicalJson?: string | null
+): ParsedCoverPageLexicalPayload => {
+  if (!lexicalJson) {
+    return { editorState: null, pageSetup: null };
+  }
+
+  const coerceEditorState = (
+    value: unknown
+  ): ParsedCoverPageLexicalPayload['editorState'] => {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (isSerializedEditorState(value)) {
+      return value;
+    }
+
+    return null;
+  };
+
+  try {
+    const parsed = JSON.parse(lexicalJson) as {
+      editorState?: unknown;
+      pageSetup?: Partial<PageSetup> | null;
+    };
+
+    if (parsed && typeof parsed === 'object' && 'editorState' in parsed) {
+      return {
+        editorState: coerceEditorState(parsed.editorState),
+        pageSetup: parsed.pageSetup
+          ? normalizePageSetup(parsed.pageSetup)
+          : null,
+      };
+    }
+
+    return { editorState: coerceEditorState(parsed), pageSetup: null };
+  } catch (error) {
+    return { editorState: lexicalJson, pageSetup: null };
+  }
 };
 
 // Plugin to load initial HTML content or Lexical state
 function LoadHtmlPlugin({
   html,
   lexicalJson,
+  onReady,
 }: {
   html: string;
   lexicalJson?: string | null;
+  onReady?: () => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const isFirstRender = useRef(true);
+  const parsedLexical = useMemo(
+    () => parseCoverPageLexicalPayload(lexicalJson),
+    [lexicalJson]
+  );
 
   useEffect(() => {
     if (!isFirstRender.current) {
       return;
     }
 
-    if (lexicalJson) {
+    if (parsedLexical.editorState) {
       try {
-        const editorState = editor.parseEditorState(lexicalJson);
+        const editorState = editor.parseEditorState(parsedLexical.editorState);
         editor.setEditorState(editorState);
         isFirstRender.current = false;
+        onReady?.();
         return;
       } catch (error) {
         console.error(
@@ -269,7 +366,8 @@ function LoadHtmlPlugin({
     }
 
     isFirstRender.current = false;
-  }, [editor, html, lexicalJson]);
+    onReady?.();
+  }, [editor, html, lexicalJson, onReady]);
 
   return null;
 }
@@ -278,9 +376,11 @@ function LoadHtmlPlugin({
 function OnChangeCoverPagePlugin({
   onHtmlChange,
   onLexicalChange,
+  pageSetup,
 }: {
   onHtmlChange: (html: string) => void;
   onLexicalChange: (lexicalJson: string) => void;
+  pageSetup: PageSetup;
 }) {
   const handleChange = (
     editorState: EditorState,
@@ -288,12 +388,40 @@ function OnChangeCoverPagePlugin({
   ) => {
     editorState.read(() => {
       const htmlString = $generateHtmlFromNodes(lexicalEditor);
-      onHtmlChange(inlineCoverPageHtml(htmlString));
-      onLexicalChange(JSON.stringify(editorState.toJSON()));
+      onHtmlChange(inlineCoverPageHtml(htmlString, pageSetup));
+      onLexicalChange(buildCoverPageLexicalPayload(editorState, pageSetup));
     });
   };
 
   return <OnChangePlugin onChange={handleChange} ignoreSelectionChange />;
+}
+
+function PageSetupSyncPlugin({
+  pageSetup,
+  onHtmlChange,
+  onLexicalChange,
+  isReady,
+}: {
+  pageSetup: PageSetup;
+  onHtmlChange: (html: string) => void;
+  onLexicalChange: (lexicalJson: string) => void;
+  isReady: boolean;
+}) {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+    const editorState = editor.getEditorState();
+    editorState.read(() => {
+      const htmlString = $generateHtmlFromNodes(editor);
+      onHtmlChange(inlineCoverPageHtml(htmlString, pageSetup));
+      onLexicalChange(buildCoverPageLexicalPayload(editorState, pageSetup));
+    });
+  }, [editor, isReady, onHtmlChange, onLexicalChange, pageSetup]);
+
+  return null;
 }
 
 interface LexicalCoverPageEditorProps {
@@ -301,10 +429,7 @@ interface LexicalCoverPageEditorProps {
   showPreview: boolean;
 }
 
-const LexicalCoverPageEditor = ({
-  type,
-  showPreview,
-}: LexicalCoverPageEditorProps) => {
+const LexicalCoverPageEditor = ({ type }: LexicalCoverPageEditorProps) => {
   const dispatch = useAppDispatch();
   const { frontCoverPage, backCoverPage } = useAppSelector(
     state => state.coverPage
@@ -313,6 +438,61 @@ const LexicalCoverPageEditor = ({
   const template = type === 'front' ? frontCoverPage : backCoverPage;
   const html = template?.html;
   const lexicalJson = template?.lexicalJson;
+  const parsedLexical = useMemo(
+    () => parseCoverPageLexicalPayload(lexicalJson),
+    [lexicalJson]
+  );
+  const htmlPageSetup = useMemo(
+    () =>
+      extractPageSetupFromHtml(
+        html || '',
+        COVER_PAGE_WRAPPER_SELECTOR
+      ),
+    [html]
+  );
+  const [pageSetup, setPageSetup] = useState<PageSetup>(DEFAULT_PAGE_SETUP);
+  const [isEditorReady, setIsEditorReady] = useState(false);
+  const lastTemplateIdRef = useRef<string | null>(null);
+  const pageMetrics = useMemo(() => {
+    const { widthCm, heightCm } = getPageDimensions(pageSetup);
+    const pxPerCm = 96 / 2.54;
+    const toPx = (value: number) => value * pxPerCm;
+    const margin = {
+      top: toPx(pageSetup.margin.top),
+      right: toPx(pageSetup.margin.right),
+      bottom: toPx(pageSetup.margin.bottom),
+      left: toPx(pageSetup.margin.left),
+    };
+    const widthPx = toPx(widthCm);
+    const heightPx = toPx(heightCm);
+    const contentHeightPx = Math.max(
+      heightPx - margin.top - margin.bottom,
+      0
+    );
+
+    return {
+      widthPx,
+      heightPx,
+      margin,
+      contentHeightPx,
+    };
+  }, [pageSetup]);
+
+  useEffect(() => {
+    if (!template?.id) {
+      return;
+    }
+
+    if (lastTemplateIdRef.current === template.id) {
+      return;
+    }
+
+    lastTemplateIdRef.current = template.id;
+    setIsEditorReady(false);
+    setPageSetup(
+      parsedLexical.pageSetup ?? htmlPageSetup ?? DEFAULT_PAGE_SETUP
+    );
+  }, [htmlPageSetup, parsedLexical.pageSetup, template?.id]);
 
   const handleHtmlChange = (newHtml: string) => {
     dispatch(setCoverPageHtml({ type, html: newHtml }));
@@ -357,19 +537,53 @@ const LexicalCoverPageEditor = ({
       <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <LexicalComposer initialConfig={initialConfig}>
           <div className="editor-container flex h-full min-h-0 flex-col">
+            {/*---------------- 
+                  Toolbar
+            -------------------*/}
             <div className="bg-gray-50/80">
-              <ToolbarPlugin />
+              <ToolbarPlugin
+                pageSetup={pageSetup}
+                onPageSetupChange={setPageSetup}
+              />
             </div>
 
+            {/*---------------------- 
+              Editor content area
+            -------------------------*/}
             <div className="editor-inner flex-1 overflow-auto bg-gray-100/70">
-              <div className="mx-auto w-full max-w-[820px] px-4 py-8">
-                <div className="relative min-h-[1123px] w-full rounded-md border border-gray-200 bg-white shadow-sm">
+              <div className="flex justify-center px-4 py-8">
+                <div
+                  className="relative rounded-md border border-gray-200 shadow-sm"
+                  style={{
+                    width: pageMetrics.widthPx,
+                    minHeight: pageMetrics.heightPx,
+                    backgroundColor: pageSetup.backgroundColor,
+                    boxSizing: 'border-box',
+                  }}
+                >
                   <RichTextPlugin
                     contentEditable={
-                      <ContentEditable className="editor-input min-h-[1123px] w-full p-10 text-[15px] leading-6 outline-none sm:p-12" />
+                      <ContentEditable
+                        className="editor-input w-full text-[15px] leading-6 outline-none"
+                        style={{
+                          minHeight: pageMetrics.contentHeightPx,
+                          paddingTop: pageMetrics.margin.top,
+                          paddingRight: pageMetrics.margin.right,
+                          paddingBottom: pageMetrics.margin.bottom,
+                          paddingLeft: pageMetrics.margin.left,
+                          boxSizing: 'border-box',
+                        }}
+                      />
                     }
                     placeholder={
-                      <div className="editor-placeholder pointer-events-none absolute left-10 top-10 text-gray-400 sm:left-12 sm:top-12">
+                      <div
+                        className="editor-placeholder pointer-events-none absolute text-gray-400"
+                        style={{
+                          top: pageMetrics.margin.top,
+                          left: pageMetrics.margin.left,
+                          right: pageMetrics.margin.right,
+                        }}
+                      >
                         Start typing your cover page content...
                       </div>
                     }
@@ -378,8 +592,19 @@ const LexicalCoverPageEditor = ({
                   <OnChangeCoverPagePlugin
                     onHtmlChange={handleHtmlChange}
                     onLexicalChange={handleLexicalChange}
+                    pageSetup={pageSetup}
                   />
-                  <LoadHtmlPlugin html={html || ''} lexicalJson={lexicalJson} />
+                  <PageSetupSyncPlugin
+                    pageSetup={pageSetup}
+                    onHtmlChange={handleHtmlChange}
+                    onLexicalChange={handleLexicalChange}
+                    isReady={isEditorReady}
+                  />
+                  <LoadHtmlPlugin
+                    html={html || ''}
+                    lexicalJson={lexicalJson}
+                    onReady={() => setIsEditorReady(true)}
+                  />
                   <HistoryPlugin />
                   <AutoFocusPlugin />
                   <LinkPlugin />
@@ -392,28 +617,6 @@ const LexicalCoverPageEditor = ({
           </div>
         </LexicalComposer>
       </div>
-
-      {showPreview && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-            <h3 className="font-semibold text-gray-900 text-sm">
-              Live Preview (A4)
-            </h3>
-            <span className="text-xs text-gray-500">
-              {type === 'front' ? 'Front' : 'Back'} cover page
-            </span>
-          </div>
-          <div className="max-h-[70vh] overflow-auto bg-gray-50/70 p-6">
-            <div className="mx-auto w-full max-w-[794px] rounded-md border border-gray-200 bg-white shadow-sm">
-              <CoverPagePreviewHtml type={type} html={html || ''} />
-            </div>
-          </div>
-          <p className="px-4 pb-4 text-gray-500 text-xs">
-            This preview shows how your {type} cover page will appear in the
-            final PDF.
-          </p>
-        </div>
-      )}
     </div>
   );
 };
