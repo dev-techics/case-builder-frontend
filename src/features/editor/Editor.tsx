@@ -21,10 +21,8 @@ import {
   loadMetadataFromBackend,
   setCurrentBundleId,
 } from '../properties-panel/redux/propertiesPanelSlice';
-import {
-  rotateDocument,
-  selectFile,
-} from '../file-explorer/redux/fileTreeSlice';
+import { selectFile } from '../file-explorer/redux/fileTreeSlice';
+import { useRotateDocumentMutation } from '../file-explorer/api';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
@@ -111,6 +109,7 @@ const normalizeRotation = (rotation: number) =>
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
+  const [rotateDocument] = useRotateDocumentMutation();
   const tree = useAppSelector(state => state.fileTree.tree);
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const fileSelectionVersion = useAppSelector(
@@ -198,13 +197,11 @@ const PDFViewer: React.FC = () => {
         };
       });
 
-      dispatch(
-        rotateDocument({
-          documentId: fileId,
-          rotation: nextRotation,
-          bundleId: resolvedBundleId || undefined,
-        })
-      )
+      rotateDocument({
+        documentId: fileId,
+        rotation: nextRotation,
+        bundleId: resolvedBundleId || undefined,
+      })
         .unwrap()
         .catch(error => {
           console.warn(
@@ -213,7 +210,7 @@ const PDFViewer: React.FC = () => {
           );
         });
     },
-    [dispatch, resolvedBundleId]
+    [resolvedBundleId, rotateDocument]
   );
 
   useLayoutEffect(() => {

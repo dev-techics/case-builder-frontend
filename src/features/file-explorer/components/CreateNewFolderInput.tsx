@@ -1,7 +1,8 @@
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { createFolder, setIsCreatingNewFolder } from '../redux/fileTreeSlice';
+import { setIsCreatingNewFolder } from '../redux/fileTreeSlice';
+import { useCreateFolderMutation } from '../api';
 
 interface CreateNewFolderProps {
   parentId?: string | null;
@@ -10,6 +11,7 @@ interface CreateNewFolderProps {
 const CreateNewFolderInput = ({ parentId = null }: CreateNewFolderProps) => {
   const [folderName, setFolderName] = useState('New Folder');
   const dispatch = useAppDispatch();
+  const [createFolder] = useCreateFolderMutation();
   const inputRef = useRef<HTMLInputElement>(null);
   const { bundleId } = useParams<{ bundleId: string }>();
   const tree = useAppSelector(state => state.fileTree.tree);
@@ -47,13 +49,11 @@ const CreateNewFolderInput = ({ parentId = null }: CreateNewFolderProps) => {
     const trimmedName = folderName.trim();
     if (trimmedName && bundleId) {
       try {
-        await dispatch(
-          createFolder({
-            bundleId,
-            name: trimmedName,
-            parentId: resolvedParentId,
-          })
-        ).unwrap();
+        await createFolder({
+          bundleId,
+          name: trimmedName,
+          parentId: resolvedParentId,
+        }).unwrap();
         setFolderName('');
         dispatch(setIsCreatingNewFolder(false));
       } catch (error) {

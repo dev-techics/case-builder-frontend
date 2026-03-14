@@ -17,16 +17,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAppDispatch } from '@/app/hooks';
-import { deleteDocument, type Children } from '../redux/fileTreeSlice';
+import type { Children } from '../redux/fileTreeSlice';
 import { useState } from 'react';
-import {
-  Delete03Icon,
-  Edit03Icon,
-  FolderAddIcon,
-} from '@hugeicons/core-free-icons';
+import { Delete03Icon, Edit03Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import DeleteAlertDialog from './DeleteAlertDialog';
+import { useDeleteDocumentMutation } from '../api';
 
 interface FileActionMenuProps {
   file: Children;
@@ -34,7 +30,7 @@ interface FileActionMenuProps {
 }
 
 const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
-  const dispatch = useAppDispatch();
+  const [deleteDocument] = useDeleteDocumentMutation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   // const bundleId = useParams<{ bundleId: string }>().bundleId || '';
 
@@ -51,7 +47,7 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
   };
 
   const handleConfirmDelete = () => {
-    dispatch(deleteDocument({ documentId: file.id }));
+    deleteDocument({ documentId: file.id });
     setShowDeleteDialog(false);
   };
 
@@ -64,12 +60,6 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" sideOffset={20}>
-          {file.type === 'folder' && (
-            <DropdownMenuItem>
-              <HugeiconsIcon className="ml-1" size={16} icon={FolderAddIcon} />
-              Create new section
-            </DropdownMenuItem>
-          )}
           <DropdownMenuItem
             onClick={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
               handleRename(e)

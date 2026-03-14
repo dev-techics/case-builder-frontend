@@ -8,16 +8,16 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
-  renameDocument,
   toggleFolder,
   type Children,
 } from '@/features/file-explorer/redux/fileTreeSlice';
-import ActionMenu from './FileActionMenu';
-import FileItemWrapper from './FileItemWrapper';
+import ActionMenu from '../FileActionMenu';
+import FileItemWrapper from '../FileItemWrapper';
 import { Folder01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import ImportDocuments from './ImportDocuments';
+import ImportDocuments from '../ImportDocuments';
 import { useDroppable } from '@dnd-kit/core';
+import { useRenameDocumentMutation } from '../../api';
 
 type SortableFolderItemProps = {
   folder: Children;
@@ -50,6 +50,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const folderRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useAppDispatch();
+  const [renameDocument] = useRenameDocumentMutation();
 
   const { expandedFolders } = useAppSelector(state => state.fileTree);
 
@@ -137,9 +138,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const handleRenameSubmit = () => {
     const trimmedValue = renameValue.trim();
     if (trimmedValue && trimmedValue !== folder.name) {
-      dispatch(
-        renameDocument({ documentId: folder.id, newName: trimmedValue })
-      );
+      renameDocument({ documentId: folder.id, newName: trimmedValue });
     }
     setIsRenaming(false);
   };

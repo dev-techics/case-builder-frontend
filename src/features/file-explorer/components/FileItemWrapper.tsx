@@ -3,8 +3,8 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import SortableFileItem from './SortableFileItem';
-import SortableFolderItem from './SortableFolderItem';
+import SortableFileItem from './nodes/SortableFileItem';
+import SortableFolderItem from './nodes/SortableFolderItem';
 import { type Tree, type Children } from '../redux/fileTreeSlice';
 import { useAppSelector } from '@/app/hooks';
 import CreateNewFolderInput from './CreateNewFolderInput';
@@ -83,7 +83,9 @@ const FileItemWrapper = ({
             return (
               <div key={child.id}>
                 {shouldShowDropPreview && effectiveDropPreview?.index === index
-                  ? renderDropIndicator(`drop-${currentParentId ?? 'root'}-${index}`)
+                  ? renderDropIndicator(
+                      `drop-${currentParentId ?? 'root'}-${index}`
+                    )
                   : null}
                 {child.type === 'folder' ? (
                   <SortableFolderItem
@@ -112,7 +114,8 @@ const FileItemWrapper = ({
             );
           })
         )}
-        {shouldShowDropPreview && effectiveDropPreview?.index === validChildren.length
+        {shouldShowDropPreview &&
+        effectiveDropPreview?.index === validChildren.length
           ? renderDropIndicator(`drop-end-${currentParentId ?? 'root'}`)
           : null}
       </SortableContext>

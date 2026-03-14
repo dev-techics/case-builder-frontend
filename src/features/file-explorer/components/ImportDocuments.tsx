@@ -1,145 +1,47 @@
 import type React from 'react';
-import { useState } from 'react';
-import { useAppDispatch } from '../../../app/hooks';
-import { addFiles } from '../redux/fileTreeSlice';
-import type { FileNode } from '../types/types';
 import { FileImportIcon, PlusSignIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useParams } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, X, AlertCircle } from 'lucide-react';
-import { UploadFile } from '../api';
+import { useImportDocumentsUpload } from '../hooks';
 
 interface ImportDocumentsProps {
   bundleId: string;
   parentId?: string | null;
 }
 
-interface ConversionStatus {
-  fileName: string;
-  status: 'converting' | 'success' | 'failed';
-  message?: string;
-}
-
 const ImportDocuments: React.FC<ImportDocumentsProps> = ({
   bundleId,
   parentId = null,
 }) => {
-  const dispatch = useAppDispatch();
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadComplete, setUploadComplete] = useState(false);
-  const [uploadedCount, setUploadedCount] = useState(0);
-  const [conversionStatuses, setConversionStatuses] = useState<
-    ConversionStatus[]
-  >([]);
-  const [hasConversions, setHasConversions] = useState(false);
-
-  bundleId = useParams<{ bundleId: string }>().bundleId || bundleId;
+  const {
+    conversionStatuses,
+    handleClose,
+    handleFileUpload,
+    hasConversions,
+    isUploading,
+    uploadComplete,
+    uploadProgress,
+    uploadedCount,
+  } = useImportDocumentsUpload({ bundleId, parentId });
 
   // Supported file types
-  // const SUPPORTED_FORMATS = {
-  //   pdf: '.pdf',
-  //   images: '.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp',
-  //   documents: '.doc,.docx,.txt,.rtf,.odt',
-  //   presentations: '.ppt,.pptx,.odp',
-  //   spreadsheets: '.xls,.xlsx,.ods',
-  // };
-
-  // const ALL_SUPPORTED_FORMATS = Object.values(SUPPORTED_FORMATS).join(',');
-
-  const handleClose = () => {
-    setIsUploading(false);
-    setUploadComplete(false);
-    setUploadProgress(0);
-    setUploadedCount(0);
-    setConversionStatuses([]);
-    setHasConversions(false);
+  const SUPPORTED_FORMATS = {
+    pdf: '.pdf',
+    images: '.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp',
+    documents: '.doc,.docx,.txt,.rtf,.odt',
+    presentations: '.ppt,.pptx,.odp',
+    spreadsheets: '.xls,.xlsx,.ods',
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    // Collect all files (validation happens on backend)
-    const selectedFiles: File[] = Array.from(files);
-
-    if (selectedFiles.length === 0) {
-      alert('Please select at least one file');
-      return;
-    }
-
-    // Check if any files need conversion
-    const needsConversion = selectedFiles.some(
-      file =>
-        file.type !== 'application/pdf' &&
-        !file.name.toLowerCase().endsWith('.pdf')
-    );
-
-    setIsUploading(true);
-    setUploadComplete(false);
-    setUploadProgress(0);
-    setHasConversions(needsConversion);
-    setConversionStatuses([]);
-
-    try {
-      const formData = new FormData();
-
-      // Append all files
-      selectedFiles.forEach(file => {
-        formData.append('files[]', file);
-      });
-
-      // Add parent_id if uploading into a folder
-      if (parentId) {
-        formData.append('parent_id', parentId);
-      }
-
-      // Upload to server with conversion support
-      const response = await UploadFile(bundleId, formData, setUploadProgress);
-
-      console.log('✅ Upload successful:', response.data);
-
-      // Extract conversion statuses if any
-      if (response.data.conversionStatuses) {
-        setConversionStatuses(response.data.conversionStatuses);
-      }
-
-      // Extract the uploaded documents from response
-      const uploadedDocuments: FileNode[] = response.data.documents.map(
-        (doc: any) => ({
-          id: doc.id,
-          parentId: doc.parentId,
-          name: doc.name,
-          type: doc.type,
-          url: doc.url,
-        })
-      );
-
-      // Add files to Redux store
-      dispatch(addFiles(uploadedDocuments));
-      console.log(uploadedDocuments);
-      setUploadedCount(uploadedDocuments.length);
-      setUploadComplete(true);
-    } catch (error: any) {
-      console.error('❌ Upload failed:', error);
-      const errorMessage =
-        error.response?.data?.message || 'Failed to upload files';
-      alert(`Upload failed: ${errorMessage}`);
-      handleClose();
-    } finally {
-      e.target.value = '';
-    }
-  };
+  const ALL_SUPPORTED_FORMATS = Object.values(SUPPORTED_FORMATS).join(',');
 
   return (
     <>
       <label
         className={`block rounded-lg p-2 text-sm hover:bg-gray-200 ${
-          isUploading
-            ? 'cursor-not-allowed opacity-50'
-            : 'cursor-pointer'
+          isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
         }`}
         onClick={e => e.stopPropagation()}
         title="Import Document"
@@ -154,8 +56,8 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
         )}
 
         <input
-          // accept={ALL_SUPPORTED_FORMATS}
-          accept="*"
+          accept={ALL_SUPPORTED_FORMATS}
+          // accept="*"
           className="hidden"
           multiple
           onChange={handleFileUpload}

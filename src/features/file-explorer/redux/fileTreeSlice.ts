@@ -1,10 +1,6 @@
-import {
-  createAsyncThunk,
-  createSlice,
-  type PayloadAction,
-} from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { FileNode } from '../types/types';
-import axiosInstance, { DocumentApiService } from '@/api/axiosInstance';
+import { fileTreeApi } from '../api';
 
 export interface Children {
   id: string;
@@ -236,289 +232,34 @@ const insertCreatedFolder = (state: FileTreeState, folder: Children) => {
   }
 };
 
-/*=============================================
-=            Async Thunks                     =
-=============================================*/
-
-/**
- * Load tree from backend
- */
-export const loadTreeFromBackend = createAsyncThunk<
-  Tree,
-  number,
-  { rejectValue: string }
->('fileTree/loadTreeFromBackend', async (bundleId, { rejectWithValue }) => {
-  try {
-    const response = await axiosInstance.get(
-      `/api/bundles/${bundleId}/documents`
-    );
-    return response.data as Tree;
-  } catch (err: any) {
-    console.error('Failed to load tree from backend:', err);
-    const errorMessage =
-      err.response?.data?.message || err.message || 'Failed to load tree';
-    return rejectWithValue(errorMessage);
+const resolveErrorMessage = (
+  payload: unknown,
+  fallback: string,
+  error?: { message?: string }
+) => {
+  if (typeof payload === 'string') {
+    return payload;
   }
-});
 
-/**
- * Delete document
- */
-export const deleteDocument = createAsyncThunk<
-  string,
-  { documentId: string },
-  { rejectValue: string }
->('fileTree/deleteDocument', async ({ documentId }, { rejectWithValue }) => {
-  try {
-    await axiosInstance.delete(`/api/documents/${documentId}`);
-    return documentId;
-  } catch (err: any) {
-    console.error('Failed to delete document:', err);
-    const errorMessage =
-      err.response?.data?.message || err.message || 'Failed to delete document';
-    return rejectWithValue(errorMessage);
-  }
-});
-
-/**
- * Rename document
- */
-export const renameDocument = createAsyncThunk<
-  { id: string; newName: string },
-  { documentId: string; newName: string },
-  { rejectValue: string }
->(
-  'fileTree/renameDocument',
-  async ({ documentId, newName }, { rejectWithValue }) => {
-    try {
-      await axiosInstance.patch(`/api/documents/${documentId}/rename`, {
-        name: newName,
-      });
-      return { id: documentId, newName };
-    } catch (err: any) {
-      console.error('Failed to rename document:', err);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to rename document';
-      return rejectWithValue(errorMessage);
+  if (payload && typeof payload === 'object') {
+    const data = (payload as { data?: unknown }).data;
+    if (typeof data === 'string') {
+      return data;
+    }
+    if (
+      data &&
+      typeof data === 'object' &&
+      typeof (data as { message?: unknown }).message === 'string'
+    ) {
+      return (data as { message: string }).message;
+    }
+    if (typeof (payload as { error?: unknown }).error === 'string') {
+      return (payload as { error: string }).error;
     }
   }
-);
 
-/**
- * Rotate document
- */
-export const rotateDocument = createAsyncThunk<
-  { documentId: string; rotation: number },
-  { documentId: string; rotation: number; bundleId?: string },
-  { rejectValue: string }
->(
-  'fileTree/rotateDocument',
-  async ({ documentId, rotation, bundleId }, { rejectWithValue }) => {
-    try {
-      await DocumentApiService.rotateDocument(documentId, rotation, bundleId);
-      return { documentId, rotation };
-    } catch (err: any) {
-      console.error('Failed to rotate document:', err);
-      const errorMessage =
-        err.response?.data?.message || err.message || 'Failed to rotate document';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-/**
- * Upload files
- */
-export const uploadFiles = createAsyncThunk<
-  FileNode[],
-  { bundleId: string; files: File[]; parentId?: string | null },
-  { rejectValue: string }
->(
-  'fileTree/uploadFiles',
-  async ({ bundleId, files, parentId }, { rejectWithValue }) => {
-    try {
-      const formData = new FormData();
-
-      files.forEach(file => {
-        formData.append('files[]', file);
-      });
-
-      if (parentId) {
-        formData.append('parent_id', parentId);
-      }
-
-      const response = await axiosInstance.post(
-        `/api/bundles/${bundleId}/documents/upload`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      return response.data.documents as FileNode[];
-    } catch (err: any) {
-      console.error('Failed to upload files:', err);
-      const errorMessage =
-        err.response?.data?.message || err.message || 'Failed to upload files';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-/**
- * Create folder
- */
-export const createFolder = createAsyncThunk<
-  Children,
-  { bundleId: string; name: string; parentId?: string | null },
-  { rejectValue: string }
->(
-  'fileTree/createFolder',
-  async ({ bundleId, name, parentId }, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.post(
-        `/api/bundles/${bundleId}/documents`,
-        {
-          name,
-          type: 'folder',
-          parent_id: parentId,
-        }
-      );
-      return response.data as Children;
-    } catch (err: any) {
-      console.error('Failed to create folder:', err);
-      const errorMessage =
-        err.response?.data?.message || err.message || 'Failed to create folder';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-/**
- * Reorder documents
- */
-
-export const reorderDocuments = createAsyncThunk<
-  { bundleId: string; tree: Tree },
-  { bundleId: string; items: Array<{ id: string; order: number }> },
-  { rejectValue: string }
->(
-  'fileTree/reorderDocuments',
-  async ({ bundleId, items }, { rejectWithValue }) => {
-    try {
-      console.log('🔄 Reordering documents:', items);
-
-      await axiosInstance.post(`/api/bundles/${bundleId}/documents/reorder`, {
-        items,
-      });
-
-      // Reload tree after reordering
-      const treeResponse = await DocumentApiService.fetchTree(bundleId);
-
-      console.log('✅ Reorder successful, tree reloaded');
-
-      return {
-        bundleId,
-        tree: treeResponse,
-      };
-    } catch (err: any) {
-      console.error('Failed to reorder documents:', err);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to reorder documents';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-/**
- * Move a document to a different parent folder (or root)
- */
-export const moveDocument = createAsyncThunk(
-  'fileTree/moveDocument',
-  async (
-    {
-      bundleId,
-      documentId,
-      newParentId,
-    }: {
-      bundleId: string;
-      documentId: string;
-      newParentId: string | null;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      console.log('📦 Moving document:', {
-        documentId,
-        newParentId: newParentId || 'root',
-      });
-
-      // Move the document
-      await DocumentApiService.moveDocument(documentId, newParentId);
-
-      // Reload the entire tree to get correct structure and order
-      const treeResponse = await DocumentApiService.fetchTree(bundleId);
-
-      console.log('✅ Move successful, tree reloaded');
-
-      return {
-        success: true,
-        tree: treeResponse,
-      };
-    } catch (error: any) {
-      console.error('❌ Error moving document:', error);
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to move document'
-      );
-    }
-  }
-);
-
-/**
- * Move multiple documents and refresh tree once
- */
-export const moveDocumentsBatch = createAsyncThunk(
-  'fileTree/moveDocumentsBatch',
-  async (
-    {
-      bundleId,
-      documentIds,
-      newParentId,
-      skipApplyTree = false,
-    }: {
-      bundleId: string;
-      documentIds: string[];
-      newParentId: string | null;
-      skipApplyTree?: boolean;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      for (const documentId of documentIds) {
-        await DocumentApiService.moveDocument(documentId, newParentId);
-      }
-
-      const treeResponse = await DocumentApiService.fetchTree(bundleId);
-
-      return {
-        success: true,
-        tree: treeResponse,
-        skipApplyTree,
-      };
-    } catch (error: any) {
-      console.error('❌ Error moving documents:', error);
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to move documents'
-      );
-    }
-  }
-);
+  return error?.message || fallback;
+};
 
 /*=============================================
 =            Redux Slice                      =
@@ -622,31 +363,35 @@ const fileTreeSlice = createSlice({
       Load Tree
     -------------------*/
     builder
-      .addCase(loadTreeFromBackend.pending, state => {
+      .addMatcher(fileTreeApi.endpoints.getTree.matchPending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(loadTreeFromBackend.fulfilled, (state, action) => {
+      .addMatcher(fileTreeApi.endpoints.getTree.matchFulfilled, (state, action) => {
         state.loading = false;
         state.tree = action.payload;
         state.expandedFolders = [action.payload.id, ...state.expandedFolders];
       })
-      .addCase(loadTreeFromBackend.rejected, (state, action) => {
+      .addMatcher(fileTreeApi.endpoints.getTree.matchRejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to load tree';
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to load tree',
+          action.error
+        );
       });
 
     /*-------------------
       Delete Document
     -------------------*/
     builder
-      .addCase(deleteDocument.pending, (state, action) => {
-        const documentId = action.meta.arg.documentId;
+      .addMatcher(fileTreeApi.endpoints.deleteDocument.matchPending, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
         state.operationsInProgress.deleting.push(documentId);
         state.error = null;
       })
-      .addCase(deleteDocument.fulfilled, (state, action) => {
-        const documentId = action.payload;
+      .addMatcher(fileTreeApi.endpoints.deleteDocument.matchFulfilled, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
 
         // Remove from tree
         findAndRemoveNode(state.tree.children, documentId);
@@ -663,9 +408,13 @@ const fileTreeSlice = createSlice({
         state.operationsInProgress.deleting =
           state.operationsInProgress.deleting.filter(id => id !== documentId);
       })
-      .addCase(deleteDocument.rejected, (state, action) => {
-        const documentId = action.meta.arg.documentId;
-        state.error = action.payload || 'Failed to delete document';
+      .addMatcher(fileTreeApi.endpoints.deleteDocument.matchRejected, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to delete document',
+          action.error
+        );
 
         // Remove from operations
         state.operationsInProgress.deleting =
@@ -676,31 +425,35 @@ const fileTreeSlice = createSlice({
       Rename Document
     -------------------*/
     builder
-      .addCase(renameDocument.pending, (state, action) => {
-        const documentId = action.meta.arg.documentId;
+      .addMatcher(fileTreeApi.endpoints.renameDocument.matchPending, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
         state.operationsInProgress.renaming.push(documentId);
         state.error = null;
       })
-      .addCase(renameDocument.fulfilled, (state, action) => {
-        const { id, newName } = action.payload;
+      .addMatcher(fileTreeApi.endpoints.renameDocument.matchFulfilled, (state, action) => {
+        const { documentId, newName } = action.meta.arg.originalArgs;
 
         // Update in tree
-        const file = state.tree.children.find(f => f.id === id);
+        const file = state.tree.children.find(f => f.id === documentId);
         if (file) {
           file.name = newName;
         } else {
-          findAndUpdateNode(state.tree.children, id, node => {
+          findAndUpdateNode(state.tree.children, documentId, node => {
             node.name = newName;
           });
         }
 
         // Remove from operations
         state.operationsInProgress.renaming =
-          state.operationsInProgress.renaming.filter(docId => docId !== id);
+          state.operationsInProgress.renaming.filter(id => id !== documentId);
       })
-      .addCase(renameDocument.rejected, (state, action) => {
-        const documentId = action.meta.arg.documentId;
-        state.error = action.payload || 'Failed to rename document';
+      .addMatcher(fileTreeApi.endpoints.renameDocument.matchRejected, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to rename document',
+          action.error
+        );
 
         // Remove from operations
         state.operationsInProgress.renaming =
@@ -711,19 +464,23 @@ const fileTreeSlice = createSlice({
       Rotate Document
     -------------------*/
     builder
-      .addCase(rotateDocument.pending, (state, action) => {
-        const documentId = action.meta.arg.documentId;
+      .addMatcher(fileTreeApi.endpoints.rotateDocument.matchPending, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
         state.operationsInProgress.rotating.push(documentId);
         state.error = null;
       })
-      .addCase(rotateDocument.fulfilled, (state, action) => {
-        const { documentId } = action.payload;
+      .addMatcher(fileTreeApi.endpoints.rotateDocument.matchFulfilled, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
         state.operationsInProgress.rotating =
           state.operationsInProgress.rotating.filter(id => id !== documentId);
       })
-      .addCase(rotateDocument.rejected, (state, action) => {
-        const documentId = action.meta.arg.documentId;
-        state.error = action.payload || 'Failed to rotate document';
+      .addMatcher(fileTreeApi.endpoints.rotateDocument.matchRejected, (state, action) => {
+        const documentId = action.meta.arg.originalArgs.documentId;
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to rotate document',
+          action.error
+        );
         state.operationsInProgress.rotating =
           state.operationsInProgress.rotating.filter(id => id !== documentId);
       });
@@ -732,16 +489,31 @@ const fileTreeSlice = createSlice({
       Upload Files
     -------------------*/
     builder
-      .addCase(uploadFiles.pending, state => {
+      .addMatcher(fileTreeApi.endpoints.uploadFiles.matchPending, state => {
         state.operationsInProgress.uploading = true;
         state.error = null;
       })
-      .addCase(uploadFiles.fulfilled, (state, action) => {
-        insertUploadedFiles(state, action.payload);
+      .addMatcher(fileTreeApi.endpoints.uploadFiles.matchFulfilled, (state, action) => {
+        const payload = action.payload;
+        if (
+          payload &&
+          typeof payload === 'object' &&
+          'documents' in payload &&
+          Array.isArray((payload as { documents?: unknown }).documents)
+        ) {
+          insertUploadedFiles(
+            state,
+            (payload as { documents: FileNode[] }).documents
+          );
+        }
         state.operationsInProgress.uploading = false;
       })
-      .addCase(uploadFiles.rejected, (state, action) => {
-        state.error = action.payload || 'Failed to upload files';
+      .addMatcher(fileTreeApi.endpoints.uploadFiles.matchRejected, (state, action) => {
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to upload files',
+          action.error
+        );
         state.operationsInProgress.uploading = false;
       });
 
@@ -749,71 +521,78 @@ const fileTreeSlice = createSlice({
       Create Folder
     -------------------*/
     builder
-      .addCase(createFolder.fulfilled, (state, action) => {
+      .addMatcher(fileTreeApi.endpoints.createFolder.matchFulfilled, (state, action) => {
         insertCreatedFolder(state, action.payload);
       })
-      .addCase(createFolder.rejected, (state, action) => {
-        state.error = action.payload || 'Failed to create folder';
+      .addMatcher(fileTreeApi.endpoints.createFolder.matchRejected, (state, action) => {
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to create folder',
+          action.error
+        );
       });
 
     /*-------------------
       Reorder Documents
     -------------------*/
     builder
-      // Reorder Documents
-      .addCase(reorderDocuments.pending, state => {
+      .addMatcher(fileTreeApi.endpoints.reorderDocuments.matchPending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(reorderDocuments.fulfilled, (state, action) => {
-        console.log('✅ reorderDocuments.fulfilled - updating tree');
+      .addMatcher(fileTreeApi.endpoints.reorderDocuments.matchFulfilled, (state, action) => {
         state.loading = false;
         state.tree = action.payload.tree;
         state.error = null;
       })
-      .addCase(reorderDocuments.rejected, (state, action) => {
-        console.error('❌ reorderDocuments.rejected:', action.payload);
+      .addMatcher(fileTreeApi.endpoints.reorderDocuments.matchRejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
-        // Reload tree to recover from failed reorder
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to reorder documents',
+          action.error
+        );
       });
 
     /*-------------------
       Move Documents
     -------------------*/
     builder
-      .addCase(moveDocument.pending, state => {
+      .addMatcher(fileTreeApi.endpoints.moveDocument.matchPending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(moveDocument.fulfilled, (state, action) => {
+      .addMatcher(fileTreeApi.endpoints.moveDocument.matchFulfilled, (state, action) => {
         state.loading = false;
-
-        // Update the entire tree with fresh data from server
         if (action.payload.tree) {
           state.tree = action.payload.tree;
         }
-
-        console.log('✅ Document moved successfully');
       })
-      .addCase(moveDocument.rejected, (state, action) => {
+      .addMatcher(fileTreeApi.endpoints.moveDocument.matchRejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
-        console.error('❌ Move failed:', action.payload);
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to move document',
+          action.error
+        );
       })
-      .addCase(moveDocumentsBatch.pending, state => {
+      .addMatcher(fileTreeApi.endpoints.moveDocumentsBatch.matchPending, state => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(moveDocumentsBatch.fulfilled, (state, action) => {
+      .addMatcher(fileTreeApi.endpoints.moveDocumentsBatch.matchFulfilled, (state, action) => {
         state.loading = false;
-        if (!action.meta.arg.skipApplyTree && action.payload.tree) {
+        if (!action.payload.skipApplyTree && action.payload.tree) {
           state.tree = action.payload.tree;
         }
       })
-      .addCase(moveDocumentsBatch.rejected, (state, action) => {
+      .addMatcher(fileTreeApi.endpoints.moveDocumentsBatch.matchRejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = resolveErrorMessage(
+          action.payload,
+          'Failed to move documents',
+          action.error
+        );
       });
   },
 });

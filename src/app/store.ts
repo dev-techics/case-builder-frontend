@@ -8,11 +8,15 @@ import authReducer from '@/features/auth/redux/authSlice';
 import CoverPageReducer from '@/features/cover-page/redux/coverPageSlice';
 import authApi from '@/features/auth/api';
 import coverPageApi from '@/features/cover-page/api';
+import { fileTreeApi } from '@/features/file-explorer/api';
 
 const store = configureStore({
   reducer: {
+    /*-------- Api slices --------- */
     [authApi.reducerPath]: authApi.reducer,
     [coverPageApi.reducerPath]: coverPageApi.reducer,
+    [fileTreeApi.reducerPath]: fileTreeApi.reducer,
+    /*----------- state slices ------------ */
     auth: authReducer,
     fileTree: fileTreeReducer,
     editor: editorReducer,
@@ -22,7 +26,11 @@ const store = configureStore({
     coverPage: CoverPageReducer,
   },
   middleware: getDefaultMiddleware =>
-    getDefaultMiddleware().concat(authApi.middleware, coverPageApi.middleware),
+    getDefaultMiddleware().concat(
+      authApi.middleware,
+      coverPageApi.middleware,
+      fileTreeApi.middleware
+    ),
 });
 
 export default store;
