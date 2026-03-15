@@ -1,8 +1,11 @@
-import axiosInstance from '@/api/axiosInstance';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-export const editorApi = {
-  async deleteDocument(documentId: string) {
-    const response = await axiosInstance.delete(`/api/documents/${documentId}`);
-    return response.data;
-  },
-};
+const BaseQuery = import.meta.env.VITE_BASE_URL;
+
+export const editorApi = createApi({
+  reducerPath: 'editorApi',
+  baseQuery: fetchBaseQuery({ baseUrl: BaseQuery }),
+  endpoints: () => ({}),
+});
+
+export const {} = editorApi;

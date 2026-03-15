@@ -1,115 +1,35 @@
 // src/features/editor/Editor.tsx
 import { FileText, ArrowUp } from 'lucide-react';
-import type React from 'react';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import PDFDocument from './components/Document';
 import UploadFile from './components/UploadFile';
-import { loadComments } from '../toolbar/redux';
 import { DocumentApiService } from '@/api/axiosInstance';
-import {
-  clearDocumentInfo,
-  loadMetadataFromBackend,
-  setCurrentBundleId,
-} from '../properties-panel/redux/propertiesPanelSlice';
-import { selectFile } from '../file-explorer/redux/fileTreeSlice';
-import { useRotateDocumentMutation } from '../file-explorer/api';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
 import IndexPreview from './components/IndexPreview';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
+import LazyPDFRenderer from './components/LazyPDFRenderer';
 import {
   setMaxScale,
   setScale,
   zoomIn,
   zoomOut,
 } from './redux/editorSlice';
+import {
+  useBundleMetadata,
+  useFileRotations,
+  useInfinitePdfFiles,
+  usePdfSizing,
+} from '@/features/editor/hooks';
 
-// Component that only renders PDF when visible
-const LazyPDFRenderer: React.FC<{
-  file: any;
-  rotation: number;
-  onVisible?: () => void;
-  onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
-}> = ({ file, rotation, onVisible, onPageMetrics }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      entries => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true);
-          onVisible?.();
-        }
-      },
-      {
-        root: null,
-        rootMargin: '200px',
-        threshold: 0.01,
-      }
-    );
-
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [isVisible, onVisible]);
-
-  return (
-    <div
-      ref={containerRef}
-      className="flex flex-col items-center p-4 min-h-[600px]"
-    >
-      {isVisible ? (
-        <ErrorBoundary FallbackComponent={Fallback} resetKeys={[file.url]}>
-          <PDFDocument
-            file={file}
-            onPageMetrics={onPageMetrics}
-            rotation={rotation}
-          />
-        </ErrorBoundary>
-      ) : (
-        <div className="flex h-96 w-full items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto mb-3 h-12 w-12 animate-pulse rounded-full bg-gray-200" />
-            <p className="text-gray-400 text-sm">Scroll to load PDF...</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const SCROLL_THRESHOLD_PX = 240;
-const LOAD_COOLDOWN_MS = 400;
-const PDF_CONTAINER_HORIZONTAL_PADDING = 32;
-const DEFAULT_MAX_SCALE = 3.0;
-const SCROLL_TOP_SHOW_THRESHOLD = 300;
 const ROTATION_STEP_DEGREES = 90;
 
-const normalizeRotation = (rotation: number) =>
-  ((rotation % 360) + 360) % 360;
-
-const PDFViewer: React.FC = () => {
+const PDFViewer = () => {
   const dispatch = useAppDispatch();
-  const [rotateDocument] = useRotateDocumentMutation();
   const tree = useAppSelector(state => state.fileTree.tree);
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
   const fileSelectionVersion = useAppSelector(
@@ -121,153 +41,52 @@ const PDFViewer: React.FC = () => {
   const scale = useAppSelector(state => state.editor.scale);
   const maxScale = useAppSelector(state => state.editor.maxScale);
 
-  // State for loaded files (infinite scroll)
-  const [visibleRange, setVisibleRange] = useState<{
-    start: number;
-    end: number;
-  } | null>(null);
-  const [loadingDirection, setLoadingDirection] = useState<
-    'prev' | 'next' | null
-  >(null);
-  const [maxBaseWidth, setMaxBaseWidth] = useState<number | null>(null);
-  const [contentWidth, setContentWidth] = useState<number>(0);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [fileRotations, setFileRotations] = useState<Record<string, number>>(
-    {}
-  );
-
-  // Refs
+  // Refs for the scroll container and content sizing
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const lastLoadTimeRef = useRef<number>(0);
-  const lastScrollTopRef = useRef<number>(0);
-  const loadingDirectionRef = useRef<'prev' | 'next' | null>(null);
-  const pendingScrollAdjustRef = useRef<number | null>(null);
-  const pageWidthsRef = useRef<Map<string, number>>(new Map());
-  const suppressAutoLoadUntilRef = useRef<number>(0);
+
+  // Used to bust PDF stream cache on bundle change
   const streamSessionKeyRef = useRef<number>(Date.now());
 
-  const handleScrollToTop = useCallback(() => {
-    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  // Bundle-scoped side effects (metadata + comments)
+  useBundleMetadata({ bundleId, treeId: tree.id });
 
-  const handlePageMetrics = useCallback(
-    ({ fileId, width }: { fileId: string; width: number }) => {
-      if (!width) {
-        return;
-      }
+  // Rotation state and mutation wiring
+  const { fileRotations, handleRotateFile, resetRotations } =
+    useFileRotations({ bundleId: resolvedBundleId });
 
-      const existingWidth = pageWidthsRef.current.get(fileId) ?? 0;
-      if (width <= existingWidth) {
-        return;
-      }
+  // Size calculations, max scale, and page metrics tracking
+  const { contentStyle, computedMaxScale, handlePageMetrics, resetSizing } =
+    usePdfSizing({
+      containerRef,
+      contentRef,
+      scale,
+    });
 
-      pageWidthsRef.current.set(fileId, width);
+  // Infinite scroll state + visible file window
+  const {
+    allFiles,
+    visibleFiles,
+    loadingDirection,
+    showScrollTop,
+    handleScroll,
+    handleScrollToTop,
+    hasPreviousFiles,
+    hasNextFiles,
+  } = useInfinitePdfFiles({
+    treeChildren: tree.children,
+    selectedFile,
+    fileSelectionVersion,
+    containerRef,
+  });
 
-      let maxWidth = 0;
-      pageWidthsRef.current.forEach(value => {
-        if (value > maxWidth) {
-          maxWidth = value;
-        }
-      });
-
-      setMaxBaseWidth(maxWidth || null);
-    },
-    []
-  );
-
+  // Reset view state when bundle changes
   useEffect(() => {
-    pageWidthsRef.current.clear();
-    setMaxBaseWidth(null);
-    setFileRotations({});
+    resetSizing();
+    resetRotations();
     streamSessionKeyRef.current = Date.now();
     dispatch(setScale(1));
-  }, [bundleId, dispatch]);
-
-  const handleRotateFile = useCallback(
-    (fileId: string, delta: number) => {
-      let nextRotation = 0;
-
-      setFileRotations(prev => {
-        const currentRotation = prev[fileId] ?? 0;
-        nextRotation = normalizeRotation(currentRotation + delta);
-        return {
-          ...prev,
-          [fileId]: nextRotation,
-        };
-      });
-
-      rotateDocument({
-        documentId: fileId,
-        rotation: nextRotation,
-        bundleId: resolvedBundleId || undefined,
-      })
-        .unwrap()
-        .catch(error => {
-          console.warn(
-            'Rotate API call failed. Local rotation remains applied.',
-            error
-          );
-        });
-    },
-    [resolvedBundleId, rotateDocument]
-  );
-
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-    const content = contentRef.current;
-    if (!container || !content) {
-      return;
-    }
-
-    const updateWidth = () => {
-      const styles = window.getComputedStyle(content);
-      const padding =
-        parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
-      const width = Math.max(0, container.clientWidth - padding);
-      setContentWidth(width);
-    };
-
-    updateWidth();
-
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(container);
-
-    return () => observer.disconnect();
-  }, []);
-
-  const availableWidth = useMemo(
-    () => Math.max(0, contentWidth - PDF_CONTAINER_HORIZONTAL_PADDING),
-    [contentWidth]
-  );
-
-  const computedMaxScale = useMemo(() => {
-    if (!maxBaseWidth || availableWidth === 0) {
-      return DEFAULT_MAX_SCALE;
-    }
-    return Math.min(DEFAULT_MAX_SCALE, availableWidth / maxBaseWidth);
-  }, [availableWidth, maxBaseWidth]);
-
-  const scaledDocumentWidth = useMemo(() => {
-    if (!maxBaseWidth) {
-      return null;
-    }
-    return Math.ceil(maxBaseWidth * scale + PDF_CONTAINER_HORIZONTAL_PADDING);
-  }, [maxBaseWidth, scale]);
-
-  const contentStyle = useMemo<React.CSSProperties | undefined>(() => {
-    const baseWidth = contentWidth > 0 ? contentWidth : 0;
-    const targetWidth =
-      scaledDocumentWidth && baseWidth
-        ? Math.max(scaledDocumentWidth, baseWidth)
-        : scaledDocumentWidth ?? (baseWidth || null);
-
-    if (!targetWidth) {
-      return undefined;
-    }
-
-    return { width: `${Math.ceil(targetWidth)}px` };
-  }, [contentWidth, scaledDocumentWidth]);
+  }, [bundleId, dispatch, resetRotations, resetSizing]);
 
   useEffect(() => {
     if (!Number.isFinite(computedMaxScale)) {
@@ -291,269 +110,17 @@ const PDFViewer: React.FC = () => {
   const handleResetZoom = useCallback(() => {
     dispatch(setScale(1));
   }, [dispatch]);
-
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Index preview is rendered locally from tree data
-  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-
-  /* Load comments for the current bundle */
-  useEffect(() => {
-    if (bundleId) {
-      dispatch(loadComments({ bundleId: bundleId }));
-    }
-  }, [dispatch, bundleId]);
-
-  useEffect(() => {
-    if (bundleId) {
-      dispatch(clearDocumentInfo());
-    }
-  }, [bundleId, dispatch]);
-
-  useEffect(() => {
-    const bundleId = tree.id.split('-')[1];
-    if (bundleId) {
-      dispatch(setCurrentBundleId(bundleId));
-      dispatch(loadMetadataFromBackend(bundleId));
-    }
-  }, [tree.id, dispatch]);
-
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Get all files from tree (flatten the tree structure)
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-  const getAllFiles = useCallback((children: any[]): any[] => {
-    const files: any[] = [];
-    const traverse = (nodes: any[]) => {
-      for (const node of nodes) {
-        if (node.type === 'file') {
-          files.push(node);
-        }
-        if (node.children) {
-          traverse(node.children);
-        }
-      }
-    };
-    traverse(children);
-    return files;
-  }, []);
-
-  const allFiles = useMemo(
-    () => getAllFiles(tree.children),
-    [tree.children, getAllFiles]
+  // Build streaming URLs for the currently visible files
+  const filesWithUrls = useMemo(
+    () =>
+      visibleFiles.map(file => ({
+        ...file,
+        url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKeyRef.current}`,
+      })),
+    [visibleFiles]
   );
 
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Ensure selected file is a valid file (not a folder)
-  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-  useEffect(() => {
-    if (allFiles.length === 0) {
-      if (selectedFile !== null) {
-        dispatch(selectFile(null));
-      }
-      return;
-    }
-
-    const selectedIsFile = selectedFile
-      ? allFiles.some(file => file.id === selectedFile)
-      : false;
-
-    if (!selectedIsFile) {
-      dispatch(selectFile(allFiles[0].id));
-    }
-  }, [allFiles, selectedFile, dispatch]);
-
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Initialize visible range for selected file
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-  useEffect(() => {
-    if (!selectedFile || allFiles.length === 0) {
-      setVisibleRange(null);
-      setLoadingDirection(null);
-      loadingDirectionRef.current = null;
-      lastLoadTimeRef.current = 0;
-      pendingScrollAdjustRef.current = null;
-      return;
-    }
-
-    const selectedIndex = allFiles.findIndex(file => file.id === selectedFile);
-    if (selectedIndex === -1) {
-      return;
-    }
-
-    setVisibleRange({ start: selectedIndex, end: selectedIndex });
-    setLoadingDirection(null);
-    loadingDirectionRef.current = null;
-    lastLoadTimeRef.current = 0;
-    pendingScrollAdjustRef.current = null;
-
-    if (containerRef.current) {
-      containerRef.current.scrollTo({ top: 0, behavior: 'auto' });
-      lastScrollTopRef.current = 0;
-    }
-    setShowScrollTop(false);
-    suppressAutoLoadUntilRef.current = performance.now() + 300;
-
-    console.log(
-      `🎯 Selected file changed to: ${allFiles.find(f => f.id === selectedFile)?.name}`
-    );
-  }, [selectedFile, fileSelectionVersion, allFiles]);
-
-  const requestLoadNext = useCallback(() => {
-    if (!visibleRange || allFiles.length === 0) {
-      return;
-    }
-
-    if (loadingDirectionRef.current) {
-      return;
-    }
-
-    if (visibleRange.end >= allFiles.length - 1) {
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastLoadTimeRef.current < LOAD_COOLDOWN_MS) {
-      return;
-    }
-
-    lastLoadTimeRef.current = now;
-    loadingDirectionRef.current = 'next';
-    setLoadingDirection('next');
-
-    setVisibleRange(prev => {
-      if (!prev || prev.end >= allFiles.length - 1) {
-        return prev;
-      }
-      return { start: prev.start, end: prev.end + 1 };
-    });
-  }, [allFiles.length, visibleRange]);
-
-  const requestLoadPrev = useCallback(() => {
-    if (!visibleRange || allFiles.length === 0) {
-      return;
-    }
-
-    if (loadingDirectionRef.current) {
-      return;
-    }
-
-    if (visibleRange.start <= 0) {
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastLoadTimeRef.current < LOAD_COOLDOWN_MS) {
-      return;
-    }
-
-    lastLoadTimeRef.current = now;
-
-    if (containerRef.current) {
-      pendingScrollAdjustRef.current = containerRef.current.scrollHeight;
-    }
-
-    loadingDirectionRef.current = 'prev';
-    setLoadingDirection('prev');
-
-    setVisibleRange(prev => {
-      if (!prev || prev.start <= 0) {
-        return prev;
-      }
-      return { start: prev.start - 1, end: prev.end };
-    });
-  }, [allFiles.length, visibleRange]);
-
-  useEffect(() => {
-    if (!loadingDirectionRef.current) {
-      return;
-    }
-
-    const id = window.setTimeout(() => {
-      loadingDirectionRef.current = null;
-      setLoadingDirection(null);
-    }, 0);
-
-    return () => window.clearTimeout(id);
-  }, [visibleRange]);
-
-  useLayoutEffect(() => {
-    const previousHeight = pendingScrollAdjustRef.current;
-    const container = containerRef.current;
-
-    if (previousHeight === null || !container) {
-      return;
-    }
-
-    const newHeight = container.scrollHeight;
-    const delta = newHeight - previousHeight;
-
-    if (delta > 0) {
-      container.scrollTop += delta;
-    }
-
-    lastScrollTopRef.current = container.scrollTop;
-    pendingScrollAdjustRef.current = null;
-  }, [visibleRange]);
-
-  // Get visible files with their data
-  const visibleFiles = useMemo(() => {
-    if (!visibleRange) {
-      return [];
-    }
-    return allFiles.slice(visibleRange.start, visibleRange.end + 1);
-  }, [visibleRange, allFiles]);
-
-  // Create files with URLs (always stream the original PDF)
-  const filesWithUrls = useMemo(() => {
-    return visibleFiles.map(file => ({
-      ...file,
-      url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKeyRef.current}`,
-    }));
-  }, [visibleFiles]);
-
-  const hasPreviousFiles = visibleRange ? visibleRange.start > 0 : false;
-  const hasNextFiles = visibleRange
-    ? visibleRange.end < allFiles.length - 1
-    : false;
-
-  const handleScroll = useCallback(() => {
-    const container = containerRef.current;
-    if (!container || !visibleRange) {
-      return;
-    }
-
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const suppressAutoLoad = performance.now() < suppressAutoLoadUntilRef.current;
-
-    if (suppressAutoLoad) {
-      lastScrollTopRef.current = scrollTop;
-      setShowScrollTop(scrollTop > SCROLL_TOP_SHOW_THRESHOLD);
-      return;
-    }
-
-    if (scrollTop === lastScrollTopRef.current) {
-      return;
-    }
-
-    const direction =
-      scrollTop > lastScrollTopRef.current ? 'down' : 'up';
-    lastScrollTopRef.current = scrollTop;
-
-    // Show/hide scroll-to-top button
-    setShowScrollTop(scrollTop > SCROLL_TOP_SHOW_THRESHOLD);
-
-    const nearTop = scrollTop <= SCROLL_THRESHOLD_PX;
-    const nearBottom =
-      scrollTop + clientHeight >= scrollHeight - SCROLL_THRESHOLD_PX;
-
-    if (direction === 'down' && nearBottom && hasNextFiles) {
-      requestLoadNext();
-    }
-
-    if (direction === 'up' && nearTop && hasPreviousFiles) {
-      requestLoadPrev();
-    }
-  }, [hasNextFiles, hasPreviousFiles, requestLoadNext, requestLoadPrev, visibleRange]);
-
+  // Derived UI state
   const hasFiles = allFiles.length > 0;
   const shouldShowIndex = hasFiles && !hasPreviousFiles;
 

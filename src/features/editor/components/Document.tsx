@@ -1,16 +1,11 @@
 // src/features/editor/components/Document.tsx
-import { useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Document, Page } from 'react-pdf';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { setDocumentPageCount } from '@/features/properties-panel/redux/propertiesPanelSlice';
-import {
-  setPendingComment,
-  setPendingHighlight,
-} from '@/features/toolbar/redux';
-import { getTextSelectionCoordinates } from '@/lib/pdfCoordinateUtils';
-import { ScreenToPdfCoordinates } from '../helpers';
 import AnnotationLayer from './AnnotationLayer';
 import type { TextHighlightableDocumentProps } from '../types/types';
+import { useDocumentMouseUp } from '@/features/editor/hooks';
 
 const PDFDocument = ({
   file,
@@ -25,6 +20,17 @@ const PDFDocument = ({
   const dispatch = useAppDispatch();
   const scale = useAppSelector(states => states.editor.scale);
   const activeTool = useAppSelector(states => states.toolbar.activeTool);
+
+  // handle mouse up handler
+  const handleMouseUp = useDocumentMouseUp({
+    fileId: file.id,
+    fileName: file.name,
+    pageInfo,
+    pageRefs,
+    containerRef,
+    scale,
+    activeTool,
+  });
 
   // Memoize the file configuration - ONLY depends on file.url
   const fileConfig = useMemo(() => {
@@ -77,121 +83,6 @@ const PDFDocument = ({
     if (onPageMetrics && viewport.width > maxWidthReportedRef.current) {
       maxWidthReportedRef.current = viewport.width;
       onPageMetrics({ fileId: file.id, width: viewport.width });
-    }
-  };
-
-  const handleMouseUp = (event: MouseEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement;
-    if (
-      target.closest('.comment-input') ||
-      target.closest('.annotation-toolbar')
-    ) {
-      return;
-    }
-
-    if (activeTool !== 'highlight' && activeTool !== 'comment') {
-      return;
-    }
-
-    const selection = window.getSelection();
-    if (!selection || selection.toString().trim() === '') {
-      return;
-    }
-
-    let selectedPageNumber: number | null = null;
-    let pageElement: HTMLDivElement | null = null;
-
-    pageRefs.current.forEach((element, pageNumber) => {
-      if (
-        element &&
-        selection.containsNode &&
-        selection.containsNode(element, true)
-      ) {
-        selectedPageNumber = pageNumber;
-        pageElement = element;
-      }
-    });
-
-    if (selectedPageNumber === null || pageElement === null) {
-      console.warn('⚠️ Could not determine which page was selected');
-      return;
-    }
-
-    const foundPageNumber: number = selectedPageNumber;
-    const foundPageElement: HTMLDivElement = pageElement;
-
-    const pageData = pageInfo.get(foundPageNumber);
-
-    if (!pageData) {
-      console.warn('⚠️ Page info not loaded yet');
-      return;
-    }
-
-    const selectionCoords = getTextSelectionCoordinates(foundPageElement);
-    if (!selectionCoords) {
-      return;
-    }
-
-    const pageInfoWithOffset = {
-      ...pageData,
-      left: 0,
-      top: 0,
-    };
-
-    const pdfCoords = ScreenToPdfCoordinates(
-      selectionCoords,
-      pageInfoWithOffset,
-      scale
-    );
-
-    console.log('📍 Selection info:', {
-      fileId: file.id,
-      fileName: file.name,
-      pageNumber: foundPageNumber,
-      text: selectionCoords.selectedText,
-      pdfCoordinates: pdfCoords,
-      selectionCoords,
-    });
-
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    const pageRect = foundPageElement.getBoundingClientRect();
-
-    if (!containerRect) {
-      console.warn('⚠️ Container ref not available');
-      return;
-    }
-
-    const pickerY = pageRect.top - containerRect.top + selectionCoords.top;
-
-    if (activeTool === 'highlight') {
-      dispatch(
-        setPendingHighlight({
-          fileId: file.id,
-          pageNumber: foundPageNumber,
-          coordinates: {
-            x: pdfCoords.x,
-            y: pdfCoords.y,
-            width: pdfCoords.width,
-            height: pdfCoords.height,
-          },
-          text: selectionCoords.selectedText,
-        })
-      );
-    }
-
-    if (activeTool === 'comment') {
-      dispatch(
-        setPendingComment({
-          fileId: file.id,
-          pageNumber: foundPageNumber,
-          selectedText: selectionCoords.selectedText,
-          position: {
-            x: 0,
-            y: pickerY,
-            pageY: pickerY,
-          },
-        })
-      );
     }
   };
 

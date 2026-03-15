@@ -16,7 +16,6 @@ type PendingHighlight = {
 type EditorState = {
   scale: number;
   maxScale: number;
-  colorPickerPosition: { x: number | null; y: number | null };
   pendingHighlight: PendingHighlight | null;
   highlights: Highlight[]; // Array to store multiple highlights
 };
@@ -24,7 +23,6 @@ type EditorState = {
 const initialState: EditorState = {
   scale: 1.0,
   maxScale: 3.0,
-  colorPickerPosition: { x: null, y: null },
   pendingHighlight: null,
   highlights: [],
 };
@@ -35,10 +33,7 @@ const editorSlice = createSlice({
   reducers: {
     // Scale controls
     setScale: (state, action: PayloadAction<number>) => {
-      state.scale = Math.min(
-        Math.max(action.payload, 0.5),
-        state.maxScale
-      );
+      state.scale = Math.min(Math.max(action.payload, 0.5), state.maxScale);
     },
     setMaxScale: (state, action: PayloadAction<number>) => {
       state.maxScale = Math.min(Math.max(action.payload, 0.5), 3.0);
@@ -51,14 +46,6 @@ const editorSlice = createSlice({
     },
     zoomOut: state => {
       state.scale = Math.max(state.scale - 0.2, 0.5);
-    },
-
-    // Color picker position
-    setColorPickerPosition: (
-      state,
-      action: PayloadAction<{ x: number | null; y: number | null }>
-    ) => {
-      state.colorPickerPosition = action.payload;
     },
 
     // Store pending highlight (before color is selected)
@@ -102,12 +89,6 @@ const editorSlice = createSlice({
           h.pageNumber !== action.payload.pageNumber
       );
     },
-
-    // Cancel highlight creation
-    cancelHighlight: state => {
-      state.colorPickerPosition = { x: null, y: null };
-      state.pendingHighlight = null;
-    },
   },
 });
 
@@ -116,14 +97,12 @@ export const {
   setMaxScale,
   zoomIn,
   zoomOut,
-  setColorPickerPosition,
   setPendingHighlight,
   addHighlight,
   removeHighlight,
   clearHighlights,
   clearFileHighlights,
   clearPageHighlights,
-  cancelHighlight,
 } = editorSlice.actions;
 
 export default editorSlice.reducer;

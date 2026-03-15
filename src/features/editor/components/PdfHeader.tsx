@@ -8,16 +8,10 @@ import {
   RotateCw,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
-import {
-  selectIsRenaming,
-  selectIsRotating,
-} from '@/features/file-explorer/redux/fileTreeSlice';
-import {
-  useDeleteDocumentMutation,
-  useRenameDocumentMutation,
-} from '@/features/file-explorer/api';
+import { selectIsRotating } from '@/features/file-explorer/redux/fileTreeSlice';
+import { useDeleteDocument, useRename } from '@/features/editor/hooks';
 
 type PdfHeaderProps = {
   file: any;
@@ -40,70 +34,40 @@ const PdfHeader = ({
   onRotateRight,
 }: PdfHeaderProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
-  const [isRenamingLocal, setIsRenamingLocal] = useState(false);
-  const [renameValue, setRenameValue] = useState(file.name);
-  const renameInputRef = useRef<HTMLInputElement>(null);
-  const [deleteDocument] = useDeleteDocumentMutation();
-  const [renameDocument] = useRenameDocumentMutation();
-  const isRenaming = useAppSelector(state => selectIsRenaming(state, file.id));
   const isRotating = useAppSelector(state => selectIsRotating(state, file.id));
 
-  useEffect(() => {
-    setRenameValue(file.name);
-  }, [file.name]);
+  // delete document hook
+  const { deleteStatus, deleteMessage, handleDelete, resetDeleteState } =
+    useDeleteDocument({
+      documentId: file.id,
+      onClose: () => setShowDeleteDialog(false),
+    });
 
-  useEffect(() => {
-    if (isRenamingLocal && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [isRenamingLocal]);
+  // rename document hook
+  const {
+    isRenamingLocal,
+    renameValue,
+    setRenameValue,
+    renameInputRef,
+    isRenaming,
+    startRename,
+    handleRenameCancel,
+    handleRenameSubmit,
+    handleRenameKeyDown,
+  } = useRename({
+    documentId: file.id,
+    fileName: file.name,
+  });
 
-  const handleFileDelete = async () => {
-    try {
-      await deleteDocument({ documentId: file.id }).unwrap();
-      console.log('File deleted successfully');
-      setShowDeleteDialog(false);
-    } catch (err: any) {
-      console.log(err);
-    }
+  const openDeleteDialog = () => {
+    resetDeleteState();
+    setShowDeleteDialog(true);
   };
 
-  const startRename = () => {
-    setRenameValue(file.name);
-    setIsRenamingLocal(true);
-  };
-
-  const handleRenameCancel = () => {
-    setRenameValue(file.name);
-    setIsRenamingLocal(false);
-  };
-
-  const handleRenameSubmit = async () => {
-    const trimmedValue = renameValue.trim();
-    if (!trimmedValue || trimmedValue === file.name) {
-      setIsRenamingLocal(false);
-      return;
-    }
-
-    try {
-      await renameDocument({ documentId: file.id, newName: trimmedValue }).unwrap();
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setIsRenamingLocal(false);
-    }
-  };
-
-  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleRenameSubmit();
-      return;
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      handleRenameCancel();
+  const handleDeleteDialogOpenChange = (open: boolean) => {
+    setShowDeleteDialog(open);
+    if (!open) {
+      resetDeleteState();
     }
   };
 
@@ -113,6 +77,10 @@ const PdfHeader = ({
         {/* --------- File icon & Name ------------- */}
         <div className="flex items-center gap-2 min-w-0">
           <FileText className="h-5 w-5 text-red-500" />
+
+          {/*----------------------- 
+              Rename input field
+          --------------------------*/}
           {isRenamingLocal ? (
             <div className="flex items-center gap-1 min-w-0">
               <input
@@ -143,6 +111,7 @@ const PdfHeader = ({
               </button>
             </div>
           ) : (
+            /* ----------- Edit button ----------*/
             <button
               className="group inline-flex items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-200"
               onClick={startRename}
@@ -182,9 +151,11 @@ const PdfHeader = ({
               <RotateCw className="h-4 w-4" />
             </button>
           </div>
-          {/* -------- Delete Button---------- */}
+          {/*--------------------- 
+                Delete Button
+            ----------------------*/}
           <button
-            onClick={() => setShowDeleteDialog(true)}
+            onClick={openDeleteDialog}
             className="rounded p-1 hover:bg-gray-200"
             type="button"
           >
@@ -192,12 +163,16 @@ const PdfHeader = ({
           </button>
         </div>
       </div>
-      {/* ------- Delete Confirmation Dialog ---------- */}
+      {/* --------------------------- 
+          Delete Confirmation Dialog
+          --------------------------- */}
       <DeleteAlertDialog
         open={showDeleteDialog}
-        onOpen={setShowDeleteDialog}
-        onDelete={handleFileDelete}
+        onOpen={handleDeleteDialogOpenChange}
+        onDelete={handleDelete}
         file={file}
+        status={deleteStatus}
+        message={deleteMessage}
       />
     </>
   );
