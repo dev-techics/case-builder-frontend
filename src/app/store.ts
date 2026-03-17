@@ -10,6 +10,8 @@ import authApi from '@/features/auth/api';
 import coverPageApi from '@/features/cover-page/api';
 import { fileTreeApi } from '@/features/file-explorer/api';
 import { editorApi } from '@/features/editor/api';
+import { dashboardApi } from '@/features/dashboard/api';
+import dashboardReducer from '@/features/dashboard/redux';
 
 const store = configureStore({
   reducer: {
@@ -18,6 +20,7 @@ const store = configureStore({
     [coverPageApi.reducerPath]: coverPageApi.reducer,
     [fileTreeApi.reducerPath]: fileTreeApi.reducer,
     [editorApi.reducerPath]: editorApi.reducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
     /*----------- state slices ------------ */
     auth: authReducer,
     fileTree: fileTreeReducer,
@@ -26,13 +29,15 @@ const store = configureStore({
     toolbar: toolbarReducer,
     bundleList: bundlesListReducer,
     coverPage: CoverPageReducer,
+    dashboard: dashboardReducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware().concat(
       authApi.middleware,
       coverPageApi.middleware,
       fileTreeApi.middleware,
-      editorApi.middleware
+      editorApi.middleware,
+      dashboardApi.middleware
     ),
 });
 

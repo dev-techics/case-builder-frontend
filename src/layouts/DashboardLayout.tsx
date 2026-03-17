@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import 'react-toastify/dist/ReactToastify.css';
 import { Outlet } from 'react-router';
 import { ToastContainer } from 'react-toastify';
-import DashboardSidebar from '@/features/dashboard/components/DashboardSidebar';
+import DashboardSidebar from '@/components/dashboard-components/DashboardSidebar';
 
 const DashboardLayout = () => {
   return (
