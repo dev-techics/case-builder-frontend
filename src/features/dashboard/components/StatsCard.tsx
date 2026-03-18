@@ -1,4 +1,3 @@
-// dashboard/components/StatsCard.tsx
 import { cn } from '@/lib/utils'; // shadcn utility
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 

@@ -23,26 +23,33 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createBundleAsync } from '../redux/bundlesListSlice';
+import type { Bundle } from '../types/types';
 import { useState, type FormEvent } from 'react';
 import { toast } from 'react-toastify';
 
 interface CreateNewBundleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreated?: (bundle: Bundle) => void;
 }
 
 const CreateNewBundleDialog = ({
   open,
   onOpenChange,
+  onCreated,
 }: CreateNewBundleDialogProps) => {
   const [bundleName, setBundleName] = useState('');
   const [caseNumber, setCaseNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useAppDispatch();
 
   // Handle new bundle creation
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
     if (!bundleName.trim() || !caseNumber.trim()) {
       return;
     }
@@ -51,11 +58,19 @@ const CreateNewBundleDialog = ({
       case_number: caseNumber.trim(),
     };
 
-    dispatch(createBundleAsync(payload));
-    toast.success('New bundle created successfully');
-    setBundleName('');
-    setCaseNumber('');
-    onOpenChange(false);
+    try {
+      setIsSubmitting(true);
+      const createdBundle = await dispatch(createBundleAsync(payload)).unwrap();
+      toast.success('New bundle created successfully');
+      setBundleName('');
+      setCaseNumber('');
+      onOpenChange(false);
+      onCreated?.(createdBundle);
+    } catch {
+      toast.error('Failed to create bundle');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -76,6 +91,7 @@ const CreateNewBundleDialog = ({
                 id="bundle-name"
                 name="bundleName"
                 value={bundleName}
+                disabled={isSubmitting}
                 onChange={e => setBundleName(e.target.value)}
                 placeholder="e.g., Smith v. Johnson - Discovery"
               />
@@ -86,6 +102,7 @@ const CreateNewBundleDialog = ({
                 id="case-number"
                 name="caseNumber"
                 value={caseNumber}
+                disabled={isSubmitting}
                 onChange={e => setCaseNumber(e.target.value)}
                 placeholder="e.g., CV-2024-001234"
               />
@@ -93,11 +110,11 @@ const CreateNewBundleDialog = ({
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" disabled={isSubmitting}>
                 Cancel
               </Button>
             </DialogClose>
-            <Button variant="default" type="submit">
+            <Button variant="default" type="submit" disabled={isSubmitting}>
               Create Bundle
             </Button>
           </DialogFooter>

@@ -1,4 +1,3 @@
-// dashboard/redux/index.ts
 import { createSlice } from '@reduxjs/toolkit';
 import type { RootState } from '@/app/store';
 import { dashboardApi } from '../api';
@@ -10,10 +9,10 @@ interface DashboardState {
 
 const initialState: DashboardState = {
   stats: {
-    totalBundles: 124,
-    updatedThisWeek: 12,
-    totalDocuments: 1450,
-    storageUsedGb: 3.2,
+    totalBundles: 0,
+    updatedThisWeek: 0,
+    totalDocuments: 0,
+    storageUsedGb: 0,
     storageLimitGb: 10,
   },
 };
