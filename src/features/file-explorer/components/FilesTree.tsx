@@ -35,14 +35,13 @@ import {
   setTree,
 } from '../redux/fileTreeSlice';
 import { useParams } from 'react-router-dom';
-import { arrayMove } from '@dnd-kit/sortable';
 import {
   useMoveDocumentsBatchMutation,
   useReorderDocumentsMutation,
 } from '../api';
 
 type FileTreeProps = {
-  tree: Tree | Children;
+  tree: Tree;
   level: number;
 };
 
@@ -59,6 +58,14 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
 
   const { bundleId } = useParams<{ bundleId: string }>();
   const extractedBundleId = bundleId || tree.id.replace('bundle-', '');
+
+  const nodeById = useMemo(() => {
+    const map = new Map<string, Children>();
+    for (const node of tree.nodes) {
+      map.set(node.id, node);
+    }
+    return map;
+  }, [tree.nodes]);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -84,22 +91,22 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   }, []);
 
   // Get the item being dragged
-  const activeItem = activeId ? findItemById(tree, activeId) : null;
+  const activeItem = activeId ? findItemById(nodeById, activeId) : null;
   const activeDragCount =
     activeItem?.type === 'file' && draggedFileIds.length > 1
       ? draggedFileIds.length
       : 1;
 
   const visibleFileIds = useMemo(
-    () => getVisibleFileIds(tree, new Set(expandedFolders), true),
-    [tree, expandedFolders]
+    () => getVisibleFileIds(tree, nodeById, new Set(expandedFolders)),
+    [tree, nodeById, expandedFolders]
   );
 
   useEffect(() => {
-    const validIds = new Set(getAllFileIds(tree));
+    const validIds = new Set(getAllFileIds(tree, nodeById));
     setSelectedFileIds(prev => prev.filter(id => validIds.has(id)));
     setSelectionAnchorId(prev => (prev && validIds.has(prev) ? prev : null));
-  }, [tree]);
+  }, [tree, nodeById]);
 
   const handleFolderSelect = useCallback(
     (folderId: string) => {
@@ -159,7 +166,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     const nextActiveId = String(event.active.id);
     setActiveId(nextActiveId);
 
-    const nextActiveItem = findItemById(tree, nextActiveId);
+    const nextActiveItem = findItemById(nodeById, nextActiveId);
     setDropPreview(null);
     if (nextActiveItem?.type === 'file') {
       const selected = selectedFileIds.includes(nextActiveId)
@@ -185,10 +192,10 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     }
 
     const rawOverId = String(over.id);
-    const activeItem = findItemById(tree, String(active.id));
+    const activeItem = findItemById(nodeById, String(active.id));
 
     if (activeItem?.type === 'file' && !rawOverId.endsWith('::content')) {
-      const overTarget = findItemById(tree, rawOverId);
+      const overTarget = findItemById(nodeById, rawOverId);
       if (overTarget?.type === 'folder') {
         setOverIdIfChanged(`${overTarget.id}::content`);
         setDropPreviewIfChanged({
@@ -215,6 +222,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
           : [];
     const preview = getDropPreviewFromOver({
       tree,
+      nodeById,
       overId: rawOverId,
       overRect: over.rect,
       pointerY: getPointerClientY(event),
@@ -222,7 +230,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       draggedType: activeItem.type,
     });
     setDropPreviewIfChanged(preview);
-  }, [draggedFileIds, setDropPreviewIfChanged, setOverIdIfChanged, tree]);
+  }, [draggedFileIds, nodeById, setDropPreviewIfChanged, setOverIdIfChanged, tree]);
 
   const { setNodeRef: setRootDropRef, isOver: isRootOver } = useDroppable({
     id: 'ROOT',
@@ -246,7 +254,7 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
     }
 
     // Find the dragged item
-    const draggedItem = findItemById(tree, activeId);
+    const draggedItem = findItemById(nodeById, activeId);
 
     if (!draggedItem) {
       console.error('Could not find dragged item');
@@ -265,240 +273,53 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       overId: over.id,
     });
 
-    // Find target item
-    if (dropPreview) {
-      const destinationParentId = dropPreview.parentId;
-      const destinationIndex = dropPreview.index;
-      const draggedParentId = findParentId(tree, draggedItem.id, tree.id);
-      const draggedParentIds = selectedDragIds.map(id =>
-        findParentId(tree, id, tree.id)
-      );
-      const isSameParentForSelection = draggedParentIds.every(
-        parentId => parentId === draggedParentId
-      );
-      const isSameParentDrop =
-        isSameParentForSelection && draggedParentId === destinationParentId;
-
-      if (
-        draggedItem.type === 'folder' &&
-        destinationParentId &&
-        isDescendant(draggedItem, destinationParentId)
-      ) {
-        console.log('⚠️ Cannot drop folder into itself or its descendants');
-        return;
-      }
-
-      if (isSameParentDrop) {
-        const siblings = getChildrenForParent(tree, destinationParentId);
-        const reordered = reorderChildrenByDropPosition(
-          siblings,
-          selectedDragIds,
-          destinationIndex
-        );
-        const hasOrderChange = reordered.some(
-          (item, index) => item.id !== siblings[index]?.id
-        );
-
-        if (!hasOrderChange) {
-          return;
-        }
-
-        const optimisticTree = replaceTreeChildrenAtParent(
-          tree,
-          destinationParentId,
-          reordered
-        );
-        if (optimisticTree !== tree) {
-          dispatch(setTree(optimisticTree as Tree));
-        }
-
-        try {
-          const items = reordered.map((child, index) => ({
-            id: child.id,
-            order: index,
-          }));
-          await reorderDocuments({
-            bundleId: extractedBundleId,
-            items,
-          }).unwrap();
-        } catch (error) {
-          console.error('❌ Error reordering:', error);
-        }
-
-        return;
-      }
-
-      const optimisticTree = moveItemsToParentInTree(
-        tree,
-        selectedDragIds,
-        destinationParentId,
-        destinationIndex
-      );
-      if (optimisticTree !== tree) {
-        dispatch(setTree(optimisticTree as Tree));
-      }
-
-      try {
-        const moveResult = await moveDocumentsBatch({
-          bundleId: extractedBundleId,
-          documentIds: selectedDragIds,
-          newParentId: destinationParentId,
-          skipApplyTree: true,
-        }).unwrap();
-
-        const parentChildren = getChildrenForParent(
-          moveResult.tree,
-          destinationParentId
-        );
-        const reordered = reorderChildrenByDropPosition(
-          parentChildren,
-          selectedDragIds,
-          destinationIndex
-        );
-        const hasOrderChange = reordered.some(
-          (item, index) => item.id !== parentChildren[index]?.id
-        );
-
-        if (hasOrderChange) {
-          const items = reordered.map((child, index) => ({
-            id: child.id,
-            order: index,
-          }));
-          await reorderDocuments({
-            bundleId: extractedBundleId,
-            items,
-          }).unwrap();
-        }
-      } catch (error) {
-        console.error('❌ Error moving file(s):', error);
-      }
-
+    if (!dropPreview) {
       return;
     }
 
-    const targetItem = findItemById(tree, over.id as string);
-
-    if (!targetItem) {
-      console.error('❌ Could not find target item');
-      return;
-    }
-
-      const draggedParentId = findParentId(tree, draggedItem.id, tree.id);
-      const targetParentId = findParentId(tree, targetItem.id, tree.id);
-      const draggedParentIds = selectedDragIds.map(id =>
-        findParentId(tree, id, tree.id)
-      );
-
-    // NEW LOGIC: Check if we're trying to reorder at the same level
-    const isSameParent = draggedParentId === targetParentId;
+    const destinationParentId = dropPreview.parentId;
+    const destinationIndex = dropPreview.index;
+    const draggedParentId = getNormalizedParentId(nodeById, draggedItem.id, tree.id);
+    const draggedParentIds = selectedDragIds.map(id =>
+      getNormalizedParentId(nodeById, id, tree.id)
+    );
     const isSameParentForSelection = draggedParentIds.every(
       parentId => parentId === draggedParentId
     );
+    const isSameParentDrop =
+      isSameParentForSelection && draggedParentId === destinationParentId;
 
-    const isEmptyTargetFolder =
-      targetItem.type === 'folder' &&
-      (!targetItem.children || targetItem.children.length === 0);
-
-    const shouldMoveIntoFolder =
-      targetItem.type === 'folder' &&
-      draggedItem.type === 'file' &&
-      !selectedDragIds.includes(targetItem.id);
-
-    const shouldMoveEmptyFolderTarget =
-      isEmptyTargetFolder && draggedItem.id !== targetItem.id;
-
-    if (shouldMoveIntoFolder || shouldMoveEmptyFolderTarget) {
-      if (
-        draggedItem.type === 'folder' &&
-        isDescendant(draggedItem, targetItem.id)
-      ) {
-        console.log('⚠️ Cannot drop folder into itself or its descendants');
-        return;
-      }
-
-      const destinationFolderId = targetItem.id;
-
-      const optimisticTree = moveItemsToParentInTree(
-        tree,
-        selectedDragIds,
-        destinationFolderId
-      );
-      if (optimisticTree !== tree) {
-        dispatch(setTree(optimisticTree as Tree));
-      }
-
-      try {
-        await moveDocumentsBatch({
-          bundleId: extractedBundleId,
-          documentIds: selectedDragIds,
-          newParentId: destinationFolderId,
-        }).unwrap();
-        console.log('✅ Moved into folder successfully');
-      } catch (error) {
-        console.error('❌ Error moving into folder:', error);
-      }
-
+    if (
+      draggedItem.type === 'folder' &&
+      destinationParentId &&
+      isDescendant(nodeById, draggedItem.id, destinationParentId)
+    ) {
+      console.log('⚠️ Cannot drop folder into itself or its descendants');
       return;
     }
 
-    // CASE 1: Same parent level - REORDER (both files and folders)
-    if (
-      isSameParent &&
-      isSameParentForSelection &&
-      draggedItem.id !== targetItem.id
-    ) {
-      const parentFolder = draggedParentId
-        ? findItemById(tree, draggedParentId)
-        : tree;
-
-      if (!parentFolder?.children) {
-        console.error('❌ Parent folder has no children');
-        return;
-      }
-
-      const oldIndex = parentFolder.children.findIndex(child => child.id === activeId);
-      const newIndex = parentFolder.children.findIndex(
-        child => child.id === over.id
+    if (isSameParentDrop) {
+      const siblingIds = getChildrenIds(tree, nodeById, destinationParentId);
+      const reorderedIds = reorderIdsByDropPosition(
+        siblingIds,
+        selectedDragIds,
+        destinationIndex
       );
 
-      if (oldIndex === -1 || newIndex === -1) {
-        console.error('❌ Could not find indices:', { oldIndex, newIndex });
+      if (arraysEqual(siblingIds, reorderedIds)) {
         return;
       }
 
-      if (oldIndex === newIndex) {
-        console.log('⏭️ Same position, skipping');
-        return;
-      }
-
-      const reorderedChildren =
-        selectedDragIds.length > 1
-          ? moveGroupBeforeTarget(parentFolder.children, selectedDragIds, targetItem.id)
-          : arrayMove(parentFolder.children, oldIndex, newIndex);
-
-      // Optimistically update local tree to prevent flicker
-      const optimisticTree = replaceTreeChildrenAtParent(
+      const optimisticTree = replaceChildrenIdsAtParent(
         tree,
-        draggedParentId,
-        reorderedChildren
+        destinationParentId,
+        reorderedIds
       );
-      if (optimisticTree !== tree) {
-        dispatch(setTree(optimisticTree as Tree));
-      }
+      dispatch(setTree(optimisticTree));
 
-      const items = reorderedChildren.map((child, index) => ({
-        id: child.id,
-        order: index,
-      }));
-
-      // Send to backend
       try {
-        await reorderDocuments({
-          bundleId: extractedBundleId,
-          items,
-        }).unwrap();
-
-        console.log('✅ Reorder saved successfully');
+        const items = reorderedIds.map((id, index) => ({ id, order: index }));
+        await reorderDocuments({ bundleId: extractedBundleId, items }).unwrap();
       } catch (error) {
         console.error('❌ Error reordering:', error);
       }
@@ -506,75 +327,43 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
       return;
     }
 
-    /*
-     * CASE 2: Dropping onto a folder at a different level (move INTO folder)
-     */
+    const optimisticTree = moveItemsToParentInTree(
+      tree,
+      nodeById,
+      selectedDragIds,
+      destinationParentId,
+      destinationIndex
+    );
+    dispatch(setTree(optimisticTree));
 
-    if (targetItem.type === 'folder' && !isSameParent) {
-      // Prevent dropping a folder into itself or its descendants
-      if (
-        draggedItem.type === 'folder' &&
-        isDescendant(draggedItem, targetItem.id)
-      ) {
-        console.log('⚠️ Cannot drop folder into itself or its descendants');
-        return;
-      }
+    try {
+      const moveResult = await moveDocumentsBatch({
+        bundleId: extractedBundleId,
+        documentIds: selectedDragIds,
+        newParentId: destinationParentId,
+        skipApplyTree: true,
+      }).unwrap();
 
-      console.log(
-        `📁 Moving ${draggedItem.name} (${draggedItem.type}) INTO folder ${targetItem.name}`
+      const nextTree = moveResult.tree;
+      const nextNodeById = new Map<string, Children>(
+        nextTree.nodes.map(node => [node.id, node])
       );
-
-      const optimisticTree = moveItemsToParentInTree(
-        tree,
+      const siblingIds = getChildrenIds(nextTree, nextNodeById, destinationParentId);
+      const reorderedIds = reorderIdsByDropPosition(
+        siblingIds,
         selectedDragIds,
-        targetItem.id
+        destinationIndex
       );
-      if (optimisticTree !== tree) {
-        dispatch(setTree(optimisticTree as Tree));
-      }
 
-      try {
-        await moveDocumentsBatch({
-          bundleId: extractedBundleId,
-          documentIds: selectedDragIds,
-          newParentId: targetItem.id,
-        }).unwrap();
-        console.log('✅ Moved into folder successfully');
-      } catch (error) {
-        console.error('❌ Error moving into folder:', error);
+      if (!arraysEqual(siblingIds, reorderedIds)) {
+        const items = reorderedIds.map((id, index) => ({ id, order: index }));
+        await reorderDocuments({ bundleId: extractedBundleId, items }).unwrap();
       }
-
-      return;
+    } catch (error) {
+      console.error('❌ Error moving file(s):', error);
     }
 
-    // * CASE 3: Different parents - move to target's parent level
-    if (!isSameParent) {
-      console.log(
-        `📂 Moving ${draggedItem.name} (${draggedItem.type}) to same level as ${targetItem.name}`
-      );
-
-      const optimisticTree = moveItemsToParentInTree(
-        tree,
-        selectedDragIds,
-        targetParentId
-      );
-      if (optimisticTree !== tree) {
-        dispatch(setTree(optimisticTree as Tree));
-      }
-
-      try {
-        await moveDocumentsBatch({
-          bundleId: extractedBundleId,
-          documentIds: selectedDragIds,
-          newParentId: targetParentId,
-        }).unwrap();
-        console.log('✅ Moved to target parent successfully');
-      } catch (error) {
-        console.error('❌ Error moving to target parent:', error);
-      }
-
-      return;
-    }
+    return;
   };
 
   return (
@@ -634,220 +423,242 @@ const FilesTree: React.FC<FileTreeProps> = ({ tree, level }) => {
   );
 };
 
-function replaceTreeChildrenAtParent(
-  node: Tree | Children,
-  parentId: string | null,
-  newChildren: Children[]
-): Tree | Children {
-  if (!node.children) {
-    return node;
+const arraysEqual = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
+const findItemById = (nodeById: Map<string, Children>, id: string) =>
+  nodeById.get(id) ?? null;
+
+const getNormalizedParentId = (
+  nodeById: Map<string, Children>,
+  nodeId: string,
+  treeId: string
+): string | null => {
+  const raw = nodeById.get(nodeId)?.parent ?? null;
+  if (
+    raw === null ||
+    raw === treeId ||
+    raw === 'root' ||
+    raw.startsWith('bundle-')
+  ) {
+    return null;
   }
+  return raw;
+};
 
-  if (!parentId) {
-    return { ...node, children: newChildren };
-  }
-
-  let changed = false;
-  const nextChildren = node.children.map(child => {
-    if (child.id === parentId && child.type === 'folder') {
-      changed = true;
-      return { ...child, children: newChildren };
-    }
-
-    if (child.type === 'folder' && child.children) {
-      const updated = replaceTreeChildrenAtParent(
-        child,
-        parentId,
-        newChildren
-      ) as Children;
-      if (updated !== child) {
-        changed = true;
-        return updated;
-      }
-    }
-
-    return child;
-  });
-
-  return changed ? { ...node, children: nextChildren } : node;
-}
-
-function moveGroupBeforeTarget(
-  children: Children[],
-  draggedIds: string[],
-  targetId: string
-): Children[] {
-  const draggedSet = new Set(draggedIds);
-  if (draggedSet.has(targetId)) {
-    return children;
-  }
-
-  const dragged = children.filter(child => draggedSet.has(child.id));
-  const remaining = children.filter(child => !draggedSet.has(child.id));
-  const targetIndex = remaining.findIndex(child => child.id === targetId);
-
-  if (targetIndex === -1) {
-    return children;
-  }
-
-  return [
-    ...remaining.slice(0, targetIndex),
-    ...dragged,
-    ...remaining.slice(targetIndex),
-  ];
-}
-
-function moveItemsToParentInTree(
-  tree: Tree | Children,
-  itemIds: string[],
-  newParentId: string | null,
-  targetIndex?: number
-): Tree | Children {
-  if (!tree.children || itemIds.length === 0) {
-    return tree;
-  }
-
-  const idSet = new Set(itemIds);
-  const movedItems = itemIds
-    .map(id => findItemById(tree, id))
-    .filter((item): item is Children => Boolean(item));
-
-  if (movedItems.length === 0) {
-    return tree;
-  }
-
-  const clonedTree = cloneTreeNode(tree);
-  for (const id of idSet) {
-    removeItemById(clonedTree.children || [], id);
-  }
-
-  if (!newParentId) {
-    const rootChildren = clonedTree.children || [];
-    const insertIndex =
-      typeof targetIndex === 'number'
-        ? Math.max(0, Math.min(targetIndex, rootChildren.length))
-        : rootChildren.length;
-    clonedTree.children = [
-      ...rootChildren.slice(0, insertIndex),
-      ...movedItems,
-      ...rootChildren.slice(insertIndex),
-    ];
-    return clonedTree;
-  }
-
-  const inserted = insertItemsIntoParent(
-    clonedTree,
-    newParentId,
-    movedItems,
-    targetIndex
-  );
-  if (!inserted) {
-    clonedTree.children = [...(clonedTree.children || []), ...movedItems];
-  }
-
-  return clonedTree;
-}
-
-function cloneTreeNode(node: Tree | Children): Tree | Children {
-  return {
-    ...node,
-    children: node.children ? node.children.map(child => cloneTreeNode(child) as Children) : undefined,
-  } as Tree | Children;
-}
-
-function removeItemById(children: Children[], id: string): boolean {
-  const index = children.findIndex(child => child.id === id);
-  if (index !== -1) {
-    children.splice(index, 1);
-    return true;
-  }
-
-  for (const child of children) {
-    if (child.type === 'folder' && child.children) {
-      if (removeItemById(child.children, id)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function insertItemsIntoParent(
-  tree: Tree | Children,
-  parentId: string,
-  items: Children[],
-  targetIndex?: number
-): boolean {
-  if (!tree.children) {
-    return false;
-  }
-
-  for (const child of tree.children) {
-    if (child.id === parentId && child.type === 'folder') {
-      const existing = child.children || [];
-      const insertIndex =
-        typeof targetIndex === 'number'
-          ? Math.max(0, Math.min(targetIndex, existing.length))
-          : existing.length;
-      child.children = [
-        ...existing.slice(0, insertIndex),
-        ...items,
-        ...existing.slice(insertIndex),
-      ];
-      return true;
-    }
-
-    if (child.type === 'folder' && child.children) {
-      if (insertItemsIntoParent(child, parentId, items, targetIndex)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function getChildrenForParent(
-  tree: Tree | Children,
+const getChildrenIds = (
+  tree: Tree,
+  nodeById: Map<string, Children>,
   parentId: string | null
-): Children[] {
-  if (!tree.children) {
-    return [];
-  }
-
+): string[] => {
   if (parentId === null) {
-    return tree.children;
+    return Array.isArray(tree.children) ? tree.children : [];
   }
 
-  const parent = findItemById(tree, parentId);
-  if (!parent || parent.type !== 'folder') {
+  const parent = nodeById.get(parentId);
+  if (!parent || parent.type !== 'folder' || !Array.isArray(parent.children)) {
     return [];
   }
 
-  return parent.children || [];
-}
+  return parent.children;
+};
 
-function reorderChildrenByDropPosition(
-  children: Children[],
+const reorderIdsByDropPosition = (
+  childrenIds: string[],
   draggedIds: string[],
   targetIndex: number
-): Children[] {
-  if (draggedIds.length === 0) {
-    return children;
+) => {
+  if (draggedIds.length === 0) return childrenIds;
+
+  const childrenSet = new Set(childrenIds);
+  const draggedUnique: string[] = [];
+  for (const id of draggedIds) {
+    if (!childrenSet.has(id)) continue;
+    if (draggedUnique.includes(id)) continue;
+    draggedUnique.push(id);
   }
 
-  const draggedSet = new Set(draggedIds);
-  const dragged = children.filter(child => draggedSet.has(child.id));
-  const remaining = children.filter(child => !draggedSet.has(child.id));
+  if (draggedUnique.length === 0) return childrenIds;
+
+  const draggedSet = new Set(draggedUnique);
+  const remaining = childrenIds.filter(id => !draggedSet.has(id));
   const insertIndex = Math.max(0, Math.min(targetIndex, remaining.length));
 
   return [
     ...remaining.slice(0, insertIndex),
-    ...dragged,
+    ...draggedUnique,
     ...remaining.slice(insertIndex),
   ];
-}
+};
+
+const cloneTree = (tree: Tree): Tree => ({
+  ...tree,
+  children: Array.isArray(tree.children) ? [...tree.children] : [],
+  nodes: tree.nodes.map(node =>
+    node.type === 'folder'
+      ? { ...node, children: Array.isArray(node.children) ? [...node.children] : [] }
+      : { ...node }
+  ),
+});
+
+const replaceChildrenIdsAtParent = (
+  tree: Tree,
+  parentId: string | null,
+  nextChildrenIds: string[]
+): Tree => {
+  const nextTree = cloneTree(tree);
+  if (parentId === null) {
+    nextTree.children = [...nextChildrenIds];
+    return nextTree;
+  }
+
+  const parent = nextTree.nodes.find(node => node.id === parentId);
+  if (parent && parent.type === 'folder') {
+    parent.children = [...nextChildrenIds];
+  }
+
+  return nextTree;
+};
+
+const moveItemsToParentInTree = (
+  tree: Tree,
+  nodeById: Map<string, Children>,
+  itemIds: string[],
+  newParentId: string | null,
+  targetIndex?: number
+): Tree => {
+  if (itemIds.length === 0) return tree;
+
+  const nextTree = cloneTree(tree);
+  const nextNodeById = new Map<string, Children>(
+    nextTree.nodes.map(node => [node.id, node])
+  );
+
+  const uniqueIds: string[] = [];
+  for (const id of itemIds) {
+    if (!nextNodeById.has(id)) continue;
+    if (uniqueIds.includes(id)) continue;
+    uniqueIds.push(id);
+  }
+
+  if (uniqueIds.length === 0) return tree;
+
+  // Remove from existing parents
+  for (const id of uniqueIds) {
+    const node = nextNodeById.get(id);
+    if (!node) continue;
+
+    const oldParentId = getNormalizedParentId(nodeById, id, tree.id);
+    if (oldParentId === null) {
+      nextTree.children = nextTree.children.filter(childId => childId !== id);
+    } else {
+      const parent = nextNodeById.get(oldParentId);
+      if (parent?.type === 'folder' && Array.isArray(parent.children)) {
+        parent.children = parent.children.filter(childId => childId !== id);
+      }
+    }
+
+    node.parent = newParentId;
+  }
+
+  const destinationIds = getChildrenIds(nextTree, nextNodeById, newParentId).filter(
+    id => !uniqueIds.includes(id)
+  );
+  const insertAt =
+    typeof targetIndex === 'number'
+      ? Math.max(0, Math.min(targetIndex, destinationIds.length))
+      : destinationIds.length;
+  const nextDestinationIds = [
+    ...destinationIds.slice(0, insertAt),
+    ...uniqueIds,
+    ...destinationIds.slice(insertAt),
+  ];
+
+  if (newParentId === null) {
+    nextTree.children = nextDestinationIds;
+    return nextTree;
+  }
+
+  const destinationParent = nextTree.nodes.find(node => node.id === newParentId);
+  if (destinationParent?.type === 'folder') {
+    destinationParent.children = nextDestinationIds;
+    return nextTree;
+  }
+
+  // Fallback: if destination is invalid, keep items at root.
+  nextTree.children = [
+    ...nextTree.children,
+    ...uniqueIds.filter(id => !nextTree.children.includes(id)),
+  ];
+  for (const id of uniqueIds) {
+    const node = nextNodeById.get(id);
+    if (node) node.parent = null;
+  }
+
+  return nextTree;
+};
+
+const getAllFileIds = (tree: Tree, nodeById: Map<string, Children>): string[] => {
+  const ids: string[] = [];
+  const visited = new Set<string>();
+
+  const walk = (childIds: string[]) => {
+    for (const id of childIds) {
+      if (visited.has(id)) continue;
+      visited.add(id);
+
+      const node = nodeById.get(id);
+      if (!node) continue;
+
+      if (node.type === 'file') {
+        ids.push(node.id);
+        continue;
+      }
+
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        walk(node.children);
+      }
+    }
+  };
+
+  walk(tree.children);
+  return ids;
+};
+
+const getVisibleFileIds = (
+  tree: Tree,
+  nodeById: Map<string, Children>,
+  expandedFolderIds: Set<string>
+): string[] => {
+  const ids: string[] = [];
+  const visited = new Set<string>();
+
+  const walk = (childIds: string[]) => {
+    for (const id of childIds) {
+      if (visited.has(id)) continue;
+      visited.add(id);
+
+      const node = nodeById.get(id);
+      if (!node) continue;
+
+      if (node.type === 'file') {
+        ids.push(node.id);
+        continue;
+      }
+
+      if (!expandedFolderIds.has(node.id)) {
+        continue;
+      }
+
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        walk(node.children);
+      }
+    }
+  };
+
+  walk(tree.children);
+  return ids;
+};
 
 function getPointerClientY(event: DragOverEvent): number | null {
   const activatorEvent = event.activatorEvent;
@@ -871,13 +682,15 @@ function getPointerClientY(event: DragOverEvent): number | null {
 
 function getDropPreviewFromOver({
   tree,
+  nodeById,
   overId,
   overRect,
   pointerY,
   selectedDragIds,
   draggedType,
 }: {
-  tree: Tree | Children;
+  tree: Tree;
+  nodeById: Map<string, Children>;
   overId: string;
   overRect: { top: number; height: number } | null;
   pointerY: number | null;
@@ -885,7 +698,7 @@ function getDropPreviewFromOver({
   draggedType: 'file' | 'folder';
 }): DropPreview | null {
   if (overId === 'ROOT') {
-    const rootChildren = getChildrenForParent(tree, null);
+    const rootChildren = getChildrenIds(tree, nodeById, null);
     return {
       parentId: null,
       index: rootChildren.length,
@@ -901,23 +714,23 @@ function getDropPreviewFromOver({
     };
   }
 
-  const overItem = findItemById(tree, overId);
+  const overItem = findItemById(nodeById, overId);
   if (!overItem) {
     return null;
   }
 
   if (overItem.type === 'folder') {
     if (draggedType === 'file') {
-      const children = getChildrenForParent(tree, overItem.id);
+      const children = getChildrenIds(tree, nodeById, overItem.id);
       return {
         parentId: overItem.id,
         index: children.length,
       };
     }
 
-    const parentId = findParentId(tree, overItem.id, tree.id);
-    const siblings = getChildrenForParent(tree, parentId);
-    const targetIndex = siblings.findIndex(child => child.id === overItem.id);
+    const parentId = getNormalizedParentId(nodeById, overItem.id, tree.id);
+    const siblings = getChildrenIds(tree, nodeById, parentId);
+    const targetIndex = siblings.findIndex(id => id === overItem.id);
 
     if (targetIndex === -1) {
       return null;
@@ -935,9 +748,9 @@ function getDropPreviewFromOver({
     return { parentId, index };
   }
 
-  const parentId = findParentId(tree, overItem.id, tree.id);
-  const siblings = getChildrenForParent(tree, parentId);
-  const targetIndex = siblings.findIndex(child => child.id === overItem.id);
+  const parentId = getNormalizedParentId(nodeById, overItem.id, tree.id);
+  const siblings = getChildrenIds(tree, nodeById, parentId);
+  const targetIndex = siblings.findIndex(id => id === overItem.id);
 
   if (targetIndex === -1) {
     return null;
@@ -961,129 +774,26 @@ function getDropPreviewFromOver({
   return { parentId, index };
 }
 
-function getAllFileIds(node: Tree | Children): string[] {
-  if (!node.children) {
-    return node.type === 'file' ? [node.id] : [];
-  }
+const isDescendant = (
+  nodeById: Map<string, Children>,
+  ancestorId: string,
+  targetId: string
+): boolean => {
+  if (ancestorId === targetId) return true;
 
-  const ids: string[] = [];
-  for (const child of node.children) {
-    if (child.type === 'file') {
-      ids.push(child.id);
-      continue;
+  let current: string | null = targetId;
+  while (current) {
+    if (current === ancestorId) return true;
+    const node = nodeById.get(current);
+    if (!node) return false;
+    const parent = node.parent ?? null;
+    if (parent === null || parent === 'root' || parent.startsWith('bundle-')) {
+      return false;
     }
-    ids.push(...getAllFileIds(child));
-  }
-  return ids;
-}
-
-function getVisibleFileIds(
-  node: Tree | Children,
-  expandedFolderIds: Set<string>,
-  isRoot = false
-): string[] {
-  if (!node.children) {
-    return node.type === 'file' ? [node.id] : [];
-  }
-
-  const ids: string[] = [];
-  const shouldTraverseChildren = isRoot || expandedFolderIds.has(node.id);
-  if (!shouldTraverseChildren) {
-    return ids;
-  }
-
-  for (const child of node.children) {
-    if (child.type === 'file') {
-      ids.push(child.id);
-      continue;
-    }
-    ids.push(...getVisibleFileIds(child, expandedFolderIds));
-  }
-
-  return ids;
-}
-
-// Helper function to find an item by ID in the tree
-function findItemById(folder: Tree | Children, id: string): Children | null {
-  if (folder.id === id) {
-    return folder as Children;
-  }
-
-  if (!folder.children) {
-    return null;
-  }
-
-  for (const child of folder.children) {
-    if (child.id === id) {
-      return child;
-    }
-
-    if (child.type === 'folder' && child.children) {
-      const found = findItemById(child, id);
-      if (found) {
-        return found;
-      }
-    }
-  }
-
-  return null;
-}
-
-// Helper function to find parent ID of an item
-function findParentId(
-  folder: Tree | Children,
-  childId: string,
-  rootId: string
-): string | null {
-  if (!folder.children) {
-    return null;
-  }
-
-  // Check if child is direct descendant
-  const isDirectChild = folder.children.some(child => child.id === childId);
-  if (isDirectChild) {
-    if (folder.id === rootId || folder.id === 'root') {
-      return null;
-    }
-    return folder.id.startsWith('bundle-') ? null : folder.id;
-  }
-
-  // Recursively search in subfolders
-  for (const child of folder.children) {
-    if (child.type === 'folder' && child.children) {
-      const parentId = findParentId(child, childId, rootId);
-      if (parentId !== null) {
-        return parentId;
-      }
-    }
-  }
-
-  return null;
-}
-
-// Helper function to check if target is a descendant of the dragged folder
-function isDescendant(folder: Children, targetId: string): boolean {
-  if (folder.id === targetId) {
-    return true;
-  }
-
-  if (!folder.children) {
-    return false;
-  }
-
-  for (const child of folder.children) {
-    if (child.id === targetId) {
-      return true;
-    }
-
-    if (child.type === 'folder' && child.children) {
-      if (isDescendant(child, targetId)) {
-        return true;
-      }
-    }
+    current = parent;
   }
 
   return false;
-}
+};
 
 export default FilesTree;

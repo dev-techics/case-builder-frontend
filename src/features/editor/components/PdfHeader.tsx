@@ -9,8 +9,8 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useAppSelector } from '@/app/hooks';
-import { selectIsRotating } from '@/features/file-explorer/redux/fileTreeSlice';
+// import { useAppSelector } from '@/app/hooks';
+// import { selectIsRotating } from '@/features/file-explorer/redux/fileTreeSlice';
 import { useDeleteDocument, useRename } from '@/features/editor/hooks';
 
 type PdfHeaderProps = {
@@ -34,7 +34,7 @@ const PdfHeader = ({
   onRotateRight,
 }: PdfHeaderProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
-  const isRotating = useAppSelector(state => selectIsRotating(state, file.id));
+  // const isRotating = useAppSelector(state => selectIsRotating(state, file.id));
 
   // delete document hook
   const { deleteStatus, deleteMessage, handleDelete, resetDeleteState } =
@@ -49,7 +49,7 @@ const PdfHeader = ({
     renameValue,
     setRenameValue,
     renameInputRef,
-    isRenaming,
+    // isRenaming,
     startRename,
     handleRenameCancel,
     handleRenameSubmit,
@@ -95,7 +95,7 @@ const PdfHeader = ({
               <button
                 aria-label="Save file name"
                 className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-50"
-                disabled={isRenaming}
+                // disabled={isRenaming}
                 onClick={handleRenameSubmit}
                 type="button"
               >
@@ -132,7 +132,7 @@ const PdfHeader = ({
             <button
               aria-label="Rotate left"
               className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isRotating}
+              // disabled={isRotating}
               onClick={onRotateLeft}
               type="button"
             >
@@ -144,7 +144,7 @@ const PdfHeader = ({
             <button
               aria-label="Rotate right"
               className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isRotating}
+              // disabled={isRotating}
               onClick={onRotateRight}
               type="button"
             >

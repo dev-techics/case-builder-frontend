@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { useAppSelector } from '@/app/hooks';
-import { selectIsRenaming } from '@/features/file-explorer/redux/fileTreeSlice';
+// import { useAppSelector } from '@/app/hooks';
+// import { selectIsRenaming } from '@/features/file-explorer/redux/fileTreeSlice';
 import { useRenameDocumentMutation } from '@/features/file-explorer/api';
 
 type UseRenameOptions = {
@@ -13,9 +13,9 @@ export const useRename = ({ documentId, fileName }: UseRenameOptions) => {
   const [renameValue, setRenameValue] = useState(fileName);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const [renameDocument] = useRenameDocumentMutation();
-  const isRenaming = useAppSelector(state =>
-    selectIsRenaming(state, String(documentId))
-  );
+  // const isRenaming = useAppSelector(state =>
+  //   selectIsRenaming(state, String(documentId))
+  // );
 
   useEffect(() => {
     setRenameValue(fileName);
@@ -74,7 +74,7 @@ export const useRename = ({ documentId, fileName }: UseRenameOptions) => {
     renameValue,
     setRenameValue,
     renameInputRef,
-    isRenaming,
+    // isRenaming,
     startRename,
     handleRenameCancel,
     handleRenameSubmit,

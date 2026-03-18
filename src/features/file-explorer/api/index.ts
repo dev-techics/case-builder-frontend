@@ -1,5 +1,5 @@
 import type { FileNode } from '../types/types';
-import type { Children, Tree } from '../redux/fileTreeSlice';
+import type { FileTreeNode, Tree } from '../redux/fileTreeSlice';
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
@@ -82,7 +82,7 @@ export const fileTreeApi = createApi({
         Create folder
     ----------------------------*/
     createFolder: build.mutation<
-      Children,
+      FileTreeNode,
       { bundleId: string; name: string; parentId?: string | null }
     >({
       query: ({ bundleId, name, parentId }) => ({

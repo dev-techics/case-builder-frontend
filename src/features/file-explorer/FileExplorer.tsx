@@ -3,14 +3,12 @@ import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import FilesTree from './components/FilesTree';
 import { useParams } from 'react-router-dom';
 import { loadHighlights, loadRedactions } from '../toolbar/redux';
-import { useGetTreeQuery } from './api';
 
 const FileTree: React.FC = () => {
   const tree = useAppSelector(state => state.fileTree.tree);
 
   const dispatch = useAppDispatch();
   const { bundleId } = useParams<{ bundleId: string }>();
-  useGetTreeQuery(bundleId ?? '', { skip: !bundleId });
 
   useEffect(() => {
     if (!bundleId) return;

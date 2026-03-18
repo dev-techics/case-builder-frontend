@@ -8,7 +8,11 @@ import {
   type RefObject,
 } from 'react';
 import { useAppDispatch } from '@/app/hooks';
-import { selectFile } from '@/features/file-explorer/redux/fileTreeSlice';
+import {
+  selectFile,
+  type Tree,
+  type FileTreeNode,
+} from '@/features/file-explorer/redux/fileTreeSlice';
 
 const DEFAULT_SCROLL_THRESHOLD_PX = 240;
 const DEFAULT_LOAD_COOLDOWN_MS = 400;
@@ -18,7 +22,7 @@ const SUPPRESS_AUTOLOAD_MS = 300;
 type VisibleRange = { start: number; end: number };
 
 type UseInfinitePdfFilesOptions = {
-  treeChildren: any[];
+  tree: Tree;
   selectedFile: string | null;
   fileSelectionVersion: number;
   containerRef: RefObject<HTMLDivElement | null>;
@@ -27,24 +31,46 @@ type UseInfinitePdfFilesOptions = {
   scrollTopShowThreshold?: number;
 };
 
-const flattenFiles = (children: any[]) => {
-  const files: any[] = [];
-  const traverse = (nodes: any[]) => {
-    for (const node of nodes) {
+const flattenFiles = (tree: Tree): FileTreeNode[] => {
+  const nodeById = new Map<string, FileTreeNode>();
+  for (const node of tree.nodes) {
+    nodeById.set(node.id, node);
+  }
+
+  const visited = new Set<string>();
+  const files: FileTreeNode[] = [];
+
+  const walk = (ids: string[]) => {
+    for (const id of ids) {
+      if (visited.has(id)) continue;
+      visited.add(id);
+
+      const node = nodeById.get(id);
+      if (!node) continue;
+
       if (node.type === 'file') {
         files.push(node);
+        continue;
       }
-      if (node.children) {
-        traverse(node.children);
+
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        walk(node.children);
       }
     }
   };
-  traverse(children);
+
+  const rootIds = Array.isArray(tree.children)
+    ? tree.children
+    : tree.nodes
+        .filter(n => n.parent === null || n.parent === tree.id)
+        .map(n => n.id);
+
+  walk(rootIds);
   return files;
 };
 
 export const useInfinitePdfFiles = ({
-  treeChildren,
+  tree,
   selectedFile,
   fileSelectionVersion,
   containerRef,
@@ -54,7 +80,7 @@ export const useInfinitePdfFiles = ({
 }: UseInfinitePdfFilesOptions) => {
   const dispatch = useAppDispatch();
 
-  const allFiles = useMemo(() => flattenFiles(treeChildren), [treeChildren]);
+  const allFiles = useMemo(() => flattenFiles(tree), [tree]);
 
   const [visibleRange, setVisibleRange] = useState<VisibleRange | null>(null);
   const [loadingDirection, setLoadingDirection] = useState<

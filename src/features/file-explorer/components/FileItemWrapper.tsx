@@ -8,6 +8,7 @@ import SortableFolderItem from './nodes/SortableFolderItem';
 import { type Tree, type Children } from '../redux/fileTreeSlice';
 import { useAppSelector } from '@/app/hooks';
 import CreateNewFolderInput from './CreateNewFolderInput';
+import { useMemo } from 'react';
 
 interface FileItemWrapperProps {
   folder: Tree | Children;
@@ -36,12 +37,23 @@ const FileItemWrapper = ({
   dropPreview,
 }: FileItemWrapperProps) => {
   const scrollToFileId = useAppSelector(state => state.fileTree.scrollToFileId);
+  const tree = useAppSelector(state => state.fileTree.tree);
   const isCreating = useAppSelector(
     state => state.fileTree.isCreatingNewFolder
   );
 
-  const children = folder.children || [];
-  const validChildren = children.filter(Boolean);
+  const nodeById = useMemo(() => {
+    const map = new Map<string, Children>();
+    for (const node of tree.nodes) {
+      map.set(node.id, node);
+    }
+    return map;
+  }, [tree.nodes]);
+
+  const childIds = Array.isArray(folder.children) ? folder.children : [];
+  const validChildren = childIds
+    .map(id => nodeById.get(id))
+    .filter((node): node is Children => Boolean(node));
   const shouldShowCreateInput = isCreating && level === 0;
   const currentParentId =
     folder.id === 'root' || folder.id.startsWith('bundle-') ? null : folder.id;

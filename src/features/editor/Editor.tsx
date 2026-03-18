@@ -74,7 +74,7 @@ const PDFViewer = () => {
     hasPreviousFiles,
     hasNextFiles,
   } = useInfinitePdfFiles({
-    treeChildren: tree.children,
+    tree,
     selectedFile,
     fileSelectionVersion,
     containerRef,

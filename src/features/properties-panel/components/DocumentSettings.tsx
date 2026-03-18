@@ -2,7 +2,6 @@ import { Calendar, FileCog, FileText, HardDrive } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import axiosInstance from '@/api/axiosInstance';
-import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
 
 function DocumentSettings() {
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
@@ -15,23 +14,9 @@ function DocumentSettings() {
 
   const currentFile = useMemo(() => {
     if (!selectedFile) return null;
-
-    const findFileById = (
-      nodes: Children[],
-      id: string
-    ): Children | null => {
-      for (const node of nodes) {
-        if (node.id === id) return node;
-        if (node.type === 'folder' && node.children) {
-          const found = findFileById(node.children, id);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    return findFileById(tree.children, selectedFile);
-  }, [selectedFile, tree.children]);
+    const node = tree.nodes.find(item => item.id === selectedFile);
+    return node?.type === 'file' ? node : null;
+  }, [selectedFile, tree.nodes]);
 
   /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     Get the size of the document

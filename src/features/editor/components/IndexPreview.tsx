@@ -64,11 +64,14 @@ const truncateLabel = (value: string): string =>
     ? value
     : `${value.slice(0, MAX_NAME_LENGTH - 3)}…`;
 
-const hasAnyFiles = (nodes: Children[]): boolean => {
-  for (const node of nodes) {
+const hasAnyFiles = (rootIds: string[], nodeById: Map<string, Children>): boolean => {
+  for (const id of rootIds) {
+    const node = nodeById.get(id);
+    if (!node) continue;
     if (node.type === 'file') return true;
-    if (node.type === 'folder' && node.children && hasAnyFiles(node.children))
-      return true;
+    if (node.type === 'folder' && Array.isArray(node.children)) {
+      if (hasAnyFiles(node.children, nodeById)) return true;
+    }
   }
   return false;
 };
@@ -76,7 +79,8 @@ const hasAnyFiles = (nodes: Children[]): boolean => {
 // ─── Index-entry builder (same logic as before, unchanged) ────────────────────
 
 const buildIndexEntries = (
-  nodes: Children[],
+  rootIds: string[],
+  nodeById: Map<string, Children>,
   pageCounts: Record<string, number>,
   startPage: number
 ): IndexEntry[] => {
@@ -84,8 +88,11 @@ const buildIndexEntries = (
   const indexCounter: number[] = [];
   let currentPage: number | null = startPage;
 
-  const walk = (items: Children[], level: number) => {
-    for (const item of items) {
+  const walk = (ids: string[], level: number) => {
+    for (const id of ids) {
+      const item = nodeById.get(id);
+      if (!item) continue;
+
       indexCounter[level] = (indexCounter[level] ?? 0) + 1;
       indexCounter.length = level + 1;
 
@@ -99,7 +106,9 @@ const buildIndexEntries = (
           level,
           indexNumber,
         });
-        if (item.children?.length) walk(item.children, level + 1);
+        if (Array.isArray(item.children) && item.children.length > 0) {
+          walk(item.children, level + 1);
+        }
         continue;
       }
 
@@ -129,7 +138,7 @@ const buildIndexEntries = (
     }
   };
 
-  walk(nodes, 0);
+  walk(rootIds, 0);
   return entries;
 };
 
@@ -186,18 +195,25 @@ const paginateEntries = (entries: IndexEntry[]): IndexEntry[][] => {
  * Mirrors paginateEntries but works on raw nodes so we can call it
  * before page-ranges are computed.
  */
-const calculateIndexPageCount = (nodes: Children[]): number => {
-  if (!hasAnyFiles(nodes)) return 0;
+const calculateIndexPageCount = (
+  rootIds: string[],
+  nodeById: Map<string, Children>
+): number => {
+  if (!hasAnyFiles(rootIds, nodeById)) return 0;
 
   // Build placeholder entries (we only care about types, not page ranges)
   const placeholders: Array<{ type: 'folder' | 'file' }> = [];
-  const walk = (items: Children[]) => {
-    for (const item of items) {
+  const walk = (ids: string[]) => {
+    for (const id of ids) {
+      const item = nodeById.get(id);
+      if (!item) continue;
       placeholders.push({ type: item.type === 'folder' ? 'folder' : 'file' });
-      if (item.type === 'folder' && item.children?.length) walk(item.children);
+      if (item.type === 'folder' && Array.isArray(item.children) && item.children.length > 0) {
+        walk(item.children);
+      }
     }
   };
-  walk(nodes);
+  walk(rootIds);
 
   let pages = 1;
   let usedMm = 0;
@@ -345,13 +361,26 @@ const IndexPreview = () => {
   );
   const scale = useAppSelector(state => state.editor.scale);
 
+  const nodeById = useMemo(() => {
+    const map = new Map<string, Children>();
+    for (const node of tree.nodes) {
+      map.set(node.id, node);
+    }
+    return map;
+  }, [tree.nodes]);
+
+  const rootIds = tree.children;
+
   // ── 1. Do we have any files at all?
-  const hasFiles = useMemo(() => hasAnyFiles(tree.children), [tree.children]);
+  const hasFiles = useMemo(
+    () => hasAnyFiles(rootIds, nodeById),
+    [nodeById, rootIds]
+  );
 
   // ── 2. How many pages will the index occupy?
   const indexPageCount = useMemo(
-    () => (hasFiles ? calculateIndexPageCount(tree.children) : 0),
-    [tree.children, hasFiles]
+    () => (hasFiles ? calculateIndexPageCount(rootIds, nodeById) : 0),
+    [hasFiles, nodeById, rootIds]
   );
 
   // ── 3. Build flat entry list (with page ranges)
@@ -365,8 +394,8 @@ const IndexPreview = () => {
 
     // Content starts after the index pages (index pages are pages 1…N)
     const contentStartPage = Math.max(1, indexPageCount + 1);
-    return buildIndexEntries(tree.children, pageCounts, contentStartPage);
-  }, [documentInfo, hasFiles, indexPageCount, tree.children]);
+    return buildIndexEntries(rootIds, nodeById, pageCounts, contentStartPage);
+  }, [documentInfo, hasFiles, indexPageCount, nodeById, rootIds]);
 
   // ── 4. Split entries across A4 pages
   const pages = useMemo(() => paginateEntries(entries), [entries]);

@@ -1,5 +1,5 @@
 import { PDFDocument, rgb } from 'pdf-lib';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppSelector } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
@@ -30,6 +30,31 @@ const ExportPdfButton = ({
     state => state.propertiesPanel.headersFooter
   );
 
+  const allFiles = useMemo(() => {
+    const nodeById = new Map<string, any>();
+    for (const node of tree.nodes) {
+      nodeById.set(node.id, node);
+    }
+
+    const files: any[] = [];
+    const walk = (ids: string[]) => {
+      for (const id of ids) {
+        const node = nodeById.get(id);
+        if (!node) continue;
+        if (node.type === 'file') {
+          files.push(node);
+          continue;
+        }
+        if (node.type === 'folder' && Array.isArray(node.children)) {
+          walk(node.children);
+        }
+      }
+    };
+
+    walk(tree.children);
+    return files;
+  }, [tree.children, tree.nodes]);
+
   const handleExport = async () => {
     try {
       setIsExporting(true);
@@ -37,8 +62,8 @@ const ExportPdfButton = ({
 
       // Get files to export
       const filesToExport = fileId
-        ? tree.children.filter(f => f.id === fileId && f.url)
-        : tree.children.filter(f => f.url);
+        ? allFiles.filter(f => f.id === fileId && f.url)
+        : allFiles.filter(f => f.url);
 
       if (filesToExport.length === 0) {
         throw new Error('No files to export');
@@ -81,7 +106,7 @@ const ExportPdfButton = ({
   return (
     <div>
       <Button
-        disabled={isExporting || tree.children.filter(f => f.url).length === 0}
+        disabled={isExporting || allFiles.filter(f => f.url).length === 0}
         onClick={handleExport}
       >
         {isExporting ? (
@@ -111,7 +136,7 @@ const ExportPdfButton = ({
 
       {error && <p className="mt-2 text-red-600 text-sm">Error: {error}</p>}
 
-      {tree.children.filter(f => f.url).length === 0 && (
+      {allFiles.filter(f => f.url).length === 0 && (
         <p className="mt-2 text-gray-500 text-sm">No files to export</p>
       )}
     </div>

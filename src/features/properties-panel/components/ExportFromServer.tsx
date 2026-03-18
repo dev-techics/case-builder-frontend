@@ -9,20 +9,36 @@ import CoverPage from '../../cover-page';
 import { setBundleId } from '../../cover-page/redux/coverPageSlice';
 
 /**
- * Recursively collects all PDF files from the tree structure
+ * Recursively collects all file nodes from the flat tree structure
  */
-const collectAllFiles = (children: Children[]): Children[] => {
-  const files: Children[] = [];
-
-  for (const child of children) {
-    if (child.type === 'file' && child.url) {
-      files.push(child);
-    } else if (child.type === 'folder' && child.children) {
-      const nestedFiles = collectAllFiles(child.children);
-      files.push(...nestedFiles);
-    }
+const collectAllFiles = (tree: {
+  children: string[];
+  nodes: Children[];
+}): Children[] => {
+  const nodeById = new Map<string, Children>();
+  for (const node of tree.nodes) {
+    nodeById.set(node.id, node);
   }
 
+  const files: Children[] = [];
+
+  const walk = (ids: string[]) => {
+    for (const id of ids) {
+      const node = nodeById.get(id);
+      if (!node) continue;
+
+      if (node.type === 'file' && node.url) {
+        files.push(node);
+        continue;
+      }
+
+      if (node.type === 'folder' && Array.isArray(node.children)) {
+        walk(node.children);
+      }
+    }
+  };
+
+  walk(tree.children);
   return files;
 };
 
@@ -53,7 +69,7 @@ function Exports() {
   const [includeBackCover, setIncludeBackCover] = useState(true);
 
   // Recursively collect all PDF files from the entire tree
-  const pdfFiles = collectAllFiles(tree.children);
+  const pdfFiles = collectAllFiles(tree);
   const hasFiles = pdfFiles.length > 0;
 
   // Get bundle ID from tree
