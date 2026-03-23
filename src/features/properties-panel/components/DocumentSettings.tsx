@@ -14,7 +14,7 @@ function DocumentSettings() {
 
   const currentFile = useMemo(() => {
     if (!selectedFile) return null;
-    const node = tree.nodes.find(item => item.id === selectedFile);
+    const node = tree.nodes[selectedFile];
     return node?.type === 'file' ? node : null;
   }, [selectedFile, tree.nodes]);
 

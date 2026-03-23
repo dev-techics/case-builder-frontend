@@ -31,29 +31,31 @@ const ExportPdfButton = ({
   );
 
   const allFiles = useMemo(() => {
-    const nodeById = new Map<string, any>();
-    for (const node of tree.nodes) {
-      nodeById.set(node.id, node);
-    }
-
     const files: any[] = [];
-    const walk = (ids: string[]) => {
+    const visited = new Set<string>();
+
+    const walk = (ids: ReadonlyArray<string>) => {
       for (const id of ids) {
-        const node = nodeById.get(id);
+        if (visited.has(id)) continue;
+        visited.add(id);
+
+        const node = tree.nodes[id];
         if (!node) continue;
+
         if (node.type === 'file') {
           files.push(node);
           continue;
         }
-        if (node.type === 'folder' && Array.isArray(node.children)) {
-          walk(node.children);
+
+        if (node.type === 'folder') {
+          walk(tree.children[node.id] ?? []);
         }
       }
     };
 
-    walk(tree.children);
+    walk(tree.rootIds);
     return files;
-  }, [tree.children, tree.nodes]);
+  }, [tree.children, tree.nodes, tree.rootIds]);
 
   const handleExport = async () => {
     try {

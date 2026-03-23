@@ -1,5 +1,5 @@
 // src/api/axiosInstance.ts
-import type { Tree } from '@/features/file-explorer/redux/fileTreeSlice';
+import type { ServerTree } from '@/features/file-explorer/types/fileTree';
 import axios from 'axios';
 import camelcaseKeys from 'camelcase-keys';
 
@@ -58,7 +58,7 @@ export class DocumentApiService {
   /**
    * Fetch the file tree for a bundle
    */
-  static async fetchTree(bundleId: string): Promise<Tree> {
+  static async fetchTree(bundleId: string): Promise<ServerTree> {
     const response = await axiosInstance.get(
       `/api/bundles/${bundleId}/documents`
     );

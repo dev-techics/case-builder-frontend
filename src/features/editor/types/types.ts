@@ -1,5 +1,4 @@
-import type { Children } from '../../file-explorer/redux/fileTreeSlice';
-import type { FileNode } from '../../file-explorer/types/types';
+import type { FileTreeFileNode } from '../../file-explorer/types/fileTree';
 import type { HighlightColor } from '../../toolbar/types/types';
 
 export type PdfDocumentInfo = {
@@ -13,7 +12,7 @@ export type PdfError = {
 };
 
 export type DocumentComponentProps = {
-  file: FileNode;
+  file: FileTreeFileNode;
 };
 
 export type UseModifiedPDFsResult = {
@@ -29,7 +28,7 @@ export type UseModifiedPDFsResult = {
 };
 
 export type TextHighlightableDocumentProps = {
-  file: Children;
+  file: FileTreeFileNode;
   scale?: number;
   rotation?: number;
   onPageMetrics?: (metrics: { fileId: string; width: number }) => void;

@@ -8,11 +8,8 @@ import {
   type RefObject,
 } from 'react';
 import { useAppDispatch } from '@/app/hooks';
-import {
-  selectFile,
-  type Tree,
-  type FileTreeNode,
-} from '@/features/file-explorer/redux/fileTreeSlice';
+import { selectFile } from '@/features/file-explorer/redux/fileTreeSlice';
+import type { FileTree, FileTreeNode } from '@/features/file-explorer/types/fileTree';
 
 const DEFAULT_SCROLL_THRESHOLD_PX = 240;
 const DEFAULT_LOAD_COOLDOWN_MS = 400;
@@ -22,7 +19,7 @@ const SUPPRESS_AUTOLOAD_MS = 300;
 type VisibleRange = { start: number; end: number };
 
 type UseInfinitePdfFilesOptions = {
-  tree: Tree;
+  tree: FileTree;
   selectedFile: string | null;
   fileSelectionVersion: number;
   containerRef: RefObject<HTMLDivElement | null>;
@@ -31,21 +28,18 @@ type UseInfinitePdfFilesOptions = {
   scrollTopShowThreshold?: number;
 };
 
-const flattenFiles = (tree: Tree): FileTreeNode[] => {
-  const nodeById = new Map<string, FileTreeNode>();
-  for (const node of tree.nodes) {
-    nodeById.set(node.id, node);
-  }
+type FileNode = Extract<FileTreeNode, { type: 'file' }>;
 
+const flattenFiles = (tree: FileTree): FileNode[] => {
   const visited = new Set<string>();
-  const files: FileTreeNode[] = [];
+  const files: FileNode[] = [];
 
-  const walk = (ids: string[]) => {
+  const walk = (ids: ReadonlyArray<string>) => {
     for (const id of ids) {
       if (visited.has(id)) continue;
       visited.add(id);
 
-      const node = nodeById.get(id);
+      const node = tree.nodes[id];
       if (!node) continue;
 
       if (node.type === 'file') {
@@ -53,19 +47,12 @@ const flattenFiles = (tree: Tree): FileTreeNode[] => {
         continue;
       }
 
-      if (Array.isArray(node.children) && node.children.length > 0) {
-        walk(node.children);
-      }
+      const childIds = tree.children[node.id] ?? [];
+      if (childIds.length > 0) walk(childIds);
     }
   };
 
-  const rootIds = Array.isArray(tree.children)
-    ? tree.children
-    : tree.nodes
-        .filter(n => n.parent === null || n.parent === tree.id)
-        .map(n => n.id);
-
-  walk(rootIds);
+  walk(tree.rootIds);
   return files;
 };
 

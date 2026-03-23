@@ -1,9 +1,7 @@
 import { useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  selectFile,
-  type Children,
-} from '@/features/file-explorer/redux/fileTreeSlice';
+import { selectFile } from '@/features/file-explorer/redux/fileTreeSlice';
+import type { FileTreeNode } from '@/features/file-explorer/types/fileTree';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,15 +62,23 @@ const truncateLabel = (value: string): string =>
     ? value
     : `${value.slice(0, MAX_NAME_LENGTH - 3)}…`;
 
-const hasAnyFiles = (rootIds: string[], nodeById: Map<string, Children>): boolean => {
+const hasAnyFiles = (
+  rootIds: ReadonlyArray<string>,
+  nodes: Record<string, FileTreeNode>,
+  childrenByParentId: Record<string, string[]>
+): boolean => {
   for (const id of rootIds) {
-    const node = nodeById.get(id);
+    const node = nodes[id];
     if (!node) continue;
+
     if (node.type === 'file') return true;
-    if (node.type === 'folder' && Array.isArray(node.children)) {
-      if (hasAnyFiles(node.children, nodeById)) return true;
+
+    const childIds = childrenByParentId[node.id] ?? [];
+    if (childIds.length > 0 && hasAnyFiles(childIds, nodes, childrenByParentId)) {
+      return true;
     }
   }
+
   return false;
 };
 
@@ -80,7 +86,8 @@ const hasAnyFiles = (rootIds: string[], nodeById: Map<string, Children>): boolea
 
 const buildIndexEntries = (
   rootIds: string[],
-  nodeById: Map<string, Children>,
+  nodes: Record<string, FileTreeNode>,
+  childrenByParentId: Record<string, string[]>,
   pageCounts: Record<string, number>,
   startPage: number
 ): IndexEntry[] => {
@@ -90,7 +97,7 @@ const buildIndexEntries = (
 
   const walk = (ids: string[], level: number) => {
     for (const id of ids) {
-      const item = nodeById.get(id);
+      const item = nodes[id];
       if (!item) continue;
 
       indexCounter[level] = (indexCounter[level] ?? 0) + 1;
@@ -106,9 +113,8 @@ const buildIndexEntries = (
           level,
           indexNumber,
         });
-        if (Array.isArray(item.children) && item.children.length > 0) {
-          walk(item.children, level + 1);
-        }
+        const childIds = childrenByParentId[item.id] ?? [];
+        if (childIds.length > 0) walk(childIds, level + 1);
         continue;
       }
 
@@ -197,19 +203,21 @@ const paginateEntries = (entries: IndexEntry[]): IndexEntry[][] => {
  */
 const calculateIndexPageCount = (
   rootIds: string[],
-  nodeById: Map<string, Children>
+  nodes: Record<string, FileTreeNode>,
+  childrenByParentId: Record<string, string[]>
 ): number => {
-  if (!hasAnyFiles(rootIds, nodeById)) return 0;
+  if (!hasAnyFiles(rootIds, nodes, childrenByParentId)) return 0;
 
   // Build placeholder entries (we only care about types, not page ranges)
   const placeholders: Array<{ type: 'folder' | 'file' }> = [];
   const walk = (ids: string[]) => {
     for (const id of ids) {
-      const item = nodeById.get(id);
+      const item = nodes[id];
       if (!item) continue;
       placeholders.push({ type: item.type === 'folder' ? 'folder' : 'file' });
-      if (item.type === 'folder' && Array.isArray(item.children) && item.children.length > 0) {
-        walk(item.children);
+      if (item.type === 'folder') {
+        const childIds = childrenByParentId[item.id] ?? [];
+        if (childIds.length > 0) walk(childIds);
       }
     }
   };
@@ -361,26 +369,20 @@ const IndexPreview = () => {
   );
   const scale = useAppSelector(state => state.editor.scale);
 
-  const nodeById = useMemo(() => {
-    const map = new Map<string, Children>();
-    for (const node of tree.nodes) {
-      map.set(node.id, node);
-    }
-    return map;
-  }, [tree.nodes]);
-
-  const rootIds = tree.children;
+  const nodes = tree.nodes;
+  const childrenByParentId = tree.children;
+  const rootIds = tree.rootIds;
 
   // ── 1. Do we have any files at all?
   const hasFiles = useMemo(
-    () => hasAnyFiles(rootIds, nodeById),
-    [nodeById, rootIds]
+    () => hasAnyFiles(rootIds, nodes, childrenByParentId),
+    [childrenByParentId, nodes, rootIds]
   );
 
   // ── 2. How many pages will the index occupy?
   const indexPageCount = useMemo(
-    () => (hasFiles ? calculateIndexPageCount(rootIds, nodeById) : 0),
-    [hasFiles, nodeById, rootIds]
+    () => (hasFiles ? calculateIndexPageCount(rootIds, nodes, childrenByParentId) : 0),
+    [childrenByParentId, hasFiles, nodes, rootIds]
   );
 
   // ── 3. Build flat entry list (with page ranges)
@@ -394,8 +396,14 @@ const IndexPreview = () => {
 
     // Content starts after the index pages (index pages are pages 1…N)
     const contentStartPage = Math.max(1, indexPageCount + 1);
-    return buildIndexEntries(rootIds, nodeById, pageCounts, contentStartPage);
-  }, [documentInfo, hasFiles, indexPageCount, nodeById, rootIds]);
+    return buildIndexEntries(
+      rootIds,
+      nodes,
+      childrenByParentId,
+      pageCounts,
+      contentStartPage
+    );
+  }, [childrenByParentId, documentInfo, hasFiles, indexPageCount, nodes, rootIds]);
 
   // ── 4. Split entries across A4 pages
   const pages = useMemo(() => paginateEntries(entries), [entries]);

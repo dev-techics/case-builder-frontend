@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle, Download, FileStack } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
-import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
+import type { FileTree, FileTreeNode } from '@/features/file-explorer/types/fileTree';
 import axiosInstance from '@/api/axiosInstance';
 import CoverPage from '../../cover-page';
 import { setBundleId } from '../../cover-page/redux/coverPageSlice';
@@ -11,20 +11,18 @@ import { setBundleId } from '../../cover-page/redux/coverPageSlice';
 /**
  * Recursively collects all file nodes from the flat tree structure
  */
-const collectAllFiles = (tree: {
-  children: string[];
-  nodes: Children[];
-}): Children[] => {
-  const nodeById = new Map<string, Children>();
-  for (const node of tree.nodes) {
-    nodeById.set(node.id, node);
-  }
+const collectAllFiles = (
+  tree: FileTree
+): Array<Extract<FileTreeNode, { type: 'file' }>> => {
+  const files: Array<Extract<FileTreeNode, { type: 'file' }>> = [];
+  const visited = new Set<string>();
 
-  const files: Children[] = [];
-
-  const walk = (ids: string[]) => {
+  const walk = (ids: ReadonlyArray<string>) => {
     for (const id of ids) {
-      const node = nodeById.get(id);
+      if (visited.has(id)) continue;
+      visited.add(id);
+
+      const node = tree.nodes[id];
       if (!node) continue;
 
       if (node.type === 'file' && node.url) {
@@ -32,13 +30,13 @@ const collectAllFiles = (tree: {
         continue;
       }
 
-      if (node.type === 'folder' && Array.isArray(node.children)) {
-        walk(node.children);
+      if (node.type === 'folder') {
+        walk(tree.children[node.id] ?? []);
       }
     }
   };
 
-  walk(tree.children);
+  walk(tree.rootIds);
   return files;
 };
 

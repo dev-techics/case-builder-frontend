@@ -2,7 +2,7 @@
  * Single File Item
  *
  * Responsibilities:
- * Display a single file in the left sidebar with action menu for edit and delete functionality.
+ * - Display a single file in the left sidebar with action menu for rename and delete
  *
  * Author: Anik Dey
  */
@@ -11,15 +11,16 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import ActionMenu from '../FileActionMenu';
-import type { Children } from '@/features/file-explorer/redux/fileTreeSlice';
-import { File02Icon } from '@hugeicons/core-free-icons';
+
 import { HugeiconsIcon } from '@hugeicons/react';
+import { File02Icon } from '@hugeicons/core-free-icons';
+
+import { useAppSelector } from '@/app/hooks';
+import ActionMenu from '../FileActionMenu';
 import { useRenameDocumentMutation } from '../../api';
 
 type SortableFileItemProps = {
-  file: Children;
-  level: number;
+  fileId: string;
   isSelected: boolean;
   shouldScrollIntoView: boolean;
   onSelect: (modifiers?: {
@@ -30,7 +31,7 @@ type SortableFileItemProps = {
 };
 
 const SortableFileItem: React.FC<SortableFileItemProps> = ({
-  file,
+  fileId,
   isSelected,
   shouldScrollIntoView,
   onSelect,
@@ -39,8 +40,16 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [renameDocument] = useRenameDocumentMutation();
 
+  const file = useAppSelector(state => state.fileTree.tree.nodes[fileId] ?? null);
+
   const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState(file.name);
+  const [renameValue, setRenameValue] = useState(file?.name ?? '');
+
+  useEffect(() => {
+    if (!isRenaming && file) {
+      setRenameValue(file.name);
+    }
+  }, [file?.name, file, isRenaming]);
 
   const {
     attributes,
@@ -49,7 +58,7 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: file.id });
+  } = useSortable({ id: fileId });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -57,20 +66,22 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
     opacity: isDragging ? 0 : 1,
   };
 
-  // Scroll into view when this file should be highlighted
   useEffect(() => {
     if (shouldScrollIntoView && fileRef.current) {
       fileRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [shouldScrollIntoView]);
 
-  // Focus input when entering rename mode
   useEffect(() => {
     if (isRenaming && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
   }, [isRenaming]);
+
+  if (!file || file.type !== 'file') {
+    return null;
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -167,6 +178,7 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
           icon={File02Icon}
           className="mr-2 h-4 w-4 flex-shrink-0 text-gray-800"
         />
+
         {isRenaming ? (
           <input
             ref={inputRef}
@@ -179,15 +191,12 @@ const SortableFileItem: React.FC<SortableFileItemProps> = ({
             className="select-text truncate text-gray-800 text-sm bg-white border border-blue-500 rounded px-1 py-0.5 outline-none flex-1 min-w-0"
           />
         ) : (
-          <span
-            className="select-none truncate text-gray-800 text-sm"
-            title={file.name}
-          >
+          <span className="select-none truncate text-gray-800 text-sm" title={file.name}>
             {file.name}
           </span>
         )}
       </div>
-      {/* Rename and delete menu */}
+
       <ActionMenu file={file} onRenameClick={handleRenameClick} />
     </div>
   );

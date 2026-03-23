@@ -18,9 +18,7 @@ const CreateNewFolderInput = ({ parentId = null }: CreateNewFolderProps) => {
   const isCreating = useAppSelector(
     state => state.fileTree.isCreatingNewFolder
   );
-  const parentNode = parentId
-    ? tree.nodes.find(node => node.id === parentId) ?? null
-    : null;
+  const parentNode = parentId ? tree.nodes[parentId] ?? null : null;
   const resolvedParentId = parentNode?.type === 'folder' ? parentNode.id : null;
   useEffect(() => {
     if (isCreating && inputRef.current) {

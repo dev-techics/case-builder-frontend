@@ -1,5 +1,4 @@
-import type { FileNode } from '../types/types';
-import type { FileTreeNode, Tree } from '../redux/fileTreeSlice';
+import type { ServerFileTreeNode, ServerTree } from '../types/fileTree';
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
@@ -22,7 +21,7 @@ export const fileTreeApi = createApi({
     /*--------------------------
         Get file tree
     ----------------------------*/
-    getTree: build.query<Tree, string | number>({
+    getTree: build.query<ServerTree, string | number>({
       query: bundleId => `/api/bundles/${bundleId}/documents`,
     }),
 
@@ -82,7 +81,7 @@ export const fileTreeApi = createApi({
         Create folder
     ----------------------------*/
     createFolder: build.mutation<
-      FileTreeNode,
+      ServerFileTreeNode,
       { bundleId: string; name: string; parentId?: string | null }
     >({
       query: ({ bundleId, name, parentId }) => ({
@@ -100,7 +99,16 @@ export const fileTreeApi = createApi({
         Upload files mutation
     ----------------------------*/
     uploadFiles: build.mutation<
-      { documents: FileNode[]; conversionStatuses?: unknown[] } | string,
+      {
+        documents: Array<{
+          id: string | number;
+          parentId: string | null;
+          name: string;
+          type: string;
+          url: string;
+        }>;
+        conversionStatuses?: unknown[];
+      } | string,
       {
         bundleId: string;
         formData: FormData;
@@ -125,7 +133,7 @@ export const fileTreeApi = createApi({
         Reorder documents
     ----------------------------*/
     reorderDocuments: build.mutation<
-      { bundleId: string; tree: Tree },
+      { bundleId: string; tree: ServerTree },
       { bundleId: string; items: Array<{ id: string; order: number }> }
     >({
       async queryFn({ bundleId, items }, _api, _extraOptions, baseQuery) {
@@ -147,7 +155,7 @@ export const fileTreeApi = createApi({
           return { error: treeResult.error as FetchBaseQueryError };
         }
 
-        return { data: { bundleId, tree: treeResult.data as Tree } };
+        return { data: { bundleId, tree: treeResult.data as ServerTree } };
       },
     }),
 
@@ -155,7 +163,7 @@ export const fileTreeApi = createApi({
         Move document
     ----------------------------*/
     moveDocument: build.mutation<
-      { tree: Tree },
+      { tree: ServerTree },
       { bundleId: string; documentId: string; newParentId: string | null }
     >({
       async queryFn(
@@ -182,7 +190,7 @@ export const fileTreeApi = createApi({
           return { error: treeResult.error as FetchBaseQueryError };
         }
 
-        return { data: { tree: treeResult.data as Tree } };
+        return { data: { tree: treeResult.data as ServerTree } };
       },
     }),
 
@@ -190,7 +198,7 @@ export const fileTreeApi = createApi({
         Move documents batch
     ----------------------------*/
     moveDocumentsBatch: build.mutation<
-      { tree: Tree; skipApplyTree?: boolean },
+      { tree: ServerTree; skipApplyTree?: boolean },
       {
         bundleId: string;
         documentIds: string[];
@@ -225,7 +233,7 @@ export const fileTreeApi = createApi({
         }
 
         return {
-          data: { tree: treeResult.data as Tree, skipApplyTree },
+          data: { tree: treeResult.data as ServerTree, skipApplyTree },
         };
       },
     }),

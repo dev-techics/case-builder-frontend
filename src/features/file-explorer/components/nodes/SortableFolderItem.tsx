@@ -1,63 +1,75 @@
 /**
  * Sortable Folder Item Component
  */
+import { useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
+
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import {
-  toggleFolder,
-  type Children,
-} from '@/features/file-explorer/redux/fileTreeSlice';
+import { toggleFolder } from '@/features/file-explorer/redux/fileTreeSlice';
+import type { FileTreeDropPreview, FileTreeNode } from '@/features/file-explorer/types/fileTree';
+
 import ActionMenu from '../FileActionMenu';
-import FileItemWrapper from '../FileItemWrapper';
+import TreeChildren from '../TreeChildren';
+import ImportDocuments from '../ImportDocuments';
+
 import { Folder01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import ImportDocuments from '../ImportDocuments';
-import { useDroppable } from '@dnd-kit/core';
 import { useRenameDocumentMutation } from '../../api';
 
+const EMPTY_IDS: ReadonlyArray<string> = Object.freeze([]);
+
 type SortableFolderItemProps = {
-  folder: Children;
+  folderId: string;
   onSelect: () => void;
-  level: number;
   isDropTarget?: boolean;
   activeId: string | null;
   overId?: string | null;
-  activeItem: Children | null;
+  activeItem: FileTreeNode | null;
   selectedFileIds: string[];
   onFileSelect: (
     fileId: string,
     modifiers?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }
   ) => void;
   onFolderSelect: (folderId: string) => void;
-  dropPreview: { parentId: string | null; index: number } | null;
+  dropPreview: FileTreeDropPreview | null;
 };
 
 const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
-  folder,
-  level,
+  folderId,
   onSelect,
+  isDropTarget,
   activeId,
   overId,
   activeItem,
   selectedFileIds,
   onFileSelect,
   onFolderSelect,
+  dropPreview,
 }) => {
   const folderRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useAppDispatch();
   const [renameDocument] = useRenameDocumentMutation();
 
-  const { expandedFolders } = useAppSelector(state => state.fileTree);
+  const folder = useAppSelector(state => state.fileTree.tree.nodes[folderId] ?? null);
+  const isExpanded = useAppSelector(state => Boolean(state.fileTree.expanded[folderId]));
+  const childIds = useAppSelector(
+    state => state.fileTree.tree.children[folderId] ?? (EMPTY_IDS as string[])
+  );
 
   const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState(folder.name);
+  const [renameValue, setRenameValue] = useState(folder?.name ?? '');
 
-  const isExpanded = expandedFolders.includes(folder.id);
+  useEffect(() => {
+    if (!isRenaming && folder) {
+      setRenameValue(folder.name);
+    }
+  }, [folder?.name, folder, isRenaming]);
+
   const isFileDragActive = activeItem?.type === 'file';
 
   const {
@@ -68,32 +80,21 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     transition,
     isDragging,
   } = useSortable({
-    id: folder.id,
-    data: {
-      type: 'folder',
-      folder: folder,
-    },
+    id: folderId,
+    data: { type: 'folder', folderId },
     disabled: isFileDragActive,
   });
 
   const { setNodeRef: setDropRef, isOver: isOverDroppable } = useDroppable({
-    id: folder.id,
-    data: {
-      type: 'folder',
-      accepts: ['file', 'folder'],
-    },
+    id: folderId,
+    data: { type: 'folder', accepts: ['file', 'folder'] },
   });
 
-  const contentDropId = `${folder.id}::content`;
-  const { setNodeRef: setContentDropRef, isOver: isOverContent } = useDroppable(
-    {
-      id: contentDropId,
-      data: {
-        type: 'folder-content',
-        folderId: folder.id,
-      },
-    }
-  );
+  const contentDropId = `${folderId}::content`;
+  const { setNodeRef: setContentDropRef, isOver: isOverContent } = useDroppable({
+    id: contentDropId,
+    data: { type: 'folder-content', folderId },
+  });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -108,9 +109,13 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     }
   }, [isRenaming]);
 
+  if (!folder || folder.type !== 'folder') {
+    return null;
+  }
+
   const handleFolderClick = () => {
     if (!isRenaming) {
-      dispatch(toggleFolder(folder.id));
+      dispatch(toggleFolder(folderId));
     }
     onSelect();
   };
@@ -138,7 +143,7 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
   const handleRenameSubmit = () => {
     const trimmedValue = renameValue.trim();
     if (trimmedValue && trimmedValue !== folder.name) {
-      renameDocument({ documentId: folder.id, newName: trimmedValue });
+      renameDocument({ documentId: folderId, newName: trimmedValue });
     }
     setIsRenaming(false);
   };
@@ -167,49 +172,42 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
     e.stopPropagation();
   };
 
-  // Show drop indicator when hovering
   const showDropIndicator =
-    (isOverDroppable || overId === `${folder.id}::content`) &&
-    activeItem?.id !== folder.id &&
+    (Boolean(isDropTarget) || isOverDroppable || overId === contentDropId) &&
+    activeItem?.id !== folderId &&
     !isDragging;
-  const isInsideContentHover = overId === `${folder.id}::content`;
+
+  const isInsideContentHover = overId === contentDropId;
+  const isEmpty = childIds.length === 0;
 
   useEffect(() => {
     if (!activeId || isExpanded || !isOverDroppable) {
       return;
     }
 
-    const timeout = setTimeout(() => {
-      dispatch(toggleFolder(folder.id));
+    const timeout = window.setTimeout(() => {
+      dispatch(toggleFolder(folderId));
     }, 500);
 
-    return () => clearTimeout(timeout);
-  }, [activeId, dispatch, folder.id, isExpanded, isOverDroppable]);
-
-  const isEmpty = !folder.children || folder.children.length === 0;
+    return () => window.clearTimeout(timeout);
+  }, [activeId, dispatch, folderId, isExpanded, isOverDroppable]);
 
   return (
     <div
       ref={node => {
-        setNodeRef(node); // sortable
-        setDropRef(node); // droppable
+        setNodeRef(node);
+        setDropRef(node);
       }}
       style={style}
     >
-      {/* Folder Header */}
       <div
         ref={folderRef}
-        className={`
-          select-none flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left 
-          hover:bg-gray-200 transition-colors
-          
-        `}
+        className="select-none flex w-full cursor-pointer items-center justify-between px-2 py-1 text-left hover:bg-gray-200 transition-colors"
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
       >
         <div className="flex items-center truncate flex-1 min-w-0">
-          {/* Drag Handle */}
           <button
             {...attributes}
             {...listeners}
@@ -222,7 +220,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
             <GripVertical className="h-4 w-4 text-gray-500" />
           </button>
 
-          {/* Expand/Collapse Icon */}
           {isExpanded ? (
             <ChevronDown
               onClick={handleFolderClick}
@@ -235,7 +232,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
             />
           )}
 
-          {/* Folder Icon */}
           <HugeiconsIcon
             icon={Folder01Icon}
             className={`mr-2 h-4 w-4 flex-shrink-0 transition-colors ${
@@ -243,7 +239,6 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
             }`}
           />
 
-          {/* Folder Name or Rename Input */}
           {isRenaming ? (
             <input
               ref={inputRef}
@@ -265,25 +260,22 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
           )}
         </div>
 
-        {/* Import Documents inside a folder */}
         <div>
-          <ImportDocuments bundleId={folder.id} parentId={folder.id} />
+          <ImportDocuments bundleId={folderId} parentId={folderId} />
         </div>
 
-        {/* Action Menu */}
         <ActionMenu file={folder} onRenameClick={handleRenameClick} />
       </div>
 
-      {/* Fallback inside-drop indicator for collapsed/empty folders */}
       {isInsideContentHover && (!isExpanded || isEmpty) ? (
         <div className="px-4 py-1">
           <div className="h-1 rounded-full bg-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.35)]" />
         </div>
       ) : null}
 
-      {/* Nested Children */}
       {isExpanded && (
         <div style={{ paddingLeft: `${12}px` }}>
+          {/* Recursive children list (each folder renders its own sortable siblings). */}
           {isEmpty ? (
             <div
               ref={setContentDropRef}
@@ -291,29 +283,27 @@ const SortableFolderItem: React.FC<SortableFolderItemProps> = ({
                 isOverContent ? 'bg-blue-100 border-l-4 border-blue-500' : ''
               }`}
             >
-              <FileItemWrapper
-                folder={folder}
-                level={level}
+              <TreeChildren
+                parentId={folderId}
                 activeItem={activeItem}
                 overId={overId}
                 activeId={activeId}
                 selectedFileIds={selectedFileIds}
                 onFileSelect={onFileSelect}
                 onFolderSelect={onFolderSelect}
-                dropPreview={null}
+                dropPreview={dropPreview}
               />
             </div>
           ) : (
-            <FileItemWrapper
-              folder={folder}
-              level={level}
+            <TreeChildren
+              parentId={folderId}
               activeItem={activeItem}
               overId={overId}
               activeId={activeId}
               selectedFileIds={selectedFileIds}
               onFileSelect={onFileSelect}
               onFolderSelect={onFolderSelect}
-              dropPreview={null}
+              dropPreview={dropPreview}
             />
           )}
         </div>

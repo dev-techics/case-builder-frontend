@@ -1,14 +1,20 @@
 import { useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../../app/hooks';
+import { useAppDispatch } from '../../app/hooks';
 import FilesTree from './components/FilesTree';
 import { useParams } from 'react-router-dom';
 import { loadHighlights, loadRedactions } from '../toolbar/redux';
+import { useGetTreeQuery } from './api';
 
 const FileTree: React.FC = () => {
-  const tree = useAppSelector(state => state.fileTree.tree);
-
   const dispatch = useAppDispatch();
   const { bundleId } = useParams<{ bundleId: string }>();
+
+  // Trigger loading the tree via RTK Query.
+  // The slice listens to `getTree` via matchers and normalizes the server response.
+  useGetTreeQuery(bundleId ?? '', {
+    skip: !bundleId,
+    refetchOnMountOrArgChange: true,
+  });
 
   useEffect(() => {
     if (!bundleId) return;
@@ -24,7 +30,7 @@ const FileTree: React.FC = () => {
         </h2>
       </div>
       <div className="py-1 overflow-y-auto">
-        <FilesTree tree={tree} level={0} />
+        <FilesTree level={0} />
       </div>
     </div>
   );

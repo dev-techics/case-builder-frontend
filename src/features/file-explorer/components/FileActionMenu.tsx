@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Children } from '../redux/fileTreeSlice';
+import type { FileTreeNode } from '../types/fileTree';
 import { useState } from 'react';
 import { Delete03Icon, Edit03Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -25,7 +25,7 @@ import DeleteAlertDialog from './DeleteAlertDialog';
 import { useDeleteDocumentMutation } from '../api';
 
 interface FileActionMenuProps {
-  file: Children;
+  file: FileTreeNode;
   onRenameClick: () => void;
 }
 
