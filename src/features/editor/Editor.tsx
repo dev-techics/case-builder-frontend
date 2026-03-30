@@ -13,18 +13,14 @@ import IndexPreview from './components/IndexPreview';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
 import LazyPDFRenderer from './components/LazyPDFRenderer';
-import {
-  setMaxScale,
-  setScale,
-  zoomIn,
-  zoomOut,
-} from './redux/editorSlice';
+import { setMaxScale, setScale, zoomIn, zoomOut } from './redux/editorSlice';
 import {
   useBundleMetadata,
   useFileRotations,
   useInfinitePdfFiles,
   usePdfSizing,
 } from '@/features/editor/hooks';
+import { resolveBundleId } from '@/lib/bundleId';
 
 const ROTATION_STEP_DEGREES = 90;
 
@@ -35,9 +31,11 @@ const PDFViewer = () => {
   const fileSelectionVersion = useAppSelector(
     state => state.fileTree.fileSelectionVersion
   );
-  const bundleId = useParams().bundleId;
-  const resolvedBundleId =
-    bundleId || (tree.id.startsWith('bundle-') ? tree.id.split('-')[1] : '');
+  const { bundleId: routeBundleId } = useParams<{ bundleId?: string }>();
+  const resolvedBundleId = resolveBundleId({
+    routeBundleId,
+    treeId: tree.id,
+  });
   const scale = useAppSelector(state => state.editor.scale);
   const maxScale = useAppSelector(state => state.editor.maxScale);
 
@@ -45,15 +43,19 @@ const PDFViewer = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Used to bust PDF stream cache on bundle change
-  const streamSessionKeyRef = useRef<number>(Date.now());
+  // Used to bust PDF stream cache when the active bundle changes.
+  const streamSessionKey = resolvedBundleId ?? tree.id;
 
   // Bundle-scoped side effects (metadata + comments)
-  useBundleMetadata({ bundleId, treeId: tree.id });
+  useBundleMetadata({
+    bundleId: resolvedBundleId ?? undefined,
+    treeId: tree.id,
+  });
 
   // Rotation state and mutation wiring
-  const { fileRotations, handleRotateFile, resetRotations } =
-    useFileRotations({ bundleId: resolvedBundleId });
+  const { fileRotations, handleRotateFile, resetRotations } = useFileRotations({
+    bundleId: resolvedBundleId ?? '',
+  });
 
   // Size calculations, max scale, and page metrics tracking
   const { contentStyle, computedMaxScale, handlePageMetrics, resetSizing } =
@@ -84,9 +86,8 @@ const PDFViewer = () => {
   useEffect(() => {
     resetSizing();
     resetRotations();
-    streamSessionKeyRef.current = Date.now();
     dispatch(setScale(1));
-  }, [bundleId, dispatch, resetRotations, resetSizing]);
+  }, [dispatch, resetRotations, resetSizing, resolvedBundleId]);
 
   useEffect(() => {
     if (!Number.isFinite(computedMaxScale)) {
@@ -115,9 +116,9 @@ const PDFViewer = () => {
     () =>
       visibleFiles.map(file => ({
         ...file,
-        url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKeyRef.current}`,
+        url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKey}`,
       })),
-    [visibleFiles]
+    [streamSessionKey, visibleFiles]
   );
 
   // Derived UI state
@@ -251,14 +252,14 @@ const PDFViewer = () => {
           {/* End of files indicator */}
           {visibleFiles.length === allFiles.length &&
             visibleFiles.length > 1 && (
-            <div className="flex items-center justify-center py-8">
-              <div className="rounded-full bg-gray-200 px-4 py-2">
-                <p className="text-gray-600 text-sm font-medium">
-                  All files loaded ({visibleFiles.length} files)
-                </p>
+              <div className="flex items-center justify-center py-8">
+                <div className="rounded-full bg-gray-200 px-4 py-2">
+                  <p className="text-gray-600 text-sm font-medium">
+                    All files loaded ({visibleFiles.length} files)
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
 

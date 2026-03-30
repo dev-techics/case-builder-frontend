@@ -11,7 +11,7 @@ import {
   useLazyGetTemplateQuery,
   useUpdateBundleMetadataMutation,
 } from '../api';
-import { buildDraftTemplate } from '../utils';
+import { buildDraftTemplate, isPersistedBundleId } from '../utils';
 type CoverPageSide = 'front' | 'back';
 
 export const useCoverPageHandlers = (type: CoverPageSide) => {
@@ -33,7 +33,7 @@ export const useCoverPageHandlers = (type: CoverPageSide) => {
         dispatch(setTemplate({ template }));
         setTemplateDialogOpen(false);
 
-        if (currentBundleId) {
+        if (isPersistedBundleId(currentBundleId)) {
           await updateBundleMetadata({
             bundleId: currentBundleId,
             metadata:
@@ -69,7 +69,7 @@ export const useCoverPageHandlers = (type: CoverPageSide) => {
   const handleRemoveTemplate = useCallback(async () => {
     dispatch(deSelectCoverPage(type));
 
-    if (!currentBundleId) {
+    if (!isPersistedBundleId(currentBundleId)) {
       return;
     }
 

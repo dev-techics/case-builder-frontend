@@ -3,13 +3,14 @@ import type {
   FileTreeNode,
   FileTreeNodeId,
   ServerFileTreeNode,
-  ServerTree,
 } from '../types/fileTree';
 
 const EMPTY_ARRAY: ReadonlyArray<string> = Object.freeze([]);
 
-export const arraysEqual = (a: ReadonlyArray<string>, b: ReadonlyArray<string>) =>
-  a.length === b.length && a.every((value, index) => value === b[index]);
+export const arraysEqual = (
+  a: ReadonlyArray<string>,
+  b: ReadonlyArray<string>
+) => a.length === b.length && a.every((value, index) => value === b[index]);
 
 const toId = (value: string | number): string => String(value);
 
@@ -17,7 +18,7 @@ export const getChildIds = (
   tree: FileTree,
   parentId: FileTreeNodeId | null
 ): ReadonlyArray<FileTreeNodeId> =>
-  parentId === null ? tree.rootIds : tree.children[parentId] ?? EMPTY_ARRAY;
+  parentId === null ? tree.rootIds : (tree.children[parentId] ?? EMPTY_ARRAY);
 
 const normalizeParentId = (
   rawParentId: unknown,
@@ -82,94 +83,6 @@ export const dedupeOrdered = (ids: string[]): string[] => {
   return next;
 };
 
-/**
- * Convert a legacy server tree (nodes have `children` + `parent`) into a normalized `FileTree`.
- */
-export const normalizeServerTree = (serverTree: ServerTree): FileTree => {
-  const nodes: Record<FileTreeNodeId, FileTreeNode> = {};
-
-  for (const rawNode of serverTree.nodes) {
-    const id = toId(rawNode.id);
-    const parentId = normalizeParentId(readServerParentId(rawNode), serverTree.id);
-    const base = {
-      id,
-      name: rawNode.name,
-      type: rawNode.type,
-      parentId,
-    } as const;
-
-    nodes[id] =
-      rawNode.type === 'file'
-        ? { ...base, type: 'file', url: rawNode.url }
-        : { ...base, type: 'folder' };
-  }
-
-  const rootIdsFromTree = Array.isArray(serverTree.children)
-    ? serverTree.children.map(toId)
-    : [];
-
-  // Preferred ordering comes from the server-provided `children` arrays.
-  const rootIds = dedupeOrdered(rootIdsFromTree).filter(id => id in nodes);
-  const children: Record<FileTreeNodeId, FileTreeNodeId[]> = {};
-
-  for (const rawNode of serverTree.nodes) {
-    if (rawNode.type !== 'folder') continue;
-    const folderId = toId(rawNode.id);
-    const childIds = Array.isArray(rawNode.children)
-      ? dedupeOrdered(rawNode.children.map(toId)).filter(id => id in nodes)
-      : [];
-
-    if (childIds.length > 0) {
-      children[folderId] = childIds;
-    }
-  }
-
-  // Backfill missing parent->child relationships when server omits a `children` list.
-  for (const node of Object.values(nodes)) {
-    const parentId = node.parentId;
-    if (parentId === null) {
-      if (!rootIds.includes(node.id)) {
-        rootIds.push(node.id);
-      }
-      continue;
-    }
-
-    const parent = nodes[parentId];
-    if (!parent || parent.type !== 'folder') {
-      node.parentId = null;
-      if (!rootIds.includes(node.id)) {
-        rootIds.push(node.id);
-      }
-      continue;
-    }
-
-    const list = children[parentId];
-    if (!Array.isArray(list)) {
-      children[parentId] = [node.id];
-      continue;
-    }
-
-    if (!list.includes(node.id)) {
-      list.push(node.id);
-    }
-  }
-
-  // Ensure child lists only contain nodes with matching parentId.
-  for (const [parentId, list] of Object.entries(children)) {
-    children[parentId] = list.filter(id => nodes[id]?.parentId === parentId);
-  }
-
-  return {
-    id: serverTree.id,
-    name: serverTree.name,
-    projectName: serverTree.projectName,
-    type: 'folder',
-    nodes,
-    children,
-    rootIds,
-  };
-};
-
 const nodesEqual = (a: FileTreeNode, b: FileTreeNode): boolean => {
   if (a === b) return true;
   if (a.id !== b.id) return false;
@@ -207,7 +120,10 @@ export const mergeFileTree = (prev: FileTree, next: FileTree): FileTree => {
         nextNodeIds.map(id => {
           const prevNode = prev.nodes[id];
           const nextNode = next.nodes[id];
-          return [id, prevNode && nodesEqual(prevNode, nextNode) ? prevNode : nextNode];
+          return [
+            id,
+            prevNode && nodesEqual(prevNode, nextNode) ? prevNode : nextNode,
+          ];
         })
       )
     : prev.nodes;
@@ -228,9 +144,10 @@ export const mergeFileTree = (prev: FileTree, next: FileTree): FileTree => {
     }
   }
 
-  const mergedChildren: Record<FileTreeNodeId, FileTreeNodeId[]> = childrenChanged
-    ? {}
-    : (prev.children as Record<FileTreeNodeId, FileTreeNodeId[]>);
+  const mergedChildren: Record<FileTreeNodeId, FileTreeNodeId[]> =
+    childrenChanged
+      ? {}
+      : (prev.children as Record<FileTreeNodeId, FileTreeNodeId[]>);
 
   if (childrenChanged) {
     for (const key of nextChildrenKeys) {
@@ -241,12 +158,15 @@ export const mergeFileTree = (prev: FileTree, next: FileTree): FileTree => {
     }
   }
 
-  const rootIds = arraysEqual(prev.rootIds, next.rootIds) ? prev.rootIds : [...next.rootIds];
+  const rootIds = arraysEqual(prev.rootIds, next.rootIds)
+    ? prev.rootIds
+    : [...next.rootIds];
 
   const metadataChanged =
     prev.id !== next.id ||
     prev.name !== next.name ||
     prev.projectName !== next.projectName ||
+    prev.indexUrl !== next.indexUrl ||
     prev.type !== next.type;
 
   return {

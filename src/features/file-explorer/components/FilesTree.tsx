@@ -28,6 +28,7 @@ import {
   ROOT_DROPPABLE_ID,
   useFileTreeInteractions,
 } from '../hooks/useFileTreeInteractions';
+import { resolveBundleId } from '@/lib/bundleId';
 
 type FilesTreeProps = {
   level: number;
@@ -39,8 +40,9 @@ const FilesTree: React.FC<FilesTreeProps> = ({ level }) => {
   const expanded = useAppSelector(state => state.fileTree.expanded);
   const rootExpanded = Boolean(expanded[tree.id]);
 
-  const { bundleId } = useParams<{ bundleId: string }>();
-  const extractedBundleId = bundleId || tree.id.replace('bundle-', '');
+  const { bundleId: routeBundleId } = useParams<{ bundleId: string }>();
+  const extractedBundleId =
+    resolveBundleId({ routeBundleId, treeId: tree.id }) ?? '';
 
   const { setNodeRef: setRootDropRef, isOver: isRootOver } = useDroppable({
     id: ROOT_DROPPABLE_ID,

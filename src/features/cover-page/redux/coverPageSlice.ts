@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Template } from '../types';
+import { isPersistedBundleId } from '../utils';
 
 type CoverPageType = 'front' | 'back';
 type CoverPageSide = 'Front' | 'Back' | 'front' | 'back';
@@ -58,7 +59,8 @@ const coverPageSlice = createSlice({
       }>
     ) => {
       const { type, html } = action.payload;
-      const target = type === 'front' ? state.frontCoverPage : state.backCoverPage;
+      const target =
+        type === 'front' ? state.frontCoverPage : state.backCoverPage;
 
       if (target) {
         target.html = html;
@@ -73,7 +75,8 @@ const coverPageSlice = createSlice({
       }>
     ) => {
       const { type, lexicalJson } = action.payload;
-      const target = type === 'front' ? state.frontCoverPage : state.backCoverPage;
+      const target =
+        type === 'front' ? state.frontCoverPage : state.backCoverPage;
 
       if (target) {
         target.lexicalJson = lexicalJson;
@@ -85,15 +88,18 @@ const coverPageSlice = createSlice({
       action: PayloadAction<{ type: CoverPageType; name: string }>
     ) => {
       const { type, name } = action.payload;
-      const target = type === 'front' ? state.frontCoverPage : state.backCoverPage;
+      const target =
+        type === 'front' ? state.frontCoverPage : state.backCoverPage;
 
       if (target) {
         target.name = name;
       }
     },
 
-    setBundleId: (state, action: PayloadAction<string>) => {
-      state.currentBundleId = action.payload;
+    setBundleId: (state, action: PayloadAction<string | null>) => {
+      state.currentBundleId = isPersistedBundleId(action.payload)
+        ? action.payload
+        : null;
     },
   },
 });

@@ -24,6 +24,7 @@ import {
   useGetTemplatesQuery,
   useUpdateBundleMetadataMutation,
 } from '../api';
+import { isPersistedBundleId } from '../utils';
 
 interface TemplateSelectionDialogProps {
   open: boolean;
@@ -87,7 +88,7 @@ const TemplateSelectionDialog = ({
       if (selectedId === deleteTarget.id) {
         dispatch(deSelectCoverPage(type));
 
-        if (currentBundleId) {
+        if (isPersistedBundleId(currentBundleId)) {
           await updateBundleMetadata({
             bundleId: currentBundleId,
             metadata:
@@ -205,8 +206,8 @@ const TemplateSelectionDialog = ({
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Cover Page</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{deleteTarget?.name}"? This
-                action cannot be undone.
+                Are you sure you want to delete &quot;{deleteTarget?.name}
+                &quot;? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

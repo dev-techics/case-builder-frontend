@@ -37,6 +37,7 @@ export interface FileTree {
   name: string;
   projectName?: string;
   type: 'folder';
+  indexUrl?: string;
   nodes: Record<FileTreeNodeId, FileTreeNode>;
   children: Record<FileTreeNodeId, FileTreeNodeId[]>;
   rootIds: FileTreeNodeId[];

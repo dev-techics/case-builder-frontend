@@ -3,10 +3,14 @@ import { AlertCircle, CheckCircle, Download, FileStack } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
-import type { FileTree, FileTreeNode } from '@/features/file-explorer/types/fileTree';
+import type {
+  FileTree,
+  FileTreeNode,
+} from '@/features/file-explorer/types/fileTree';
 import axiosInstance from '@/api/axiosInstance';
 import CoverPage from '../../cover-page';
 import { setBundleId } from '../../cover-page/redux/coverPageSlice';
+import { useParams } from 'react-router-dom';
 
 /**
  * Recursively collects all file nodes from the flat tree structure
@@ -65,19 +69,18 @@ function Exports() {
   const [includeIndex, setIncludeIndex] = useState(true);
   const [includeFrontCover, setIncludeFrontCover] = useState(true);
   const [includeBackCover, setIncludeBackCover] = useState(true);
+  const { bundleId: routeBundleId } = useParams<{ bundleId: string }>();
 
   // Recursively collect all PDF files from the entire tree
   const pdfFiles = collectAllFiles(tree);
   const hasFiles = pdfFiles.length > 0;
 
-  // Get bundle ID from tree
-  const bundleId = tree.id.split('-')[1];
+  const bundleId =
+    routeBundleId || (tree.id === 'bundle-loading' ? '' : tree.id);
 
   // Load cover page data when component mounts
   useEffect(() => {
-    if (bundleId) {
-      dispatch(setBundleId(bundleId));
-    }
+    dispatch(setBundleId(bundleId || null));
   }, [bundleId, dispatch]);
 
   const handleExport = async () => {

@@ -8,6 +8,7 @@ import {
 } from '../api';
 import { setTemplate } from '../redux/coverPageSlice';
 import type { Template } from '../types';
+import { isPersistedBundleId } from '../utils';
 
 const resolveCoverPageName = (type: 'front' | 'back', name?: string) => {
   const trimmed = name?.trim();
@@ -57,7 +58,7 @@ export const useCoverPageSave = (
 
       dispatch(setTemplate({ template: savedTemplate }));
 
-      if (currentBundleId) {
+      if (isPersistedBundleId(currentBundleId)) {
         await updateBundleMetadata({
           bundleId: currentBundleId,
           metadata:

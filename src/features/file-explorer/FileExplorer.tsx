@@ -4,10 +4,12 @@ import FilesTree from './components/FilesTree';
 import { useParams } from 'react-router-dom';
 import { loadHighlights, loadRedactions } from '../toolbar/redux';
 import { useGetTreeQuery } from './api';
+import { normalizeBundleId } from '@/lib/bundleId';
 
 const FileTree: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { bundleId } = useParams<{ bundleId: string }>();
+  const { bundleId: routeBundleId } = useParams<{ bundleId: string }>();
+  const bundleId = normalizeBundleId(routeBundleId);
 
   // Trigger loading the tree via RTK Query.
   // The slice listens to `getTree` via matchers and normalizes the server response.

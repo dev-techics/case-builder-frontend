@@ -1,5 +1,17 @@
 import type { Template } from '../types';
 
+export const isPersistedBundleId = (
+  bundleId: string | null | undefined
+): bundleId is string => {
+  const normalized = bundleId?.trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return normalized.toLowerCase() !== 'loading';
+};
+
 /**
  * Builds a draft template with unique ID and timestamp
  * @param type front | back

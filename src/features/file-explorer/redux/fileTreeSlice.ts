@@ -11,7 +11,6 @@ import {
   isDescendant,
   mergeFileTree,
   normalizeServerNode,
-  normalizeServerTree,
   normalizeTreeParentId,
   removeNodeAndDescendantsFromTree,
 } from './fileTreeModel';
@@ -298,8 +297,7 @@ const fileTreeSlice = createSlice({
         (state, action) => {
           state.loading = false;
           state.error = null;
-
-          const nextTree = normalizeServerTree(action.payload);
+          const nextTree = action.payload;
           const isNewRoot = state.tree.id !== nextTree.id;
           state.tree = mergeFileTree(state.tree, nextTree);
 
@@ -323,7 +321,10 @@ const fileTreeSlice = createSlice({
           ) {
             state.selectedFolderId = null;
           }
-          if (state.scrollToFileId && !(state.scrollToFileId in state.tree.nodes)) {
+          if (
+            state.scrollToFileId &&
+            !(state.scrollToFileId in state.tree.nodes)
+          ) {
             state.scrollToFileId = null;
           }
         }
@@ -489,7 +490,9 @@ const fileTreeSlice = createSlice({
           const requestedParentEntry =
             action.meta.arg.originalArgs.formData.get('parent_id');
           const requestedParentIdRaw =
-            typeof requestedParentEntry === 'string' ? requestedParentEntry : null;
+            typeof requestedParentEntry === 'string'
+              ? requestedParentEntry
+              : null;
           let requestedParentId = normalizeTreeParentId(
             requestedParentIdRaw,
             state.tree.id
@@ -530,7 +533,10 @@ const fileTreeSlice = createSlice({
             if (state.selectedFile) {
               const selectedNode = state.tree.nodes[state.selectedFile];
               const selectedParentId = selectedNode?.parentId ?? null;
-              if (selectedNode?.type === 'file' && selectedParentId === requestedParentId) {
+              if (
+                selectedNode?.type === 'file' &&
+                selectedParentId === requestedParentId
+              ) {
                 const selectedIndex = baseList.indexOf(selectedNode.id);
                 if (selectedIndex !== -1) {
                   insertIndex = selectedIndex + 1;
@@ -625,7 +631,7 @@ const fileTreeSlice = createSlice({
         fileTreeApi.endpoints.reorderDocuments.matchFulfilled,
         (state, action) => {
           state.loading = false;
-          const nextTree = normalizeServerTree(action.payload.tree);
+          const nextTree = action.payload.tree;
           state.tree = mergeFileTree(state.tree, nextTree);
           state.error = null;
         }
@@ -655,7 +661,7 @@ const fileTreeSlice = createSlice({
         (state, action) => {
           state.loading = false;
           if (!action.payload.tree) return;
-          const nextTree = normalizeServerTree(action.payload.tree);
+          const nextTree = action.payload.tree;
           state.tree = mergeFileTree(state.tree, nextTree);
         }
       )
@@ -684,7 +690,7 @@ const fileTreeSlice = createSlice({
           if (action.payload.skipApplyTree || !action.payload.tree) {
             return;
           }
-          const nextTree = normalizeServerTree(action.payload.tree);
+          const nextTree = action.payload.tree;
           state.tree = mergeFileTree(state.tree, nextTree);
         }
       )

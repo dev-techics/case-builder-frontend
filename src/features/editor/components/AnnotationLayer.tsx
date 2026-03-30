@@ -5,6 +5,7 @@ import CommentOverlay from '@/features/toolbar/components/CommentOverlay';
 import { InteractiveHighlightOverlay } from '@/features/toolbar/components/HighlightOverlay';
 import RedactionOverlay from '@/features/toolbar/components/RedactionOverlay';
 import { ScreenToPdfCoordinates } from '../helpers';
+import { resolveBundleIdFromTreeId } from '@/lib/bundleId';
 
 type AnnotationLayerProps = {
   fileId: string;
@@ -52,7 +53,8 @@ const AnnotationLayer = ({
   const dispatch = useAppDispatch();
   const activeTool = useAppSelector(state => state.toolbar.activeTool);
   const redactionStyle = useAppSelector(state => state.toolbar.redactionStyle);
-  const bundleId = useAppSelector(state => state.fileTree.tree.id);
+  const treeId = useAppSelector(state => state.fileTree.tree.id);
+  const bundleId = resolveBundleIdFromTreeId(treeId);
   const { headerLeft, headerRight, footer } = useAppSelector(
     state => state.propertiesPanel.headersFooter
   );
@@ -149,13 +151,11 @@ const AnnotationLayer = ({
     }
 
     const resolvedFillHex = redactionStyle.fillHex || '#000000';
-    const resolvedOpacity = redactionStyle.fillHex
-      ? redactionStyle.opacity
-      : 0;
+    const resolvedOpacity = redactionStyle.fillHex ? redactionStyle.opacity : 0;
 
     dispatch(
       createRedaction({
-        bundleId: bundleId.split('-')[1],
+        bundleId,
         data: {
           document_id: fileId,
           page_number: pageNumber,
@@ -186,19 +186,19 @@ const AnnotationLayer = ({
     typeof headerLeft === 'string' ? headerLeft : headerLeft.text || '';
   const headerRightText =
     typeof headerRight === 'string' ? headerRight : headerRight.text || '';
-  const footerText =
-    typeof footer === 'string' ? footer : footer.text || '';
+  const footerText = typeof footer === 'string' ? footer : footer.text || '';
   const pageCount = documentInfo[fileId]?.numPages ?? null;
   const headerFooterStyles = {
     left: 50 * scale,
     top: 25 * scale,
     bottom: 25 * scale,
   };
-  const headerFooterRightX = pageInfo
-    ? (pageInfo.width - 120) * scale
-    : 0;
+  const headerFooterRightX = pageInfo ? (pageInfo.width - 120) * scale : 0;
 
-  const resolveTextStyle = (color: string | undefined, size: number | undefined) => ({
+  const resolveTextStyle = (
+    color: string | undefined,
+    size: number | undefined
+  ) => ({
     color: color || '#4b5563',
     fontSize: `${(size || 10) * scale}px`,
     lineHeight: 1,
@@ -246,74 +246,81 @@ const AnnotationLayer = ({
         />
       )}
 
-      {pageInfo && (headerLeftText || headerRightText || footerText || pageCount) && (
-        <div className="pointer-events-none absolute inset-0">
-          {headerLeftText && (
-            <div
-              style={{
-                position: 'absolute',
-                left: headerFooterStyles.left,
-                top: headerFooterStyles.top,
-                ...resolveTextStyle(
-                  typeof headerLeft === 'string' ? undefined : headerLeft.color,
-                  typeof headerLeft === 'string' ? undefined : headerLeft.size
-                ),
-              }}
-            >
-              {headerLeftText}
-            </div>
-          )}
-          {headerRightText && (
-            <div
-              style={{
-                position: 'absolute',
-                left: headerFooterRightX,
-                top: headerFooterStyles.top,
-                ...resolveTextStyle(
-                  typeof headerRight === 'string' ? undefined : headerRight.color,
-                  typeof headerRight === 'string' ? undefined : headerRight.size
-                ),
-              }}
-            >
-              {headerRightText}
-            </div>
-          )}
-          {(footerText || pageCount) && (
-            <>
-              {footerText && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: headerFooterStyles.left,
-                    bottom: headerFooterStyles.bottom,
-                    ...resolveTextStyle(
-                      typeof footer === 'string' ? undefined : footer.color,
-                      typeof footer === 'string' ? undefined : footer.size
-                    ),
-                  }}
-                >
-                  {footerText}
-                </div>
-              )}
-              {pageCount && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: headerFooterRightX,
-                    bottom: headerFooterStyles.bottom,
-                    ...resolveTextStyle(
-                      typeof footer === 'string' ? undefined : footer.color,
-                      typeof footer === 'string' ? undefined : footer.size
-                    ),
-                  }}
-                >
-                  Page {pageNumber} of {pageCount}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
+      {pageInfo &&
+        (headerLeftText || headerRightText || footerText || pageCount) && (
+          <div className="pointer-events-none absolute inset-0">
+            {headerLeftText && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: headerFooterStyles.left,
+                  top: headerFooterStyles.top,
+                  ...resolveTextStyle(
+                    typeof headerLeft === 'string'
+                      ? undefined
+                      : headerLeft.color,
+                    typeof headerLeft === 'string' ? undefined : headerLeft.size
+                  ),
+                }}
+              >
+                {headerLeftText}
+              </div>
+            )}
+            {headerRightText && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: headerFooterRightX,
+                  top: headerFooterStyles.top,
+                  ...resolveTextStyle(
+                    typeof headerRight === 'string'
+                      ? undefined
+                      : headerRight.color,
+                    typeof headerRight === 'string'
+                      ? undefined
+                      : headerRight.size
+                  ),
+                }}
+              >
+                {headerRightText}
+              </div>
+            )}
+            {(footerText || pageCount) && (
+              <>
+                {footerText && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: headerFooterStyles.left,
+                      bottom: headerFooterStyles.bottom,
+                      ...resolveTextStyle(
+                        typeof footer === 'string' ? undefined : footer.color,
+                        typeof footer === 'string' ? undefined : footer.size
+                      ),
+                    }}
+                  >
+                    {footerText}
+                  </div>
+                )}
+                {pageCount && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: headerFooterRightX,
+                      bottom: headerFooterStyles.bottom,
+                      ...resolveTextStyle(
+                        typeof footer === 'string' ? undefined : footer.color,
+                        typeof footer === 'string' ? undefined : footer.size
+                      ),
+                    }}
+                  >
+                    Page {pageNumber} of {pageCount}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
       <div
         className={`${interactionClassName} z-30`}

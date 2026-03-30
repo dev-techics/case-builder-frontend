@@ -8,17 +8,18 @@ import {
   createComment,
 } from '@/features/toolbar/redux';
 import type { CreateCommentRequest } from '../types/types';
+import { resolveBundleIdFromTreeId } from '@/lib/bundleId';
 
 type InputCommentProps = {
   variant?: 'toolbar' | 'floating';
 };
 
 function InputComment({ variant = 'toolbar' }: InputCommentProps) {
-  const [isVisible, setIsVisible] = useState(false);
   const [commentText, setCommentText] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const justOpenedRef = useRef(false); // Track if just opened
-  const bundleId = useAppSelector(states => states.fileTree.tree.id);
+  const treeId = useAppSelector(states => states.fileTree.tree.id);
+  const bundleId = resolveBundleIdFromTreeId(treeId);
   //   const toolbarPosition = useAppSelector(
   //     states => states.toolbar.ToolbarPosition
   //   );
@@ -30,33 +31,37 @@ function InputComment({ variant = 'toolbar' }: InputCommentProps) {
     states => states.toolbar.pendingComment
   );
   const dispatch = useAppDispatch();
-
-  // Show/hide based on position
-  useEffect(() => {
-    const shouldShow =
-      variant === 'floating'
-        ? CommentPosition &&
+  const isVisible =
+    variant === 'floating'
+      ? Boolean(
+          CommentPosition &&
           CommentPosition.x !== null &&
           CommentPosition.y !== null
-        : Boolean(pendingComment);
+        )
+      : Boolean(pendingComment);
 
-    if (shouldShow) {
-      setIsVisible(true);
-      justOpenedRef.current = true; // Mark as just opened
-
-      // Focus input when visible
-      setTimeout(() => {
-        inputRef.current?.focus();
-        // Allow click-outside handler to work after a delay
-        setTimeout(() => {
-          justOpenedRef.current = false;
-        }, 100);
-      }, 0);
-    } else {
-      setIsVisible(false);
-      setCommentText('');
+  useEffect(() => {
+    if (!isVisible) {
+      return;
     }
-  }, [CommentPosition, pendingComment, variant]);
+
+    let releaseOpenGuardTimeoutId = 0;
+    justOpenedRef.current = true;
+
+    const focusTimeoutId = window.setTimeout(() => {
+      inputRef.current?.focus();
+      // Allow click-outside handler to work after a delay
+      releaseOpenGuardTimeoutId = window.setTimeout(() => {
+        justOpenedRef.current = false;
+      }, 100);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(focusTimeoutId);
+      window.clearTimeout(releaseOpenGuardTimeoutId);
+      justOpenedRef.current = false;
+    };
+  }, [isVisible]);
 
   // Handle click outside to close
   useEffect(() => {
@@ -82,6 +87,7 @@ function InputComment({ variant = 'toolbar' }: InputCommentProps) {
       }
 
       // Close the comment input
+      setCommentText('');
       dispatch(cancelCommentCreation());
     };
 
@@ -112,10 +118,12 @@ function InputComment({ variant = 'toolbar' }: InputCommentProps) {
         page_y: pendingComment.position.pageY,
       };
 
+      if (!bundleId) {
+        return;
+      }
+
       console.log('✅ Comment created:', comment);
-      dispatch(
-        createComment({ bundleId: bundleId.split('-')[1], data: comment })
-      );
+      dispatch(createComment({ bundleId, data: comment }));
 
       // Clear text selection
       const selection = window.getSelection();

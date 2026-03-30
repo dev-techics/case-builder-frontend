@@ -1,14 +1,35 @@
-import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
-import { KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type {
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useAppDispatch } from '@/app/hooks';
 
-import { useMoveDocumentsBatchMutation, useReorderDocumentsMutation } from '../api';
-import { dedupeOrdered, isDescendant, normalizeServerTree } from '../redux/fileTreeModel';
-import { moveNodes, reorderChildren, selectFile, selectFolder } from '../redux/fileTreeSlice';
-import type { FileTree, FileTreeDropPreview, FileTreeNodeType } from '../types/fileTree';
+import {
+  useMoveDocumentsBatchMutation,
+  useReorderDocumentsMutation,
+} from '../api';
+import { dedupeOrdered, isDescendant } from '../redux/fileTreeModel';
+import {
+  moveNodes,
+  reorderChildren,
+  selectFile,
+  selectFolder,
+} from '../redux/fileTreeSlice';
+import type {
+  FileTree,
+  FileTreeDropPreview,
+  FileTreeNodeType,
+} from '../types/fileTree';
 
 export const ROOT_DROPPABLE_ID = 'ROOT';
 
@@ -39,32 +60,42 @@ export const useFileTreeInteractions = ({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
-  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
-  const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null);
+  const [rawSelectedFileIds, setRawSelectedFileIds] = useState<string[]>([]);
+  const [rawSelectionAnchorId, setRawSelectionAnchorId] = useState<
+    string | null
+  >(null);
 
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
-  const [dropPreview, setDropPreview] = useState<FileTreeDropPreview | null>(null);
+  const [dropPreview, setDropPreview] = useState<FileTreeDropPreview | null>(
+    null
+  );
 
-  const activeItem = activeId ? tree.nodes[activeId] ?? null : null;
+  const activeItem = activeId ? (tree.nodes[activeId] ?? null) : null;
   const activeDragCount =
-    activeItem?.type === 'file' && draggedFileIds.length > 1 ? draggedFileIds.length : 1;
+    activeItem?.type === 'file' && draggedFileIds.length > 1
+      ? draggedFileIds.length
+      : 1;
+
+  const allFileIds = useMemo(() => getAllFileIds(tree), [tree]);
+  const validFileIds = useMemo(() => new Set(allFileIds), [allFileIds]);
+  const selectedFileIds = useMemo(
+    () => rawSelectedFileIds.filter(id => validFileIds.has(id)),
+    [rawSelectedFileIds, validFileIds]
+  );
+  const selectionAnchorId =
+    rawSelectionAnchorId && validFileIds.has(rawSelectionAnchorId)
+      ? rawSelectionAnchorId
+      : null;
 
   const visibleFileIds = useMemo(
     () => getVisibleFileIds(tree, rootExpanded, expanded),
     [tree, rootExpanded, expanded]
   );
 
-  useEffect(() => {
-    // Keep selection stable when the server updates the tree.
-    const validIds = new Set(getAllFileIds(tree));
-    setSelectedFileIds(prev => prev.filter(id => validIds.has(id)));
-    setSelectionAnchorId(prev => (prev && validIds.has(prev) ? prev : null));
-  }, [tree]);
-
   const onFolderSelect = useCallback(
     (folderId: string) => {
-      setSelectedFileIds([]);
-      setSelectionAnchorId(null);
+      setRawSelectedFileIds([]);
+      setRawSelectionAnchorId(null);
       dispatch(selectFolder(folderId));
     },
     [dispatch]
@@ -78,7 +109,9 @@ export const useFileTreeInteractions = ({
       const isRangeSelect = Boolean(modifiers?.shiftKey);
       const isToggleSelect = Boolean(modifiers?.ctrlKey || modifiers?.metaKey);
 
-      setSelectedFileIds(prev => {
+      setRawSelectedFileIds(prev => {
+        const nextPrev = prev.filter(id => validFileIds.has(id));
+
         if (isRangeSelect && selectionAnchorId) {
           const start = visibleFileIds.indexOf(selectionAnchorId);
           const end = visibleFileIds.indexOf(fileId);
@@ -89,28 +122,33 @@ export const useFileTreeInteractions = ({
         }
 
         if (isToggleSelect) {
-          return prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId];
+          return nextPrev.includes(fileId)
+            ? nextPrev.filter(id => id !== fileId)
+            : [...nextPrev, fileId];
         }
 
         return [fileId];
       });
 
       if (!isRangeSelect) {
-        setSelectionAnchorId(fileId);
+        setRawSelectionAnchorId(fileId);
       }
       dispatch(selectFile(fileId));
     },
-    [dispatch, selectionAnchorId, visibleFileIds]
+    [dispatch, selectionAnchorId, validFileIds, visibleFileIds]
   );
 
-  const setDropPreviewIfChanged = useCallback((next: FileTreeDropPreview | null) => {
-    setDropPreview(prev => {
-      if (prev?.parentId === next?.parentId && prev?.index === next?.index) {
-        return prev;
-      }
-      return next;
-    });
-  }, []);
+  const setDropPreviewIfChanged = useCallback(
+    (next: FileTreeDropPreview | null) => {
+      setDropPreview(prev => {
+        if (prev?.parentId === next?.parentId && prev?.index === next?.index) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   const setOverIdIfChanged = useCallback((next: string | null) => {
     setOverId(prev => (prev === next ? prev : next));
@@ -136,8 +174,8 @@ export const useFileTreeInteractions = ({
 
         // Dragging an unselected file should select it first.
         if (!selectedFileIds.includes(nextActiveId)) {
-          setSelectedFileIds([nextActiveId]);
-          setSelectionAnchorId(nextActiveId);
+          setRawSelectedFileIds([nextActiveId]);
+          setRawSelectionAnchorId(nextActiveId);
         }
         return;
       }
@@ -177,7 +215,11 @@ export const useFileTreeInteractions = ({
       }
 
       const selectedDragIds =
-        draggedFileIds.length > 0 ? draggedFileIds : active?.id ? [String(active.id)] : [];
+        draggedFileIds.length > 0
+          ? draggedFileIds
+          : active?.id
+            ? [String(active.id)]
+            : [];
       const preview = getDropPreviewFromOver({
         tree,
         overId: rawOverId,
@@ -195,7 +237,8 @@ export const useFileTreeInteractions = ({
     async (event: DragEndEvent) => {
       const { active, over } = event;
       const nextActiveId = String(active.id);
-      const selectedDragIds = draggedFileIds.length > 0 ? draggedFileIds : [nextActiveId];
+      const selectedDragIds =
+        draggedFileIds.length > 0 ? draggedFileIds : [nextActiveId];
 
       setActiveId(null);
       setOverId(null);
@@ -212,9 +255,14 @@ export const useFileTreeInteractions = ({
 
       // Multi-select moves only support moving files that share the same parent.
       const draggedParentId = draggedItem.parentId ?? null;
-      const draggedParentIds = selectedDragIds.map(id => tree.nodes[id]?.parentId ?? null);
-      const isSameParentForSelection = draggedParentIds.every(parentId => parentId === draggedParentId);
-      const isSameParentDrop = isSameParentForSelection && draggedParentId === destinationParentId;
+      const draggedParentIds = selectedDragIds.map(
+        id => tree.nodes[id]?.parentId ?? null
+      );
+      const isSameParentForSelection = draggedParentIds.every(
+        parentId => parentId === draggedParentId
+      );
+      const isSameParentDrop =
+        isSameParentForSelection && draggedParentId === destinationParentId;
 
       // Safety: don't allow a folder to be dropped into its own descendants.
       if (
@@ -227,12 +275,21 @@ export const useFileTreeInteractions = ({
 
       if (isSameParentDrop) {
         const siblingIds = getChildrenIds(tree, destinationParentId);
-        const reorderedIds = reorderIdsByDropPosition(siblingIds, selectedDragIds, destinationIndex);
+        const reorderedIds = reorderIdsByDropPosition(
+          siblingIds,
+          selectedDragIds,
+          destinationIndex
+        );
         if (arraysEqual(siblingIds, reorderedIds)) {
           return;
         }
 
-        dispatch(reorderChildren({ parentId: destinationParentId, orderedIds: reorderedIds }));
+        dispatch(
+          reorderChildren({
+            parentId: destinationParentId,
+            orderedIds: reorderedIds,
+          })
+        );
 
         try {
           const items = reorderedIds.map((id, order) => ({ id, order }));
@@ -260,9 +317,13 @@ export const useFileTreeInteractions = ({
           skipApplyTree: true,
         }).unwrap();
 
-        const nextTree = normalizeServerTree(moveResult.tree);
+        const nextTree = moveResult.tree;
         const siblingIds = getChildrenIds(nextTree, destinationParentId);
-        const reorderedIds = reorderIdsByDropPosition(siblingIds, selectedDragIds, destinationIndex);
+        const reorderedIds = reorderIdsByDropPosition(
+          siblingIds,
+          selectedDragIds,
+          destinationIndex
+        );
 
         if (!arraysEqual(siblingIds, reorderedIds)) {
           const items = reorderedIds.map((id, order) => ({ id, order }));
@@ -272,7 +333,15 @@ export const useFileTreeInteractions = ({
         console.error('❌ Error moving file(s):', error);
       }
     },
-    [bundleId, dispatch, draggedFileIds, dropPreview, moveDocumentsBatch, reorderDocuments, tree]
+    [
+      bundleId,
+      dispatch,
+      draggedFileIds,
+      dropPreview,
+      moveDocumentsBatch,
+      reorderDocuments,
+      tree,
+    ]
   );
 
   return {
@@ -310,7 +379,9 @@ const reorderIdsByDropPosition = (
   if (draggedIds.length === 0) return childrenIds;
 
   const childrenSet = new Set(childrenIds);
-  const draggedUnique = dedupeOrdered(draggedIds).filter(id => childrenSet.has(id));
+  const draggedUnique = dedupeOrdered(draggedIds).filter(id =>
+    childrenSet.has(id)
+  );
   if (draggedUnique.length === 0) return childrenIds;
 
   const draggedSet = new Set(draggedUnique);
@@ -456,7 +527,11 @@ function getDropPreviewFromOver({
     }
 
     let index = targetIndex;
-    if (pointerY !== null && overRect && pointerY > overRect.top + overRect.height / 2) {
+    if (
+      pointerY !== null &&
+      overRect &&
+      pointerY > overRect.top + overRect.height / 2
+    ) {
       index = targetIndex + 1;
     }
 
@@ -476,10 +551,13 @@ function getDropPreviewFromOver({
   }
 
   let index = targetIndex;
-  if (pointerY !== null && overRect && pointerY > overRect.top + overRect.height / 2) {
+  if (
+    pointerY !== null &&
+    overRect &&
+    pointerY > overRect.top + overRect.height / 2
+  ) {
     index = targetIndex + 1;
   }
 
   return { parentId, index };
 }
-

@@ -4,6 +4,7 @@ import type {
   HighlightColor,
   CreateHighlightRequest,
 } from '@/features/toolbar/types/types';
+import { resolveBundleIdFromTreeId } from '@/lib/bundleId';
 
 export const HIGHLIGHT_COLORS: HighlightColor[] = [
   { name: 'Yellow', rgb: { r: 1, g: 1, b: 0 }, hex: '#FFFF00', opacity: 0.3 },
@@ -33,7 +34,8 @@ function HighlightColorPicker() {
   const pendingHighlight = useAppSelector(
     state => state.toolbar.pendingHighlight
   );
-  const bundleId = useAppSelector(state => state.fileTree.tree.id);
+  const treeId = useAppSelector(state => state.fileTree.tree.id);
+  const bundleId = resolveBundleIdFromTreeId(treeId);
   const dispatch = useAppDispatch();
 
   const handleColorClick = (color: HighlightColor) => {
@@ -57,12 +59,14 @@ function HighlightColorPicker() {
       opacity: color.opacity,
     };
 
+    if (!bundleId) {
+      return;
+    }
+
     console.log('✅ Creating highlight:', highlight);
 
     // Add highlight to Redux store
-    dispatch(
-      createHighlight({ bundleId: bundleId.split('-')[1], data: highlight })
-    );
+    dispatch(createHighlight({ bundleId, data: highlight }));
 
     // Close the color picker and clear pending data
     dispatch(cancelHighlight());

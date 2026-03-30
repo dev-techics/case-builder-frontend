@@ -6,6 +6,7 @@ import {
   loadMetadataFromBackend,
   setCurrentBundleId,
 } from '@/features/properties-panel/redux/propertiesPanelSlice';
+import { resolveBundleId } from '@/lib/bundleId';
 
 type UseBundleMetadataOptions = {
   bundleId?: string;
@@ -17,24 +18,28 @@ export const useBundleMetadata = ({
   treeId,
 }: UseBundleMetadataOptions) => {
   const dispatch = useAppDispatch();
+  const resolvedBundleId = resolveBundleId({
+    routeBundleId: bundleId,
+    treeId,
+  });
 
   useEffect(() => {
-    if (bundleId) {
-      dispatch(loadComments({ bundleId }));
+    if (resolvedBundleId) {
+      dispatch(loadComments({ bundleId: resolvedBundleId }));
     }
-  }, [dispatch, bundleId]);
+  }, [dispatch, resolvedBundleId]);
 
   useEffect(() => {
-    if (bundleId) {
+    if (resolvedBundleId) {
       dispatch(clearDocumentInfo());
     }
-  }, [bundleId, dispatch]);
+  }, [dispatch, resolvedBundleId]);
 
   useEffect(() => {
-    const resolvedBundleId = treeId.split('-')[1];
+    dispatch(setCurrentBundleId(resolvedBundleId));
+
     if (resolvedBundleId) {
-      dispatch(setCurrentBundleId(resolvedBundleId));
       dispatch(loadMetadataFromBackend(resolvedBundleId));
     }
-  }, [dispatch, treeId]);
+  }, [dispatch, resolvedBundleId]);
 };

@@ -114,7 +114,7 @@ const propertiesPanelSlice = createSlice({
         fileName: action.payload.fileName,
       };
     },
-    setCurrentBundleId: (state, action: PayloadAction<string>) => {
+    setCurrentBundleId: (state, action: PayloadAction<string | null>) => {
       state.currentBundleId = action.payload;
     },
     // Clear document info when files are deleted
