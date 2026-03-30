@@ -3,32 +3,25 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import LexicalCoverPageEditor from './LexicalCoverPageEditor';
 import { setCoverPageName, setTemplate } from '../../redux/coverPageSlice';
-import {
-  useCreateCoverPageMutation,
-  useGetTemplateQuery,
-  useUpdateBundleMetadataMutation,
-  useUpdateCoverPageMutation,
-} from '../../api';
+import { useGetTemplateQuery } from '../../api';
+import { useCoverPageSave } from '../../hook';
 import CoverPageEditorHeader from './CoverPageEditorHeader';
-
-const resolveCoverPageName = (type: 'front' | 'back', name?: string) => {
-  const trimmed = name?.trim();
-  if (trimmed) {
-    return trimmed;
-  }
-  return type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
-};
 
 export const CoverPageEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { frontCoverPage, backCoverPage, currentBundleId } = useAppSelector(
+  const { frontCoverPage, backCoverPage } = useAppSelector(
     state => state.coverPage
   );
 
   const templateId = id ?? '';
   const isDraft = templateId.startsWith('draft-');
+
+  /*------------------------------------------------------------
+   Select template from Redux store if it matches the URL param,
+   otherwise rely on RTK Query to fetch it.
+   -------------------------------------------------------------*/
   const template =
     frontCoverPage?.id === templateId
       ? frontCoverPage
@@ -41,6 +34,8 @@ export const CoverPageEditor = () => {
           : null;
 
   const shouldSkipQuery = !templateId || isDraft || Boolean(template);
+
+  // If template is not in the Redux store (e.g., user navigated directly to the URL), fetch it from the server
   const {
     data: fetchedTemplate,
     isLoading,
@@ -55,64 +50,17 @@ export const CoverPageEditor = () => {
     }
   }, [dispatch, fetchedTemplate]);
 
-  const [createCoverPage, { isLoading: isCreating }] =
-    useCreateCoverPageMutation();
-  const [updateCoverPage, { isLoading: isUpdating }] =
-    useUpdateCoverPageMutation();
-  const [updateBundleMetadata] = useUpdateBundleMetadataMutation();
-  const isSaving = isCreating || isUpdating;
+  //* Custom hook to handle saving logic, including API calls and state management
+  const { handleSave, isSaving } = useCoverPageSave(template, isDraft);
   const [showPreview, setShowPreview] = useState(false);
 
   const handleCancel = () => {
     navigate(-1);
   };
 
-  const handleSave = async () => {
-    if (!template) {
-      return;
-    }
-
-    const templateKey =
-      template.templateKey ??
-      (isDraft ? `custom_${template.type}_${Date.now()}` : undefined);
-
-    const payload = {
-      templateKey,
-      html: template.html,
-      lexicalJson: template.lexicalJson,
-      type: template.type,
-      name: resolveCoverPageName(template.type, template.name),
-      description: template.description,
-      isDefault: template.isDefault,
-    };
-
-    try {
-      // Draft templates are created on the server the first time the user saves.
-      const savedTemplate = isDraft
-        ? await createCoverPage(payload).unwrap()
-        : await updateCoverPage({ id: template.id, data: payload }).unwrap();
-
-      console.log(savedTemplate);
-      dispatch(setTemplate({ template: savedTemplate }));
-
-      if (currentBundleId) {
-        await updateBundleMetadata({
-          bundleId: currentBundleId,
-          metadata:
-            savedTemplate.type === 'front'
-              ? { front_cover_page_id: savedTemplate.id }
-              : { back_cover_page_id: savedTemplate.id },
-        }).unwrap();
-      }
-
-      if (isDraft) {
-        navigate(`/cover-page-editor/${savedTemplate.id}`, { replace: true });
-      }
-    } catch (error) {
-      console.error('Failed to save cover page:', error);
-    }
-  };
-
+  /*--------------------------------- 
+    Handle Error and Loading states 
+  -----------------------------------*/
   if (!templateId) {
     return (
       <div className="flex h-full items-center justify-center text-gray-500">

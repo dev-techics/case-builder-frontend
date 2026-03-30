@@ -43,13 +43,6 @@ const CoverPageEditorHeader = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowPreview(prev => !prev)}
-          >
-            {showPreview ? 'Hide Preview' : 'Show Preview'}
-          </Button> */}
           <Button
             variant="outline"
             size="sm"

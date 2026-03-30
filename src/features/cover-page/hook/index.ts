@@ -11,30 +11,8 @@ import {
   useLazyGetTemplateQuery,
   useUpdateBundleMetadataMutation,
 } from '../api';
-import type { Template } from '../types';
-
+import { buildDraftTemplate } from '../utils';
 type CoverPageSide = 'front' | 'back';
-
-const buildDraftTemplate = (
-  type: 'front' | 'back',
-  label: 'front' | 'back'
-): Template => {
-  const now = Date.now();
-  const timestamp = new Date(now).toISOString();
-
-  return {
-    id: `draft-${type}-${now}`,
-    templateKey: `custom_${type}_${now}`,
-    name: `Custom ${label} Cover Page`,
-    description: 'Custom template',
-    type,
-    isDefault: false,
-    html: '',
-    lexicalJson: null,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-};
 
 export const useCoverPageHandlers = (type: CoverPageSide) => {
   const dispatch = useAppDispatch();
@@ -117,4 +95,5 @@ export const useCoverPageHandlers = (type: CoverPageSide) => {
   };
 };
 
+export * from './useCoverPageSave';
 export * from './useToolbarHandlers';
