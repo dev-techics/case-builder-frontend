@@ -146,14 +146,185 @@
 
   .editor-text-code {
     font-family:
-      ui-monospace,
-      SFMono-Regular,
-      Menlo,
-      Monaco,
-      Consolas,
-      'Liberation Mono',
-      'Courier New',
-      monospace;
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
     font-size: 0.9em;
+  }
+
+  .cover-page-builder-shell {
+    --gjs-main-color: #fff;
+    --gjs-primary-color: #fff;
+    --gjs-secondary-color: #475569;
+    --gjs-tertiary-color: #e2e8f0;
+    --gjs-quaternary-color: #2563eb;
+    --gjs-font-color: #0f172a;
+    --gjs-font-color-active: #0f172a;
+    --gjs-main-dark-color: rgba(15, 23, 42, 0.08);
+    --gjs-secondary-dark-color: #e2e8f0;
+    --gjs-main-light-color: rgba(37, 99, 235, 0.08);
+    --gjs-secondary-light-color: #64748b;
+    --gjs-soft-light-color: #f8fafc;
+    --gjs-color-blue: #2563eb;
+    --gjs-color-red: #ef4444;
+  }
+
+  .cover-page-builder-shell .gjs-one-bg {
+    background-color: #fff;
+  }
+
+  .cover-page-builder-shell .gjs-two-color,
+  .cover-page-builder-shell .gjs-sm-sector-label,
+  .cover-page-builder-shell .gjs-label,
+  .cover-page-builder-shell .gjs-layer-name {
+    color: #090d18;
+  }
+
+  .cover-page-builder-shell .gjs-three-bg {
+    background-color: #eff6ff;
+  }
+
+  .cover-page-builder-shell .gjs-four-color,
+  .cover-page-builder-shell .gjs-four-color-h:hover {
+    color: #2563eb;
+  }
+
+  .cover-page-builder-shell .gjs-four-bg {
+    background-color: #2563eb;
+  }
+
+  .cover-page-builder-shell .gjs-blocks-c,
+  .cover-page-builder-shell .gjs-sm-sectors,
+  .cover-page-builder-shell .gjs-trt-traits,
+  .cover-page-builder-shell .gjs-layers {
+    background: #fff;
+    color: #0f172a;
+  }
+
+  /* text styles*/
+  .cover-page-builder-shell .gjs-two-color,
+  .cover-page-builder-shell .gjs-sm-sector-label,
+  .cover-page-builder-shell .gjs-label,
+  .cover-page-builder-shell .gjs-layer-name {
+    color: #000;
+    font-size: large;
+    font-weight: 600;
+  }
+  .cover-page-builder-shell .gjs-blocks-cs {
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .cover-page-builder-shell .gjs-block-category,
+  .cover-page-builder-shell .gjs-sm-sector,
+  .cover-page-builder-shell .gjs-layer {
+    margin-bottom: 0.875rem;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .cover-page-builder-shell .gjs-block-category .gjs-title,
+  .cover-page-builder-shell .gjs-sm-title,
+  .cover-page-builder-shell .gjs-trt-header,
+  .cover-page-builder-shell .gjs-layer-title {
+    background: #f8fafc;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .cover-page-builder-shell .gjs-block {
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.875rem;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .cover-page-builder-shell .gjs-block:hover {
+    border-color: #93c5fd;
+    background: #f8fbff;
+  }
+
+  .cover-page-builder-shell .gjs-block-label {
+    color: #0f172a;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .cover-page-builder-shell .gjs-sm-properties,
+  .cover-page-builder-shell .gjs-layer-item,
+  .cover-page-builder-shell .gjs-trt-trait {
+    background: #fff;
+  }
+
+  .cover-page-builder-shell .gjs-sm-property,
+  .cover-page-builder-shell .gjs-trt-trait {
+    padding: 0.875rem;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .cover-page-builder-shell .gjs-sm-property:first-child,
+  .cover-page-builder-shell .gjs-trt-trait:first-child {
+    border-top: 0;
+  }
+
+  .cover-page-builder-shell .gjs-field,
+  .cover-page-builder-shell .gjs-sm-field,
+  .cover-page-builder-shell .gjs-clm-field,
+  .cover-page-builder-shell .gjs-sm-select,
+  .cover-page-builder-shell .gjs-select {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.75rem;
+    box-shadow: none;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field input,
+  .cover-page-builder-shell .gjs-sm-field select,
+  .cover-page-builder-shell .gjs-sm-field textarea,
+  .cover-page-builder-shell .gjs-field input,
+  .cover-page-builder-shell .gjs-field select,
+  .cover-page-builder-shell .gjs-field textarea,
+  .cover-page-builder-shell .gjs-trt-traits input,
+  .cover-page-builder-shell .gjs-trt-traits select,
+  .cover-page-builder-shell .gjs-trt-traits textarea {
+    color: #0f172a;
+    background: transparent;
+  }
+
+  .cover-page-builder-shell .gjs-radio-item {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #cbd5e1;
+  }
+
+  .cover-page-builder-shell .gjs-radio-item.gjs-four-bg,
+  .cover-page-builder-shell .gjs-sm-active {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .cover-page-builder-shell .gjs-layer {
+    color: #0f172a;
+  }
+
+  .cover-page-builder-shell .gjs-cv-canvas {
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cover-page-builder-shell .gjs-editor-cont,
+  .cover-page-builder-shell .gjs-cv-canvas,
+  .cover-page-builder-shell .gjs-canvas {
+    height: 100%;
+  }
+
+  .cover-page-builder-shell .gjs-frame-wrapper {
+    background: transparent;
   }
 }

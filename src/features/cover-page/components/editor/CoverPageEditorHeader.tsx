@@ -1,24 +1,23 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Template } from '../../types';
-import type { Dispatch, SetStateAction } from 'react';
+import type { CoverPageType } from '../../types';
 
 interface CoverPageEditorHeaderProps {
-  template: Template;
-  handleNameChange: (value: string) => void;
-  showPreview: boolean;
-  setShowPreview: Dispatch<SetStateAction<boolean>>;
-  handleCancel: () => void;
-  handleSave: () => void;
+  name: string;
+  type: CoverPageType;
   isSaving: boolean;
+  onNameChange: (value: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
 }
 
 const CoverPageEditorHeader = ({
-  template,
-  handleNameChange,
-  handleCancel,
-  handleSave,
+  name,
+  type,
   isSaving,
+  onNameChange,
+  onCancel,
+  onSave,
 }: CoverPageEditorHeaderProps) => {
   return (
     <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur">
@@ -33,11 +32,9 @@ const CoverPageEditorHeader = ({
             </label>
             <Input
               id="cover-page-editor-name"
-              value={template.name ?? ''}
-              onChange={event => handleNameChange(event.target.value)}
-              placeholder={`e.g., ${
-                template.type === 'front' ? 'Main' : 'Back'
-              } Cover Page`}
+              value={name}
+              onChange={event => onNameChange(event.target.value)}
+              placeholder={`e.g., ${type === 'front' ? 'Main' : 'Back'} Cover Page`}
               className="h-9 max-w-[420px] text-sm font-semibold"
             />
           </div>
@@ -46,12 +43,12 @@ const CoverPageEditorHeader = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={handleCancel}
+            onClick={onCancel}
             disabled={isSaving}
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+          <Button size="sm" onClick={onSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save'}
           </Button>
         </div>

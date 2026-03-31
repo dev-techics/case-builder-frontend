@@ -1,15 +1,16 @@
 import { useAppSelector } from '@/app/hooks';
 import CoverPagePreviewHtml from './CoverPagePreviewHtml';
+import { selectCoverPageByType } from '../../redux/selectors';
+import type { CoverPageType } from '../../types';
 
 interface CoverPagePreviewProps {
-  type: 'front' | 'back';
+  type: CoverPageType;
 }
 
 const CoverPagePreview = ({ type }: CoverPagePreviewProps) => {
-  const { frontCoverPage, backCoverPage } = useAppSelector(
-    state => state.coverPage
+  const html = useAppSelector(
+    state => selectCoverPageByType(state, type)?.html
   );
-  const html = type === 'front' ? frontCoverPage?.html : backCoverPage?.html;
 
   if (!html) {
     return (

@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { Template } from '../types';
+import type { CoverPageTemplate } from '../types';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -7,7 +7,7 @@ type CoverPagePayload = {
   templateKey?: string;
   values?: Record<string, unknown>;
   html?: string;
-  lexicalJson?: string | null;
+  builderState?: string | null;
   type?: 'front' | 'back';
   name?: string;
   description?: string;
@@ -34,17 +34,20 @@ const toSnakeCoverPagePayload = (data: CoverPagePayload) =>
     template_key: data.templateKey,
     values: data.values,
     html_content: data.html,
-    lexical_json: data.lexicalJson,
+    lexical_json: data.builderState,
     type: data.type,
     name: data.name,
     description: data.description,
     is_default: data.isDefault,
   });
 
-const normalizeTemplate = (payload: unknown): Template => {
-  const template = (payload ?? {}) as Template & {
+const normalizeTemplate = (payload: unknown): CoverPageTemplate => {
+  const template = (payload ?? {}) as CoverPageTemplate & {
+    builder_state?: string | null;
+    builder_state_json?: string | null;
     html_content?: string;
     lexical_json?: string | null;
+    lexicalJson?: string | null;
     template_key?: string;
     is_default?: boolean;
   };
@@ -52,22 +55,34 @@ const normalizeTemplate = (payload: unknown): Template => {
   return {
     ...template,
     html: template.html ?? template.html_content ?? '',
-    lexicalJson: template.lexicalJson ?? template.lexical_json ?? null,
+    builderState:
+      template.builderState ??
+      template.builder_state ??
+      template.builder_state_json ??
+      template.lexicalJson ??
+      template.lexical_json ??
+      null,
     templateKey: template.templateKey ?? template.template_key,
     isDefault: template.isDefault ?? template.is_default ?? false,
   };
 };
 
 const normalizeTemplateList = (response: unknown) => {
-  const payload = response as { coverPages?: Template[] } | Template[];
+  const payload = response as
+    | { coverPages?: CoverPageTemplate[] }
+    | CoverPageTemplate[];
   const templates = Array.isArray(payload)
     ? payload
     : (payload?.coverPages ?? []);
   return templates.map(template => normalizeTemplate(template));
 };
 
-const normalizeTemplateResponse = (response: any) => {
-  const template = response?.coverPage ?? response?.cover_page ?? response;
+const normalizeTemplateResponse = (response: unknown) => {
+  const payload = response as {
+    coverPage?: unknown;
+    cover_page?: unknown;
+  };
+  const template = payload?.coverPage ?? payload?.cover_page ?? response;
   return normalizeTemplate(template);
 };
 const coverPageApi = createApi({
@@ -87,7 +102,7 @@ const coverPageApi = createApi({
     /*------------------------------------
         Fetch cover page template query
     --------------------------------------*/
-    getTemplates: build.query<Template[], void>({
+    getTemplates: build.query<CoverPageTemplate[], void>({
       query: () => '/api/cover-pages',
       transformResponse: normalizeTemplateList,
       providesTags: result =>
@@ -104,7 +119,7 @@ const coverPageApi = createApi({
     /*-------------------------------------------
         Fetch sigle cover page template by id
     ---------------------------------------------*/
-    getTemplate: build.query<Template, string>({
+    getTemplate: build.query<CoverPageTemplate, string>({
       query: id => `/api/cover-pages/${id}`,
       transformResponse: normalizeTemplateResponse,
       providesTags: (_result, _error, id) => [{ type: 'CoverPage', id }],
@@ -112,7 +127,7 @@ const coverPageApi = createApi({
     /*-------------------------------------------
         Create a new cover page
     ---------------------------------------------*/
-    createCoverPage: build.mutation<Template, CoverPagePayload>({
+    createCoverPage: build.mutation<CoverPageTemplate, CoverPagePayload>({
       query: payload => ({
         url: '/api/cover-pages',
         method: 'POST',
@@ -125,7 +140,7 @@ const coverPageApi = createApi({
         Update an existing cover page
     ---------------------------------------------*/
     updateCoverPage: build.mutation<
-      Template,
+      CoverPageTemplate,
       { id: string; data: CoverPagePayload }
     >({
       query: ({ id, data }) => ({

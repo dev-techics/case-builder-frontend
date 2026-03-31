@@ -1,4 +1,4 @@
-import type { Template } from '../types';
+import type { CoverPageTemplate, CoverPageType } from '../types';
 
 export const isPersistedBundleId = (
   bundleId: string | null | undefined
@@ -12,29 +12,53 @@ export const isPersistedBundleId = (
   return normalized.toLowerCase() !== 'loading';
 };
 
-/**
- * Builds a draft template with unique ID and timestamp
- * @param type front | back
- * @param label front | back
- * @returns Template object with unique id and default values for a new cover page template
- */
-export const buildDraftTemplate = (
-  type: 'front' | 'back',
-  label: 'front' | 'back'
-): Template => {
+export const isDraftCoverPageId = (templateId: string | null | undefined) =>
+  Boolean(templateId?.startsWith('draft-'));
+
+export const getDraftCoverPageType = (
+  templateId: string
+): CoverPageType | null => {
+  if (templateId.includes('front')) {
+    return 'front';
+  }
+
+  if (templateId.includes('back')) {
+    return 'back';
+  }
+
+  return null;
+};
+
+export const getDefaultCoverPageName = (type: CoverPageType) =>
+  type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
+
+export const buildCoverPageBundleMetadata = (
+  type: CoverPageType,
+  templateId: string | null
+) =>
+  type === 'front'
+    ? { front_cover_page_id: templateId }
+    : { back_cover_page_id: templateId };
+
+export const createDraftCoverPageTemplate = (
+  type: CoverPageType
+): CoverPageTemplate => {
   const now = Date.now();
   const timestamp = new Date(now).toISOString();
+  const typeLabel = type === 'front' ? 'Front' : 'Back';
 
   return {
     id: `draft-${type}-${now}`,
     templateKey: `custom_${type}_${now}`,
-    name: `Custom ${label} Cover Page`,
-    description: 'Custom template',
+    name: `Custom ${typeLabel} Cover Page`,
+    description: 'Custom cover page template',
     type,
     isDefault: false,
     html: '',
-    lexicalJson: null,
+    builderState: null,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
 };
+
+export const buildDraftTemplate = createDraftCoverPageTemplate;

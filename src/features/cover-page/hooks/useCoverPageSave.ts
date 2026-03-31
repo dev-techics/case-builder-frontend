@@ -6,25 +6,38 @@ import {
   useUpdateBundleMetadataMutation,
   useUpdateCoverPageMutation,
 } from '../api';
-import { setTemplate } from '../redux/coverPageSlice';
-import type { Template } from '../types';
-import { isPersistedBundleId } from '../utils';
+import { setCoverPageTemplate } from '../redux/coverPageSlice';
+import type { CoverPageTemplate } from '../types';
+import {
+  buildCoverPageBundleMetadata,
+  getDefaultCoverPageName,
+  isPersistedBundleId,
+} from '../utils';
 
-const resolveCoverPageName = (type: 'front' | 'back', name?: string) => {
-  const trimmed = name?.trim();
-  if (trimmed) {
-    return trimmed;
-  }
-  return type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
-};
+const buildCoverPageSavePayload = (
+  template: CoverPageTemplate,
+  isDraft: boolean
+) => ({
+  templateKey:
+    template.templateKey ??
+    (isDraft ? `custom_${template.type}_${Date.now()}` : undefined),
+  html: template.html,
+  builderState: template.builderState,
+  type: template.type,
+  name: template.name.trim() || getDefaultCoverPageName(template.type),
+  description: template.description,
+  isDefault: template.isDefault,
+});
 
 export const useCoverPageSave = (
-  template: Template | null,
+  template: CoverPageTemplate | null,
   isDraft: boolean
 ) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { currentBundleId } = useAppSelector(state => state.coverPage);
+  const currentBundleId = useAppSelector(
+    state => state.coverPage.currentBundleId
+  );
   const [createCoverPage, { isLoading: isCreating }] =
     useCreateCoverPageMutation();
   const [updateCoverPage, { isLoading: isUpdating }] =
@@ -36,35 +49,21 @@ export const useCoverPageSave = (
       return;
     }
 
-    const templateKey =
-      template.templateKey ??
-      (isDraft ? `custom_${template.type}_${Date.now()}` : undefined);
-
-    const payload = {
-      templateKey,
-      html: template.html,
-      lexicalJson: template.lexicalJson,
-      type: template.type,
-      name: resolveCoverPageName(template.type, template.name),
-      description: template.description,
-      isDefault: template.isDefault,
-    };
-
     try {
-      // If it's a draft, we create a new template. Otherwise, we update the existing one.
+      const payload = buildCoverPageSavePayload(template, isDraft);
       const savedTemplate = isDraft
         ? await createCoverPage(payload).unwrap()
         : await updateCoverPage({ id: template.id, data: payload }).unwrap();
 
-      dispatch(setTemplate({ template: savedTemplate }));
+      dispatch(setCoverPageTemplate({ template: savedTemplate }));
 
       if (isPersistedBundleId(currentBundleId)) {
         await updateBundleMetadata({
           bundleId: currentBundleId,
-          metadata:
-            savedTemplate.type === 'front'
-              ? { front_cover_page_id: savedTemplate.id }
-              : { back_cover_page_id: savedTemplate.id },
+          metadata: buildCoverPageBundleMetadata(
+            savedTemplate.type,
+            savedTemplate.id
+          ),
         }).unwrap();
       }
 

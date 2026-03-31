@@ -1,24 +1,26 @@
-import { useAppSelector } from '@/app/hooks';
-import { Button } from '@/components/ui/button';
-import TemplateSelectionDialog from './components/TemplateSelectionDialog';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Edit03Icon,
   RemoveCircleIcon,
   ViewIcon,
 } from '@hugeicons/core-free-icons';
-import { useNavigate } from 'react-router-dom';
-import { useCoverPageHandlers } from './hook';
+import { useAppSelector } from '@/app/hooks';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import TemplateSelectionDialog from './components/TemplateSelectionDialog';
 import CoverPagePreview from './components/preview/CoverPagePreview';
-import { useState } from 'react';
+import { useCoverPageActions } from './hooks';
+import { selectCoverPageByType } from './redux/selectors';
+import type { CoverPageType } from './types';
 
 interface CoverPageProps {
-  type: 'front' | 'back';
+  type: CoverPageType;
 }
 
 const CoverPage = ({ type }: CoverPageProps) => {
-  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [showPreview, setShowPreview] = useState(false);
   const navigate = useNavigate();
   const {
     isTemplateDialogOpen: showTemplateDialog,
@@ -26,39 +28,25 @@ const CoverPage = ({ type }: CoverPageProps) => {
     handleSelectTemplate,
     handleCreateTemplate,
     handleRemoveTemplate,
-  } = useCoverPageHandlers(type);
-  const { frontCoverPage, backCoverPage } = useAppSelector(
-    state => state.coverPage
+  } = useCoverPageActions(type);
+  const selectedTemplate = useAppSelector(state =>
+    selectCoverPageByType(state, type)
   );
-  const selectedTemplateId =
-    type === 'front' ? frontCoverPage?.id : backCoverPage?.id;
-  const selectedTemplateName =
-    type === 'front' ? frontCoverPage?.name : backCoverPage?.name;
+  const selectedTemplateId = selectedTemplate?.id;
   const hasSelection = Boolean(selectedTemplateId);
-  const displayName = selectedTemplateName?.trim() || 'Not Selected';
+  const displayName = selectedTemplate?.name.trim() || 'Not Selected';
+
   return (
     <>
-      {/*-------------------------
-        Cover Page Selection Card
-      ----------------------------*/}
       <div className="space-y-3">
-        {/* Template Selection */}
         <h2>{type} cover page</h2>
-        <div className="flex gap-2 border rounded-md  p-2 justify-between items-center">
-          <p className="text-xs font-normal">
-            {/*---------------------------------- 
-              Cover page name based on the type 
-              -----------------------------------*/}
-            {displayName}
-          </p>
+        <div className="flex items-center justify-between gap-2 rounded-md border p-2">
+          <p className="text-xs font-normal">{displayName}</p>
           <div className="min-h-5 min-w-5">
-            {/*--------------------------------- 
-              Select Cover page If not selected
-            ------------------------------------*/}
             {!hasSelection ? (
               <Button
-                variant={'ghost'}
-                size={'sm'}
+                variant="ghost"
+                size="sm"
                 className="border shadow-sm text-xs font-normal"
                 onClick={() => setShowTemplateDialog(true)}
               >
@@ -79,7 +67,7 @@ const CoverPage = ({ type }: CoverPageProps) => {
                 </span>
                 <span
                   title="Edit"
-                  className=" hover:bg-gray-300 p-1 rounded-full cursor-pointer"
+                  className="cursor-pointer rounded-full p-1 hover:bg-gray-300"
                   onClick={() => {
                     if (!selectedTemplateId) {
                       return;
@@ -91,7 +79,7 @@ const CoverPage = ({ type }: CoverPageProps) => {
                 </span>
                 <span
                   title="Remove"
-                  className=" hover:bg-gray-300 rounded-full cursor-pointer p-1"
+                  className="cursor-pointer rounded-full p-1 hover:bg-gray-300"
                   onClick={handleRemoveTemplate}
                 >
                   <HugeiconsIcon
@@ -105,9 +93,6 @@ const CoverPage = ({ type }: CoverPageProps) => {
         </div>
       </div>
 
-      {/*--------------------------- 
-        Template Selection Dialog 
-        ---------------------------*/}
       <TemplateSelectionDialog
         open={showTemplateDialog}
         onOpen={setShowTemplateDialog}
@@ -116,9 +101,6 @@ const CoverPage = ({ type }: CoverPageProps) => {
         type={type}
       />
 
-      {/*------------------------------ 
-        View selected cover page dialog
-      ---------------------------------*/}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent>
           <CoverPagePreview type={type} />

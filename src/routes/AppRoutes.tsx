@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import LandingLayout from '../layouts/LandingPageLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -13,7 +14,14 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ProtectedRoute, { PublicRoute } from './ProtectedRoutes';
 import useAuthInit from '@/features/auth/hooks/useAuthInit';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
-import { CoverPageEditor } from '@/features/cover-page/components/editor/CoverPageEditor';
+
+const CoverPageEditor = lazy(() =>
+  import('@/features/cover-page/components/editor/CoverPageEditor').then(
+    module => ({
+      default: module.CoverPageEditor,
+    })
+  )
+);
 
 export default function AppRoutes() {
   useAuthInit();
@@ -44,7 +52,20 @@ export default function AppRoutes() {
           <Route element={<BundlesPage />} path="/dashboard/bundles" />
         </Route>
 
-        <Route element={<CoverPageEditor />} path="/cover-page-editor/:id" />
+        <Route
+          element={
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-gray-500">
+                  Loading cover page editor...
+                </div>
+              }
+            >
+              <CoverPageEditor />
+            </Suspense>
+          }
+          path="/cover-page-editor/:id"
+        />
       </Route>
 
       {/* 404 Not Found */}

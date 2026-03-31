@@ -17,21 +17,22 @@ import {
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Trash2 } from 'lucide-react';
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
-import type { Template } from '../types';
-import { deSelectCoverPage } from '../redux/coverPageSlice';
+import type { CoverPageTemplate, CoverPageType } from '../types';
+import { clearCoverPageTemplate } from '../redux/coverPageSlice';
+import { selectCoverPageByType } from '../redux/selectors';
 import {
   useDeleteCoverPageMutation,
   useGetTemplatesQuery,
   useUpdateBundleMetadataMutation,
 } from '../api';
-import { isPersistedBundleId } from '../utils';
+import { buildCoverPageBundleMetadata, isPersistedBundleId } from '../utils';
 
 interface TemplateSelectionDialogProps {
   open: boolean;
   onOpen: (open: boolean) => void;
   onSelect: (id: string) => void;
   onCreate: () => void;
-  type: 'front' | 'back';
+  type: CoverPageType;
 }
 
 const TemplateSelectionDialog = ({
@@ -50,28 +51,26 @@ const TemplateSelectionDialog = ({
     useDeleteCoverPageMutation();
   const [updateBundleMetadata] = useUpdateBundleMetadataMutation();
   const templates = data ?? [];
-  const { frontCoverPage, backCoverPage, currentBundleId } = useAppSelector(
-    state => state.coverPage
+  const selectedTemplate = useAppSelector(state =>
+    selectCoverPageByType(state, type)
+  );
+  const currentBundleId = useAppSelector(
+    state => state.coverPage.currentBundleId
   );
 
-  const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CoverPageTemplate | null>(
+    null
+  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Filter templates based on type
-  const coverType = type.toLowerCase() as 'front' | 'back';
   const filteredTemplates = templates.filter(
-    template => template.type === coverType
+    template => template.type === type
   );
-  const selectedId =
-    coverType === 'front' ? frontCoverPage?.id : backCoverPage?.id;
-
-  const handleSelectTemplate = (id: string) => {
-    onSelect(id);
-  };
+  const selectedId = selectedTemplate?.id;
 
   const handleRequestDelete = (
     event: MouseEvent<HTMLButtonElement>,
-    template: Template
+    template: CoverPageTemplate
   ) => {
     event.stopPropagation();
     setDeleteTarget(template);
@@ -86,15 +85,12 @@ const TemplateSelectionDialog = ({
       await deleteCoverPage(deleteTarget.id).unwrap();
 
       if (selectedId === deleteTarget.id) {
-        dispatch(deSelectCoverPage(type));
+        dispatch(clearCoverPageTemplate(type));
 
         if (isPersistedBundleId(currentBundleId)) {
           await updateBundleMetadata({
             bundleId: currentBundleId,
-            metadata:
-              coverType === 'front'
-                ? { front_cover_page_id: null }
-                : { back_cover_page_id: null },
+            metadata: buildCoverPageBundleMetadata(type, null),
           }).unwrap();
         }
       }
@@ -112,7 +108,7 @@ const TemplateSelectionDialog = ({
   ) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      handleSelectTemplate(id);
+      onSelect(id);
     }
   };
 
@@ -123,9 +119,6 @@ const TemplateSelectionDialog = ({
           <DialogTitle>Choose {type} Cover Page Template</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4 md:grid-cols-3 sm:grid-cols-2">
-          {/*----------------------- 
-            Create new cover page
-          --------------------------*/}
           <button
             className="group rounded-lg border-2 border-dashed border-gray-300 p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50"
             onClick={onCreate}
@@ -139,7 +132,7 @@ const TemplateSelectionDialog = ({
               </div>
             </div>
             <p className="text-gray-600 text-xs">
-              Start from a blank {type.toLowerCase()} cover page.
+              Start from a blank {type} cover page.
             </p>
           </button>
 
@@ -153,9 +146,6 @@ const TemplateSelectionDialog = ({
             </div>
           ) : filteredTemplates.length > 0 ? (
             filteredTemplates.map(template => (
-              /*------------------------
-                  Cover page tempalte
-              --------------------------*/
               <div
                 key={template.id}
                 role="button"
@@ -165,7 +155,7 @@ const TemplateSelectionDialog = ({
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200'
                 }`}
-                onClick={() => handleSelectTemplate(template.id)}
+                onClick={() => onSelect(template.id)}
                 onKeyDown={event => handleTemplateKeyDown(event, template.id)}
               >
                 {template.id && (
@@ -196,7 +186,7 @@ const TemplateSelectionDialog = ({
           ) : (
             <div className="col-span-full text-center py-8">
               <p className="text-gray-500 text-sm">
-                No {type.toLowerCase()} cover page templates available
+                No {type} cover page templates available
               </p>
             </div>
           )}

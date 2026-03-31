@@ -88,9 +88,8 @@ export const normalizePageSetup = (
       ? input.orientation
       : DEFAULT_PAGE_SETUP.orientation;
 
-  const size = input.size && isPageSize(input.size)
-    ? input.size
-    : DEFAULT_PAGE_SETUP.size;
+  const size =
+    input.size && isPageSize(input.size) ? input.size : DEFAULT_PAGE_SETUP.size;
 
   const margin = {
     top: clamp(coerceNumber(input.margin?.top, DEFAULT_PAGE_SETUP.margin.top)),
