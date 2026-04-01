@@ -89,7 +89,9 @@ const coverPageApi = createApi({
   reducerPath: 'coverPageApi',
   baseQuery: fetchBaseQuery({
     baseUrl: BASE_URL,
+    credentials: 'include',
     prepareHeaders: headers => {
+      headers.set('accept', 'application/json');
       const token = localStorage.getItem('access_token');
       if (token) {
         headers.set('authorization', `Bearer ${token}`);

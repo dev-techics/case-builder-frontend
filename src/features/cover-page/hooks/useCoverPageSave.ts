@@ -62,7 +62,7 @@ export const useCoverPageSave = (
           bundleId: currentBundleId,
           metadata: buildCoverPageBundleMetadata(
             savedTemplate.type,
-            savedTemplate.id
+            savedTemplate.id.toString()
           ),
         }).unwrap();
       }

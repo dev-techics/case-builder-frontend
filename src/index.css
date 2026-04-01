@@ -151,6 +151,10 @@
     font-size: 0.9em;
   }
 
+  /*----------------------------------------
+   Grapes cover page builder custom styles 
+   ----------------------------------------*/
+
   .cover-page-builder-shell {
     --gjs-main-color: #fff;
     --gjs-primary-color: #fff;
@@ -283,6 +287,27 @@
     box-shadow: none;
   }
 
+  .cover-page-builder-shell .gjs-sm-field.gjs-sm-integer,
+  .cover-page-builder-shell .gjs-sm-field.gjs-sm-input,
+  .cover-page-builder-shell .gjs-sm-field.gjs-sm-select,
+  .cover-page-builder-shell .gjs-sm-input.gjs-clm-field,
+  .cover-page-builder-shell .gjs-sm-integer.gjs-clm-field,
+  .cover-page-builder-shell .gjs-sm-select.gjs-clm-field,
+  .cover-page-builder-shell .gjs-clm-select {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    box-shadow: none;
+    color: #0f172a;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field.gjs-sm-composite,
+  .cover-page-builder-shell .gjs-sm-composite.gjs-clm-field,
+  .cover-page-builder-shell .gjs-sm-composite.gjs-clm-select {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    box-shadow: none;
+  }
+
   .cover-page-builder-shell .gjs-sm-field input,
   .cover-page-builder-shell .gjs-sm-field select,
   .cover-page-builder-shell .gjs-sm-field textarea,
@@ -293,7 +318,68 @@
   .cover-page-builder-shell .gjs-trt-traits select,
   .cover-page-builder-shell .gjs-trt-traits textarea {
     color: #0f172a;
+    -webkit-text-fill-color: #0f172a;
     background: transparent;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field input:focus,
+  .cover-page-builder-shell .gjs-sm-field select:focus,
+  .cover-page-builder-shell .gjs-sm-field textarea:focus,
+  .cover-page-builder-shell .gjs-field input:focus,
+  .cover-page-builder-shell .gjs-field select:focus,
+  .cover-page-builder-shell .gjs-field textarea:focus,
+  .cover-page-builder-shell .gjs-trt-traits input:focus,
+  .cover-page-builder-shell .gjs-trt-traits select:focus,
+  .cover-page-builder-shell .gjs-trt-traits textarea:focus {
+    color: #0f172a;
+    -webkit-text-fill-color: #0f172a;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field input::placeholder,
+  .cover-page-builder-shell .gjs-sm-field textarea::placeholder,
+  .cover-page-builder-shell .gjs-field input::placeholder,
+  .cover-page-builder-shell .gjs-field textarea::placeholder,
+  .cover-page-builder-shell .gjs-trt-traits input::placeholder,
+  .cover-page-builder-shell .gjs-trt-traits textarea::placeholder {
+    color: #000;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field input:disabled,
+  .cover-page-builder-shell .gjs-sm-field select:disabled,
+  .cover-page-builder-shell .gjs-sm-field textarea:disabled,
+  .cover-page-builder-shell .gjs-field input:disabled,
+  .cover-page-builder-shell .gjs-field select:disabled,
+  .cover-page-builder-shell .gjs-field textarea:disabled,
+  .cover-page-builder-shell .gjs-trt-traits input:disabled,
+  .cover-page-builder-shell .gjs-trt-traits select:disabled,
+  .cover-page-builder-shell .gjs-trt-traits textarea:disabled {
+    color: #475569;
+    -webkit-text-fill-color: #475569;
+    opacity: 1;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field .gjs-sm-unit,
+  .cover-page-builder-shell .gjs-clm-field .gjs-sm-unit,
+  .cover-page-builder-shell .gjs-clm-select .gjs-sm-unit {
+    color: #475569;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field .gjs-sm-u-arrow,
+  .cover-page-builder-shell .gjs-clm-field .gjs-sm-u-arrow,
+  .cover-page-builder-shell .gjs-clm-select .gjs-sm-u-arrow {
+    border-bottom-color: #64748b;
+  }
+
+  .cover-page-builder-shell .gjs-sm-field .gjs-clm-d-s-arrow,
+  .cover-page-builder-shell .gjs-sm-field .gjs-sm-d-arrow,
+  .cover-page-builder-shell .gjs-sm-field .gjs-sm-d-s-arrow,
+  .cover-page-builder-shell .gjs-clm-field .gjs-clm-d-s-arrow,
+  .cover-page-builder-shell .gjs-clm-field .gjs-sm-d-arrow,
+  .cover-page-builder-shell .gjs-clm-field .gjs-sm-d-s-arrow,
+  .cover-page-builder-shell .gjs-clm-select .gjs-clm-d-s-arrow,
+  .cover-page-builder-shell .gjs-clm-select .gjs-sm-d-arrow,
+  .cover-page-builder-shell .gjs-clm-select .gjs-sm-d-s-arrow {
+    border-top-color: #64748b;
   }
 
   .cover-page-builder-shell .gjs-radio-item {

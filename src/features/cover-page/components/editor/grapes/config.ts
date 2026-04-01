@@ -3,6 +3,11 @@ import { COVER_PAGE_WRAPPER_SELECTOR } from '../../../utils/grapesBuilder';
 export type LibraryPanel = 'blocks' | 'layers';
 export type InspectorPanel = 'styles' | 'traits';
 
+/*------------------------------------------------
+  Styles applied to the canvas iframe 
+  to ensure the cover page is displayed correctly 
+  and provides a good editing experience.
+-------------------------------------------------*/
 export const CANVAS_FRAME_STYLES = `
   * {
     box-sizing: border-box;
@@ -24,6 +29,10 @@ export const CANVAS_FRAME_STYLES = `
   }
 `;
 
+/*--------------------------------------------------------------------------------
+  Configuration for the style manager sectors in the right inspector panel.
+  Each sector groups related CSS properties together for a better user experience.
+----------------------------------------------------------------------------------*/
 export const STYLE_MANAGER_SECTORS = [
   {
     name: 'Typography',
@@ -79,6 +88,11 @@ export const STYLE_MANAGER_SECTORS = [
   },
 ];
 
+/*------------------------------------------------------------------------------------------------------------
+  Flags for the root component of the GrapesJS editor.
+  These settings ensure that the root component (which represents the entire canvas)
+  cannot be accidentally modified or removed by the user, preserving the integrity of the cover page structure.
+---------------------------------------------------------------------------------------------------------------*/
 export const ROOT_COMPONENT_FLAGS = {
   removable: false,
   draggable: false,

@@ -32,6 +32,7 @@ export const getDraftCoverPageType = (
 export const getDefaultCoverPageName = (type: CoverPageType) =>
   type === 'front' ? 'Front Cover Page' : 'Back Cover Page';
 
+// Utility function to convert camelCase keys in the payload to snake_case before sending it to the API. This ensures that the API receives the data in the expected format, regardless of how it's structured in the frontend.
 export const buildCoverPageBundleMetadata = (
   type: CoverPageType,
   templateId: string | null

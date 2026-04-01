@@ -219,7 +219,7 @@ export const useGrapesCoverPageEditor = (
         assets: [],
       },
       canvas: {
-        styles: [CANVAS_FRAME_STYLES],
+        frameStyle: CANVAS_FRAME_STYLES,
       },
     });
 
