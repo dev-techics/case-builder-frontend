@@ -7,17 +7,19 @@ import {
   changeFooter,
   changeHeaderLeft,
   changeHeaderRight,
-  saveMetadataToBackend,
 } from '../redux/propertiesPanelSlice';
+import { usePersistMetadata } from '../hooks';
 
 const Annotations = () => {
   const dispatch = useAppDispatch();
+  // Selectors to get header/footer text and save status from Redux state
   const { headerLeft, headerRight, footer } = useAppSelector(
     states => states.propertiesPanel.headersFooter
   );
-  const { isSaving, lastSaved } = useAppSelector(
+  const { currentBundleId, isSaving, lastSaved } = useAppSelector(
     states => states.propertiesPanel
   );
+  const { persistMetadata } = usePersistMetadata();
 
   // Local state for input fields
   const [localHeaderLeft, setLocalHeaderLeft] = useState(headerLeft.text || '');
@@ -40,17 +42,24 @@ const Annotations = () => {
   }, [footer.text]);
 
   const handleReset = () => {
+    setLocalHeaderLeft('');
+    setLocalHeaderRight('');
+    setLocalFooter('');
     dispatch(changeHeaderLeft(''));
     dispatch(changeHeaderRight(''));
     dispatch(changeFooter(''));
-    // Save to backend after reset
-    setTimeout(() => {
-      dispatch(saveMetadataToBackend());
-    }, 100);
   };
 
   const handleSave = () => {
-    dispatch(saveMetadataToBackend());
+    dispatch(changeHeaderLeft(localHeaderLeft));
+    dispatch(changeHeaderRight(localHeaderRight));
+    dispatch(changeFooter(localFooter));
+    void persistMetadata({
+      bundleId: currentBundleId,
+      headerLeftText: localHeaderLeft,
+      headerRightText: localHeaderRight,
+      footerText: localFooter,
+    });
   };
 
   const handleCopyPreview = () => {
@@ -62,7 +71,7 @@ const Annotations = () => {
     field: 'headerLeft' | 'headerRight' | 'footer',
     value: string
   ) => {
-    // Update Redux state
+    // Update Redux state on blur so the PDF preview reflects the latest text
     if (field === 'headerLeft') {
       dispatch(changeHeaderLeft(value));
     } else if (field === 'headerRight') {
@@ -70,11 +79,6 @@ const Annotations = () => {
     } else if (field === 'footer') {
       dispatch(changeFooter(value));
     }
-
-    // Auto-save to backend after a short delay
-    setTimeout(() => {
-      dispatch(saveMetadataToBackend());
-    }, 500);
   };
 
   const inputClass =
@@ -95,7 +99,7 @@ const Annotations = () => {
         </div>
       )}
 
-      {/* Header Section */}
+      {/* ----------- Header Section ------------- */}
       <div>
         <div className="mb-3 flex flex-col items-start justify-between">
           <h3 className="font-semibold text-gray-900 text-sm">Page Headers</h3>
@@ -139,7 +143,7 @@ const Annotations = () => {
         </div>
       </div>
 
-      {/* Footer Section */}
+      {/* ----------- Footer Section ------------- */}
       <div>
         <div className="mb-3 flex flex-col items-start justify-between">
           <h3 className="font-semibold text-gray-900 text-sm">Page Footer</h3>
@@ -169,7 +173,7 @@ const Annotations = () => {
         </div>
       </div>
 
-      {/* Preview Section */}
+      {/* ---------- Preview Section ------------ */}
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
         <p className="mb-2 font-semibold text-blue-900 text-xs">Preview</p>
         <div className="space-y-1 rounded border border-blue-100 bg-white p-2 font-mono text-blue-800 text-xs">
@@ -193,6 +197,7 @@ const Annotations = () => {
 
       {/* Action Buttons */}
       <div className="flex gap-2">
+        {/* Copy Button */}
         <Button
           className="flex-1"
           onClick={handleCopyPreview}
@@ -202,6 +207,7 @@ const Annotations = () => {
           <Copy className="mr-1.5 h-3.5 w-3.5" />
           Copy
         </Button>
+        {/* Reset Button */}
         <Button
           className="flex-1"
           onClick={handleReset}
@@ -211,9 +217,10 @@ const Annotations = () => {
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           Reset
         </Button>
+        {/* Save Button */}
         <Button
           className="flex-1"
-          disabled={isSaving}
+          disabled={isSaving || !currentBundleId}
           onClick={handleSave}
           size="sm"
           variant="default"

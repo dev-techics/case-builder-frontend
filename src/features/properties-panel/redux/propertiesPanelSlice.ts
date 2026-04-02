@@ -1,9 +1,5 @@
-import { BundleApiService } from '@/api/axiosInstance';
-import {
-  createAsyncThunk,
-  createSlice,
-  type PayloadAction,
-} from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { propertiesPanelApi, type PropertiesPanelMetadata } from '../api';
 
 type HeaderFooterItem = {
   text: string;
@@ -54,38 +50,14 @@ const initialState: PropertiesPanelState = {
   lastSaved: null,
 };
 
-// Async thunk to save metadata to backend
-export const saveMetadataToBackend = createAsyncThunk(
-  'propertiesPanel/saveMetadata',
-  async (_, { getState }) => {
-    const state = getState() as any;
-    const { headersFooter, currentBundleId } = state.propertiesPanel;
-
-    if (!currentBundleId) {
-      throw new Error('No bundle ID set');
-    }
-
-    const response = await BundleApiService.updateMetadata(currentBundleId, {
-      header_left: headersFooter.headerLeft.text,
-      header_right: headersFooter.headerRight.text,
-      footer: headersFooter.footer.text,
-    });
-
-    return response;
-  }
-);
-
-// Async thunk to load metadata from backend
-export const loadMetadataFromBackend = createAsyncThunk(
-  'propertiesPanel/loadMetadata',
-  async (bundleId: string) => {
-    const response = await BundleApiService.getBundle(bundleId);
-    return {
-      bundleId,
-      metadata: response.metadata || {},
-    };
-  }
-);
+const applyMetadata = (
+  state: PropertiesPanelState,
+  metadata: PropertiesPanelMetadata
+) => {
+  state.headersFooter.headerLeft.text = metadata.headerLeft || '';
+  state.headersFooter.headerRight.text = metadata.headerRight || '';
+  state.headersFooter.footer.text = metadata.footer || '';
+};
 
 const propertiesPanelSlice = createSlice({
   name: 'propertiesPanel',
@@ -117,6 +89,16 @@ const propertiesPanelSlice = createSlice({
     setCurrentBundleId: (state, action: PayloadAction<string | null>) => {
       state.currentBundleId = action.payload;
     },
+    syncMetadataFromBackend: (
+      state,
+      action: PayloadAction<{
+        bundleId: string;
+        metadata: PropertiesPanelMetadata;
+      }>
+    ) => {
+      state.currentBundleId = action.payload.bundleId;
+      applyMetadata(state, action.payload.metadata);
+    },
     // Clear document info when files are deleted
     removeDocumentPageCount: (state, action: PayloadAction<string>) => {
       delete state.documentInfo[action.payload];
@@ -131,25 +113,25 @@ const propertiesPanelSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      // Save metadata
-      .addCase(saveMetadataToBackend.pending, state => {
-        state.isSaving = true;
-      })
-      .addCase(saveMetadataToBackend.fulfilled, state => {
-        state.isSaving = false;
-        state.lastSaved = new Date().toISOString();
-      })
-      .addCase(saveMetadataToBackend.rejected, state => {
-        state.isSaving = false;
-      })
-      // Load metadata
-      .addCase(loadMetadataFromBackend.fulfilled, (state, action) => {
-        const { metadata, bundleId } = action.payload;
-        state.currentBundleId = bundleId;
-        state.headersFooter.headerLeft.text = metadata.headerLeft || '';
-        state.headersFooter.headerRight.text = metadata.headerRight || '';
-        state.headersFooter.footer.text = metadata.footer || '';
-      });
+      .addMatcher(
+        propertiesPanelApi.endpoints.saveMetaData.matchPending,
+        state => {
+          state.isSaving = true;
+        }
+      )
+      .addMatcher(
+        propertiesPanelApi.endpoints.saveMetaData.matchFulfilled,
+        state => {
+          state.isSaving = false;
+          state.lastSaved = new Date().toISOString();
+        }
+      )
+      .addMatcher(
+        propertiesPanelApi.endpoints.saveMetaData.matchRejected,
+        state => {
+          state.isSaving = false;
+        }
+      );
   },
 });
 
@@ -159,6 +141,7 @@ export const {
   changeFooter,
   setDocumentPageCount,
   setCurrentBundleId,
+  syncMetadataFromBackend,
   removeDocumentPageCount,
   clearDocumentInfo,
   toggleRightSidebar,

@@ -3,9 +3,10 @@ import { useAppDispatch } from '@/app/hooks';
 import { loadComments } from '@/features/toolbar/redux';
 import {
   clearDocumentInfo,
-  loadMetadataFromBackend,
   setCurrentBundleId,
+  syncMetadataFromBackend,
 } from '@/features/properties-panel/redux/propertiesPanelSlice';
+import { useGetMetaDataQuery } from '@/features/properties-panel/api';
 import { resolveBundleId } from '@/lib/bundleId';
 
 type UseBundleMetadataOptions = {
@@ -22,6 +23,13 @@ export const useBundleMetadata = ({
     routeBundleId: bundleId,
     treeId,
   });
+  const { data: metadata } = useGetMetaDataQuery(
+    { bundleId: resolvedBundleId ?? '' },
+    {
+      skip: !resolvedBundleId,
+      refetchOnMountOrArgChange: true,
+    }
+  );
 
   useEffect(() => {
     if (resolvedBundleId) {
@@ -37,9 +45,16 @@ export const useBundleMetadata = ({
 
   useEffect(() => {
     dispatch(setCurrentBundleId(resolvedBundleId));
-
-    if (resolvedBundleId) {
-      dispatch(loadMetadataFromBackend(resolvedBundleId));
-    }
   }, [dispatch, resolvedBundleId]);
+
+  useEffect(() => {
+    if (resolvedBundleId && metadata) {
+      dispatch(
+        syncMetadataFromBackend({
+          bundleId: resolvedBundleId,
+          metadata,
+        })
+      );
+    }
+  }, [dispatch, metadata, resolvedBundleId]);
 };

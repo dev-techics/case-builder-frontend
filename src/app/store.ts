@@ -12,6 +12,7 @@ import { fileTreeApi } from '@/features/file-explorer/api';
 import { editorApi } from '@/features/editor/api';
 import { dashboardApi } from '@/features/dashboard/api';
 import dashboardReducer from '@/features/dashboard/redux';
+import { propertiesPanelApi } from '@/features/properties-panel/api';
 
 const store = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ const store = configureStore({
     [fileTreeApi.reducerPath]: fileTreeApi.reducer,
     [editorApi.reducerPath]: editorApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
+    [propertiesPanelApi.reducerPath]: propertiesPanelApi.reducer,
     /*----------- state slices ------------ */
     auth: authReducer,
     fileTree: fileTreeReducer,
@@ -37,7 +39,8 @@ const store = configureStore({
       coverPageApi.middleware,
       fileTreeApi.middleware,
       editorApi.middleware,
-      dashboardApi.middleware
+      dashboardApi.middleware,
+      propertiesPanelApi.middleware
     ),
 });
 
