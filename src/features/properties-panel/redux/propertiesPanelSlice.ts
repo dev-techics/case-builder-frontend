@@ -7,6 +7,23 @@ type HeaderFooterItem = {
   size: number;
 };
 
+type HeaderFooterField = 'headerLeft' | 'headerRight' | 'footer';
+
+type AnnotationValues = Record<HeaderFooterField, string>;
+
+type UpdateAnnotationsPayload =
+  | {
+      type: 'reset';
+    }
+  | {
+      type: 'blur';
+      annotation: { field: HeaderFooterField; value: string };
+    }
+  | {
+      type: 'save';
+      annotations: AnnotationValues;
+    };
+
 type DocumentPageInfo = {
   numPages: number;
   fileName?: string;
@@ -23,6 +40,12 @@ type PropertiesPanelState = {
   currentBundleId: string | null;
   isSaving: boolean;
   lastSaved: string | null;
+};
+
+const clearMetadata = (state: PropertiesPanelState) => {
+  state.headersFooter.headerLeft.text = '';
+  state.headersFooter.headerRight.text = '';
+  state.headersFooter.footer.text = '';
 };
 
 const initialState: PropertiesPanelState = {
@@ -63,14 +86,26 @@ const propertiesPanelSlice = createSlice({
   name: 'propertiesPanel',
   initialState,
   reducers: {
-    changeHeaderLeft: (state, action: PayloadAction<string>) => {
-      state.headersFooter.headerLeft.text = action.payload;
-    },
-    changeHeaderRight: (state, action: PayloadAction<string>) => {
-      state.headersFooter.headerRight.text = action.payload;
-    },
-    changeFooter: (state, action: PayloadAction<string>) => {
-      state.headersFooter.footer.text = action.payload;
+    updateAnnotations: (
+      state,
+      action: PayloadAction<UpdateAnnotationsPayload>
+    ) => {
+      if (action.payload.type === 'reset') {
+        clearMetadata(state);
+        return;
+      }
+
+      if (action.payload.type === 'blur') {
+        const { field, value } = action.payload.annotation;
+        state.headersFooter[field].text = value;
+        return;
+      }
+
+      state.headersFooter.headerLeft.text =
+        action.payload.annotations.headerLeft;
+      state.headersFooter.headerRight.text =
+        action.payload.annotations.headerRight;
+      state.headersFooter.footer.text = action.payload.annotations.footer;
     },
     // New action to set document page count
     setDocumentPageCount: (
@@ -87,6 +122,10 @@ const propertiesPanelSlice = createSlice({
       };
     },
     setCurrentBundleId: (state, action: PayloadAction<string | null>) => {
+      if (state.currentBundleId !== action.payload) {
+        clearMetadata(state);
+        state.lastSaved = null;
+      }
       state.currentBundleId = action.payload;
     },
     syncMetadataFromBackend: (
@@ -136,9 +175,7 @@ const propertiesPanelSlice = createSlice({
 });
 
 export const {
-  changeHeaderLeft,
-  changeHeaderRight,
-  changeFooter,
+  updateAnnotations,
   setDocumentPageCount,
   setCurrentBundleId,
   syncMetadataFromBackend,

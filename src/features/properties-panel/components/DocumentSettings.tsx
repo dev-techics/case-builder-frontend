@@ -1,7 +1,77 @@
+import type { LucideIcon } from 'lucide-react';
 import { Calendar, FileCog, FileText, HardDrive } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { useMemo } from 'react';
 import { useAppSelector } from '@/app/hooks';
-import axiosInstance from '@/api/axiosInstance';
+import { useGetDocumentMetadataQuery } from '@/features/properties-panel/api';
+
+const formatFileSize = (bytes: number | null): string => {
+  if (bytes === null || !Number.isFinite(bytes)) {
+    return 'N/A';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let size = bytes;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${size.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
+};
+
+const formatDate = (dateValue: string | null): string => {
+  if (!dateValue) {
+    return 'N/A';
+  }
+
+  const parsedDate = new Date(dateValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'N/A';
+  }
+
+  return parsedDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+type InfoRowProps = {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  title?: string;
+  monospace?: boolean;
+};
+
+const InfoRow = ({
+  icon: Icon,
+  label,
+  value,
+  title,
+  monospace = false,
+}: InfoRowProps) => {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
+      <div className="flex min-w-0 items-center gap-2">
+        <Icon className="h-4 w-4 flex-shrink-0 text-gray-400" />
+        <span className="text-gray-600 text-sm">{label}</span>
+      </div>
+      <span
+        className={`max-w-40 truncate text-right font-semibold text-gray-900 text-sm ${
+          monospace ? 'font-mono text-xs' : ''
+        }`}
+        title={title ?? value}
+      >
+        {value}
+      </span>
+    </div>
+  );
+};
 
 function DocumentSettings() {
   const selectedFile = useAppSelector(state => state.fileTree.selectedFile);
@@ -10,53 +80,16 @@ function DocumentSettings() {
     state => state.propertiesPanel.documentInfo
   );
 
-  const [fileSize, setFileSize] = useState<string | null>(null);
-
   const currentFile = useMemo(() => {
     if (!selectedFile) return null;
     const node = tree.nodes[selectedFile];
     return node?.type === 'file' ? node : null;
   }, [selectedFile, tree.nodes]);
-
-  /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    Get the size of the document
-  -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-  useEffect(() => {
-    if (!selectedFile) {
-      setFileSize(null);
-      return;
-    }
-
-    let isActive = true;
-
-    const fetchFileSize = async () => {
-      try {
-        const response = await axiosInstance.head(
-          `/api/documents/${selectedFile}/stream?original=true`
-        );
-        const contentLength = response.headers['content-length'];
-        const bytes = Number.parseInt(contentLength, 10);
-
-        if (!Number.isFinite(bytes)) {
-          if (isActive) setFileSize('N/A');
-          return;
-        }
-
-        if (isActive) {
-          setFileSize(`${(bytes / (1024 * 1024)).toFixed(2)} MB`);
-        }
-      } catch (error) {
-        if (isActive) setFileSize('N/A');
-        console.log('Error fetching file size:', error);
-      }
-    };
-
-    fetchFileSize();
-
-    return () => {
-      isActive = false;
-    };
-  }, [selectedFile]);
+  const {
+    data: metadata,
+    isLoading: isMetadataLoading,
+    isFetching: isMetadataFetching,
+  } = useGetDocumentMetadataQuery(currentFile?.id ?? skipToken);
 
   if (!currentFile) {
     return (
@@ -70,12 +103,28 @@ function DocumentSettings() {
     );
   }
 
-  const totalPages =
-    currentFile && documentInfo?.[currentFile.id]?.numPages
-      ? documentInfo[currentFile.id].numPages
-      : 'Loading...';
+  const fallbackPageCount = documentInfo[currentFile.id]?.numPages ?? null;
+  const totalPages = metadata?.pageCount ?? fallbackPageCount;
+  const isMetadataPending =
+    (isMetadataLoading || isMetadataFetching) && !metadata;
 
-  const displayFileSize = fileSize ?? 'Loading...';
+  const displayPages =
+    totalPages !== null
+      ? String(totalPages)
+      : isMetadataPending
+        ? 'Loading...'
+        : 'N/A';
+  const displayFileSize = metadata
+    ? formatFileSize(metadata.fileSizeBytes)
+    : isMetadataPending
+      ? 'Loading...'
+      : 'N/A';
+  const displayModified = metadata
+    ? formatDate(metadata.lastModifiedAt)
+    : isMetadataPending
+      ? 'Loading...'
+      : 'N/A';
+  const documentTitle = metadata?.originalName || currentFile.name;
 
   return (
     <div className="mx-2 space-y-1">
@@ -87,9 +136,9 @@ function DocumentSettings() {
         <div className="min-w-0 flex-1">
           <h3
             className="truncate font-semibold text-gray-900 text-sm"
-            title={currentFile.name}
+            title={documentTitle}
           >
-            {currentFile.name}
+            {documentTitle}
           </h3>
           <p className="mt-0.5 text-gray-500 text-xs">PDF Document</p>
         </div>
@@ -97,39 +146,9 @@ function DocumentSettings() {
 
       {/* Document Info Grid */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
-          <div className="flex items-center gap-2">
-            <FileCog className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-600 text-sm">Total Pages</span>
-          </div>
-          <span className="font-semibold text-gray-900 text-sm">
-            {totalPages}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
-          <div className="flex items-center gap-2">
-            <HardDrive className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-600 text-sm">File Size</span>
-          </div>
-          <span className="font-semibold text-gray-900 text-sm">
-            {displayFileSize}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-600 text-sm">Modified</span>
-          </div>
-          <span className="font-semibold text-gray-900 text-sm">
-            {new Date().toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </span>
-        </div>
+        <InfoRow icon={FileCog} label="Total Pages" value={displayPages} />
+        <InfoRow icon={HardDrive} label="File Size" value={displayFileSize} />
+        <InfoRow icon={Calendar} label="Modified" value={displayModified} />
       </div>
     </div>
   );

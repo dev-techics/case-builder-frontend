@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import camelcaseKeys from 'camelcase-keys';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -30,6 +31,30 @@ export type SaveMetaDataPayload = {
   footer: string;
 };
 
+type RawDocumentMetadataResponse = {
+  size?: number | string | null;
+  original_name?: string | null;
+  file_size?: number | string | null;
+  page_count?: number | string | null;
+  last_modified_at?: string | null;
+};
+
+type CamelizedDocumentMetadata = {
+  size?: unknown;
+  originalName?: unknown;
+  fileSize?: unknown;
+  pageCount?: unknown;
+  lastModifiedAt?: unknown;
+};
+
+export type DocumentMetadata = {
+  fileSizeBytes: number | null;
+  originalName: string;
+  pageCount: number | null;
+  lastModifiedAt: string | null;
+};
+
+// Convert server response to match our redux state
 const normalizeMetadata = (
   response: MetadataResponse
 ): PropertiesPanelMetadata => {
@@ -53,6 +78,42 @@ const normalizeMetadata = (
           ? metadata.header_right
           : '',
     footer: typeof metadata.footer === 'string' ? metadata.footer : '',
+  };
+};
+
+const toFiniteNumber = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsedValue = Number.parseInt(value, 10);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  return null;
+};
+
+const toStringOrEmpty = (value: unknown): string =>
+  typeof value === 'string' ? value : '';
+
+const normalizeDocumentMetadata = (
+  response: RawDocumentMetadataResponse | null | undefined
+): DocumentMetadata => {
+  const metadata = response
+    ? (camelcaseKeys(response, { deep: true }) as CamelizedDocumentMetadata)
+    : {};
+
+  const fileSizeBytes =
+    toFiniteNumber(metadata.fileSize) ?? toFiniteNumber(metadata.size);
+  const pageCount = toFiniteNumber(metadata.pageCount);
+  const lastModifiedAt = toStringOrEmpty(metadata.lastModifiedAt);
+
+  return {
+    fileSizeBytes,
+    originalName: toStringOrEmpty(metadata.originalName),
+    pageCount: pageCount !== null && pageCount >= 0 ? pageCount : null,
+    lastModifiedAt: lastModifiedAt || null,
   };
 };
 
@@ -118,8 +179,23 @@ export const propertiesPanelApi = createApi({
       }),
       transformResponse: normalizeMetadata,
     }),
+
+    /*------------------------
+      Get document metadata
+    --------------------------*/
+    getDocumentMetadata: builder.query<DocumentMetadata, string>({
+      query: documentId => ({
+        url: `/api/documents/${documentId}/document-metadata`,
+        method: 'GET',
+      }),
+      transformResponse: normalizeDocumentMetadata,
+      keepUnusedDataFor: 300,
+    }),
   }),
 });
 
-export const { useSaveMetaDataMutation, useGetMetaDataQuery } =
-  propertiesPanelApi;
+export const {
+  useSaveMetaDataMutation,
+  useGetMetaDataQuery,
+  useGetDocumentMetadataQuery,
+} = propertiesPanelApi;
