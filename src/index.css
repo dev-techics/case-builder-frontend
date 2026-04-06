@@ -413,4 +413,9 @@
   .cover-page-builder-shell .gjs-frame-wrapper {
     background: transparent;
   }
+  /* In your global stylesheet */
+  .cover-page-builder-shell .gjs-cv-canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
 }

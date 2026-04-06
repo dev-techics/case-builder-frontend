@@ -276,6 +276,23 @@ export const useGrapesCoverPageEditor = (
     };
   }, [persistEditorState, template?.id, type]);
 
+  useEffect(() => {
+    if (!editor || !isReady) return;
+
+    const updateZoom = () => {
+      const width = window.innerWidth;
+      let zoom = 100;
+      if (width < 1440) zoom = 90;
+      if (width < 1280) zoom = 80;
+      if (width < 1024) zoom = 70;
+      editor.Canvas.setZoom(zoom);
+    };
+
+    updateZoom(); // apply on mount
+    window.addEventListener('resize', updateZoom);
+    return () => window.removeEventListener('resize', updateZoom);
+  }, [editor, isReady]);
+
   return {
     editor,
     isReady,

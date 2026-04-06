@@ -16,7 +16,8 @@ export const CANVAS_FRAME_STYLES = `
   body {
     margin: 0;
     min-height: 100vh;
-    padding: 32px;
+    /* clamp keeps padding proportional on narrow viewports */
+    padding: clamp(12px, 3vw, 32px);
     background: #e5e7eb;
     display: flex;
     justify-content: center;
