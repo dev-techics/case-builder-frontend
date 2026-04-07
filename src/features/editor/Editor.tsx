@@ -9,7 +9,7 @@ import { DocumentApiService } from '@/api/axiosInstance';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
-import IndexPreview from './components/IndexPreview';
+import IndexPreview from '@/features/index-preview';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
 import LazyPDFRenderer from './components/LazyPDFRenderer';
