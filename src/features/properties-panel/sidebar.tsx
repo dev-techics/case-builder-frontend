@@ -38,7 +38,9 @@ function PropertiesSidebar() {
     <RightSidebar>
       {/* Sidebar Header */}
       <div className="border-b bg-gray-50 px-4 py-3">
-        <h2 className="font-semibold text-gray-900 text-sm">Document Tools</h2>
+        <h2 className="font-semibold text-gray-900 text-sm text-center">
+          Document Tools
+        </h2>
       </div>
 
       {/* Tab Navigation */}

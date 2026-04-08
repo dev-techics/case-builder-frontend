@@ -1,7 +1,11 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
 import PropertiesSidebar from '@/features/properties-panel';
 import EditorSidebar from '@/features/sidebar';
 import { SidebarStateProvider } from '@/context/SidebarContext';
@@ -13,6 +17,43 @@ const LEFT_SIDEBAR_MAX_WIDTH = 520;
 
 const clampSidebarWidth = (width: number) =>
   Math.min(Math.max(width, LEFT_SIDEBAR_MIN_WIDTH), LEFT_SIDEBAR_MAX_WIDTH);
+
+function EditorSidebarToggle() {
+  const { state } = useSidebar();
+
+  return (
+    <SidebarTrigger
+      className="fixed top-3 z-[99] hidden transition-[left] duration-200 ease-linear md:inline-flex bg-gray-200"
+      style={{
+        left:
+          state === 'collapsed'
+            ? '0.75rem'
+            : 'calc(var(--sidebar-width) - 2rem)',
+      }}
+    />
+  );
+}
+
+function EditorSidebarResizeHandle({
+  onPointerDown,
+}: {
+  onPointerDown: React.PointerEventHandler<HTMLDivElement>;
+}) {
+  const { state } = useSidebar();
+
+  if (state === 'collapsed') {
+    return null;
+  }
+
+  return (
+    <div
+      aria-label="Resize left sidebar"
+      className="absolute top-0 right-0 z-[100] hidden h-full w-1.5 cursor-col-resize bg-transparent hover:bg-border md:block"
+      onPointerDown={onPointerDown}
+      role="separator"
+    />
+  );
+}
 
 export default function EditorLayout() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(
@@ -72,17 +113,12 @@ export default function EditorLayout() {
         {/* Left Sidebar with its own provider */}
         <SidebarProvider className="relative" style={sidebarStyle}>
           <EditorSidebar />
-          <SidebarTrigger className="absolute top-3 right-2 z-[99] hidden md:inline-flex" />
-          <div
-            aria-label="Resize left sidebar"
-            className="absolute top-0 right-0 z-[100] hidden h-full w-1.5 cursor-col-resize bg-transparent hover:bg-border md:block"
-            onPointerDown={handleDragStart}
-            role="separator"
-          />
+          <EditorSidebarToggle />
+          <EditorSidebarResizeHandle onPointerDown={handleDragStart} />
         </SidebarProvider>
 
         {/* Main Area */}
-        <div className="mr-12 flex flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           {/* Topbar */}
           <Header />
           {/* Canvas / Workspace */}
