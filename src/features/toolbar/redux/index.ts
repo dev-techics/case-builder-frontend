@@ -1100,26 +1100,3 @@ export const {
   cancelCommentCreation,
   setIsCommentExpanded,
 } = toolbarSlice.actions;
-
-/*=============================================
-=            Selectors                        =
-=============================================*/
-
-export const selectHighlights = (state: { toolbar: EditorState }) =>
-  state.toolbar.highlights;
-export const selectLoadingHighlights = (state: { toolbar: EditorState }) =>
-  state.toolbar.loadingHighlights;
-export const selectHighlightError = (state: { toolbar: EditorState }) =>
-  state.toolbar.highlightError;
-export const selectHighlightsByDocument = (
-  state: { toolbar: EditorState },
-  documentId: string
-) => state.toolbar.highlights.filter(h => h.fileId === documentId);
-export const selectHighlightsByPage = (
-  state: { toolbar: EditorState },
-  documentId: string,
-  pageNumber: number
-) =>
-  state.toolbar.highlights.filter(
-    h => h.fileId === documentId && h.pageNumber === pageNumber
-  );

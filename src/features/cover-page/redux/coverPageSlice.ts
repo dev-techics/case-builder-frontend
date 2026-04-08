@@ -104,8 +104,4 @@ export const {
   clearCoverPageTemplate,
 } = coverPageSlice.actions;
 
-export const setTemplate = setCoverPageTemplate;
-export const deSelectCoverPage = clearCoverPageTemplate;
-export const setCoverPageLexicalJson = setCoverPageBuilderState;
-
 export default coverPageSlice.reducer;

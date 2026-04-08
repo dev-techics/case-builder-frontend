@@ -1,38 +1,3 @@
-import { getDocument } from 'pdfjs-dist';
-
-/**
- * Extract text content and metadata from a PDF page
- */
-export async function testPdfTextExtraction(fileUrl: string) {
-  const loadingTask = getDocument(fileUrl);
-  const pdf = await loadingTask.promise;
-  const page = await pdf.getPage(1);
-  const textContent = await page.getTextContent();
-  const viewport = page.getViewport({ scale: 1 });
-
-  return {
-    items: textContent.items,
-    width: viewport.width,
-    height: viewport.height,
-  };
-}
-
-/**
- * Get PDF page information including dimensions and position
- */
-export async function getPdfPageInfo(fileUrl: string, pageNumber = 1) {
-  const loadingTask = getDocument(fileUrl);
-  const pdf = await loadingTask.promise;
-  const page = await pdf.getPage(pageNumber);
-  const viewport = page.getViewport({ scale: 1 });
-
-  return {
-    width: viewport.width,
-    height: viewport.height,
-    pageNumber,
-  };
-}
-
 /**
  * Convert screen coordinates to PDF coordinates
  * PDF coordinate system: origin (0,0) is at bottom-left
@@ -121,42 +86,4 @@ export function getTextSelectionCoordinates(pageElement: HTMLElement) {
     height: maxBottom - minTop,
     selectedText: selection.toString(),
   };
-}
-
-/**
- * Get multiple highlight rectangles for multi-line text selection
- */
-export function getMultiLineTextSelectionCoordinates(
-  pageElement: HTMLElement,
-  pageInfo: { width: number; height: number; left?: number; top?: number },
-  scale = 1
-) {
-  const selection = window.getSelection();
-
-  if (!selection || selection.rangeCount === 0) {
-    return [];
-  }
-
-  const range = selection.getRangeAt(0);
-  const rects = range.getClientRects();
-
-  if (rects.length === 0) {
-    return [];
-  }
-
-  const pageRect = pageElement.getBoundingClientRect();
-
-  // Convert each rectangle to PDF coordinates
-  return Array.from(rects).map(rect => {
-    const screenCoords = {
-      left: rect.left - pageRect.left,
-      top: rect.top - pageRect.top,
-      right: rect.right - pageRect.left,
-      bottom: rect.bottom - pageRect.top,
-      width: rect.width,
-      height: rect.height,
-    };
-
-    return ScreenToPdfCoordinates(screenCoords, pageInfo, scale);
-  });
 }

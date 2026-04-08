@@ -23,80 +23,6 @@ function pdfToScreenCoordinates(
 }
 
 /**
- * Single highlight overlay element (non-interactive)
- */
-function HighlightElement({
-  highlight,
-  pageHeight,
-  scale,
-}: {
-  highlight: Highlight;
-  pageHeight: number;
-  scale: number;
-}) {
-  const screenCoords = pdfToScreenCoordinates(
-    highlight.coordinates,
-    pageHeight,
-    scale
-  );
-
-  return (
-    <div
-      className="pointer-events-none absolute transition-all duration-150"
-      style={{
-        left: `${screenCoords.x}px`,
-        top: `${screenCoords.y}px`,
-        width: `${screenCoords.width}px`,
-        height: `${screenCoords.height}px`,
-        backgroundColor: highlight.color.hex,
-        opacity: highlight.color.opacity,
-        mixBlendMode: 'multiply',
-      }}
-      title={`${highlight.color.name} highlight: "${highlight.text}"`}
-    />
-  );
-}
-
-/**
- * Basic overlay container (non-interactive)
- */
-export function HighlightOverlay({
-  fileId,
-  pageNumber,
-  pageHeight,
-  scale,
-}: HighlightOverlayProps) {
-  const allHighlights = useAppSelector(state => state.toolbar.highlights);
-
-  const pageHighlights = allHighlights.filter(
-    h => h.fileId === fileId && h.pageNumber === pageNumber
-  );
-
-  if (pageHighlights.length === 0) {
-    return null;
-  }
-
-  return (
-    <div
-      className="pointer-events-none absolute inset-0"
-      style={{
-        width: '100%',
-        height: '100%',
-      }}
-    >
-      {pageHighlights.map(highlight => (
-        <HighlightElement
-          highlight={highlight}
-          key={highlight.id}
-          pageHeight={pageHeight}
-          scale={scale}
-        />
-      ))}
-    </div>
-  );
-}
-
-/**
  * Interactive version with delete button on hover
  */
 export function InteractiveHighlightOverlay({
@@ -179,8 +105,8 @@ export function InteractiveHighlightOverlay({
             <div className="pointer-events-none absolute top-full left-0 z-20 mt-1 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-white text-xs opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
               <div className="font-medium">{highlight.color.name}</div>
               <div className="max-w-xs truncate text-gray-300">
-                "{highlight.text.substring(0, 50)}
-                {highlight.text.length > 50 ? '...' : ''}"
+                &quot;{highlight.text.substring(0, 50)}
+                {highlight.text.length > 50 ? '...' : ''}&quot;
               </div>
             </div>
           </div>

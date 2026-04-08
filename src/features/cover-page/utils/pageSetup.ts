@@ -216,13 +216,3 @@ export const getPageSetupAttributes = (setup: PageSetup) => {
     'data-page-background': setup.backgroundColor,
   };
 };
-
-export const getPageSetupStyle = (setup: PageSetup) => {
-  const { widthCm, heightCm } = getPageDimensions(setup);
-  return [
-    `background-color:${setup.backgroundColor}`,
-    `width:${widthCm}cm`,
-    `height:${heightCm}cm`,
-    `padding:${setup.margin.top}cm ${setup.margin.right}cm ${setup.margin.bottom}cm ${setup.margin.left}cm`,
-  ].join(';');
-};

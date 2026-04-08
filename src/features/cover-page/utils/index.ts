@@ -61,5 +61,3 @@ export const createDraftCoverPageTemplate = (
     updatedAt: timestamp,
   };
 };
-
-export const buildDraftTemplate = createDraftCoverPageTemplate;

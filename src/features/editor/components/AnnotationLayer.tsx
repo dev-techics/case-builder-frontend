@@ -4,7 +4,7 @@ import { createRedaction } from '@/features/toolbar/redux';
 import CommentOverlay from '@/features/toolbar/components/CommentOverlay';
 import { InteractiveHighlightOverlay } from '@/features/toolbar/components/HighlightOverlay';
 import RedactionOverlay from '@/features/toolbar/components/RedactionOverlay';
-import { ScreenToPdfCoordinates } from '../helpers';
+import { ScreenToPdfCoordinates } from '@/lib/pdfCoordinateUtils';
 import { resolveBundleIdFromTreeId } from '@/lib/bundleId';
 
 type AnnotationLayerProps = {

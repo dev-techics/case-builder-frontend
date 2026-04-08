@@ -46,18 +46,6 @@ export interface Bundle {
   tags?: string[];
   userId?: number;
 }
-/**
- * Filter State Interface
- */
-export interface FilterState {
-  searchTerm: string;
-  sortBy: SortOption;
-  statusFilter?: BundleStatus[];
-  dateRange?: {
-    start: string;
-    end: string;
-  };
-}
 
 /**
  * Component Props Types
@@ -70,53 +58,6 @@ export interface BundleRowProps {
   onDelete?: (bundleId: string) => void;
   onDuplicate?: (bundle: Bundle) => void;
   onExport?: (bundle: Bundle) => void;
-}
-
-export type PartialBundle = Partial<Bundle> & Pick<Bundle, 'id'>;
-
-/**
- * Form State Types
- */
-export interface BundleFormState {
-  name: string;
-  caseNumber: string;
-  status: BundleStatus;
-  color: BundleColor;
-  description: string;
-  tags: string[];
-  errors: {
-    name?: string;
-    caseNumber?: string;
-    [key: string]: string | undefined;
-  };
-}
-
-/**
- * Search and Pagination Types
- */
-export interface SearchParams {
-  query?: string;
-  status?: BundleStatus[];
-  page?: number;
-  pageSize?: number;
-  sortBy?: SortOption;
-  sortOrder?: 'asc' | 'desc';
-}
-
-export interface PaginationState {
-  currentPage: number;
-  totalPages: number;
-  pageSize: number;
-  totalItems: number;
-}
-
-/**
- * BundleList Component Props
- */
-export interface BundleListProps {
-  initialBundles?: Bundle[];
-  onBundleClick?: (bundle: Bundle) => void;
-  onBundleCreate?: () => void;
 }
 
 /**
@@ -132,8 +73,3 @@ export type StatusColorMap = {
 export type ColorClassMap = {
   [K in BundleColor]: string;
 };
-
-export interface ErrorResponse {
-  message: string;
-  errors?: Record<string, string[]>;
-}

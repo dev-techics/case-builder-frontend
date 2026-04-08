@@ -4,8 +4,10 @@ import {
   setPendingComment,
   setPendingHighlight,
 } from '@/features/toolbar/redux';
-import { getTextSelectionCoordinates } from '@/lib/pdfCoordinateUtils';
-import { ScreenToPdfCoordinates } from '../helpers';
+import {
+  getTextSelectionCoordinates,
+  ScreenToPdfCoordinates,
+} from '@/lib/pdfCoordinateUtils';
 
 type UseDocumentMouseUpOptions = {
   fileId: string;

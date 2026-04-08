@@ -36,10 +36,3 @@ export const getErrorMessage = (error: unknown): string | null => {
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem('access_token');
 };
-
-/*-------------------------------------------
-    Returns access token from local storage
- -------------------------------------------*/
-export const getToken = (): string | null => {
-  return localStorage.getItem('access_token');
-};
