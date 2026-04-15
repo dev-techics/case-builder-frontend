@@ -73,16 +73,16 @@ const PdfHeader = ({
 
   return (
     <>
-      <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
+      <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3 gap-2">
         {/* --------- File icon & Name ------------- */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex w-full items-center gap-2 min-w-0">
           <FileText className="h-5 w-5 text-red-500" />
 
           {/*----------------------- 
               Rename input field
           --------------------------*/}
           {isRenamingLocal ? (
-            <div className="flex items-center gap-1 min-w-0">
+            <div className="flex w-full items-center gap-1 min-w-0">
               <input
                 ref={renameInputRef}
                 type="text"
@@ -90,7 +90,7 @@ const PdfHeader = ({
                 onChange={e => setRenameValue(e.target.value)}
                 onKeyDown={handleRenameKeyDown}
                 onBlur={handleRenameSubmit}
-                className="h-7 min-w-[180px] rounded border border-blue-500 bg-white px-2 text-sm text-gray-800 outline-none"
+                className="h-7 w-full min-w-[180px] rounded border border-blue-500 bg-white px-2 text-sm text-gray-800 outline-none"
               />
               <button
                 aria-label="Save file name"
@@ -127,6 +127,7 @@ const PdfHeader = ({
             </button>
           )}
         </div>
+        {/* ---------- Rotate & delete button ---------*/}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-md border bg-white px-2 py-1">
             <button
