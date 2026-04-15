@@ -8,7 +8,7 @@
  * Author: Anik Dey
  */
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from 'case-builder-ui';
 import BundlesHeader from './components/BundlesHeader';
 import BundlesFilterBar from './components/BundlesFilterbar';
 import BundleCard from './components/BundleCard';
