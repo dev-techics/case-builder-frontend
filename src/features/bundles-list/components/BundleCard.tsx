@@ -16,7 +16,7 @@ import {
   Trash2,
   FileStack,
 } from 'lucide-react';
-import type { Bundle, ColorClassMap, StatusColorMap } from '../types/types';
+import type { Bundle } from '../types/types';
 
 // Component Props Types
 interface BundleCardProps {
@@ -34,21 +34,6 @@ const BundleCard = ({
   onDelete,
   onDuplicate,
 }: BundleCardProps) => {
-  const statusColors: StatusColorMap = {
-    'In Progress': 'bg-blue-100 text-blue-700',
-    Complete: 'bg-green-100 text-green-700',
-    Review: 'bg-orange-100 text-orange-700',
-    Archived: 'bg-gray-100 text-gray-700',
-  };
-
-  const colorClasses: ColorClassMap = {
-    blue: 'bg-blue-500',
-    green: 'bg-green-500',
-    purple: 'bg-purple-500',
-    orange: 'bg-orange-500',
-    red: 'bg-red-500',
-    yellow: 'bg-yellow-500',
-  };
   const handleCardClick = () => {
     onOpen(bundle);
   };
@@ -61,8 +46,6 @@ const BundleCard = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden group">
-      <div className={`h-2 ${colorClasses[bundle.color]}`} />
-
       <div className="p-5">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -122,7 +105,7 @@ const BundleCard = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <FileText className="h-4 w-4" />
-            <span>{bundle.documentCount} documents</span>
+            <span>{bundle.totalDocument} documents</span>
           </div>
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[bundle.status]}`}

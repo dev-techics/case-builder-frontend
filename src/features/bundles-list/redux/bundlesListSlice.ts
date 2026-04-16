@@ -4,13 +4,6 @@ import axiosInstance from '@/api/axiosInstance';
 import type { CreateBundleDto } from '../api/bundlesApi';
 
 const normalizeBundle = (bundle: any): Bundle => {
-  const documentCount =
-    bundle?.documentCount ??
-    bundle?.documentsCount ??
-    bundle?.document_count ??
-    bundle?.documents_count ??
-    0;
-
   const updatedAt =
     bundle?.updatedAt ??
     bundle?.lastModified ??
@@ -23,13 +16,12 @@ const normalizeBundle = (bundle: any): Bundle => {
   return {
     id: bundle?.id,
     name: bundle?.name,
+    totalDocument: bundle.totalDocument,
     caseNumber: bundle?.caseNumber ?? bundle?.case_number ?? '',
-    documentCount,
     status: bundle?.status ?? 'In Progress',
     color: bundle?.color ?? 'blue',
     createdAt: bundle?.createdAt ?? bundle?.created_at,
     updatedAt,
-    updatedBy: bundle?.updatedBy ?? bundle?.updated_by,
     description: bundle?.description,
     tags: bundle?.tags,
     userId: bundle?.userId ?? bundle?.user_id,
@@ -112,7 +104,6 @@ const bundleListSlice = createSlice({
           name: `${originalBundle.name} (Copy)`,
           updatedAt: new Date().toISOString().split('T')[0],
           status: 'In Progress',
-          documentCount: 0, // or keep original count: originalBundle.documentCount
         };
 
         // Find the index of the original bundle
