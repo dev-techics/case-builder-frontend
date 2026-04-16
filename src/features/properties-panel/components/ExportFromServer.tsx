@@ -3,6 +3,14 @@ import { AlertCircle, CheckCircle, Download, FileStack } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type {
   FileTree,
   FileTreeNode,
@@ -44,6 +52,24 @@ const collectAllFiles = (
   return files;
 };
 
+type ExportCompressionProfile =
+  | 'none'
+  | 'balanced'
+  | 'small'
+  | 'tiny'
+  | 'extreme';
+
+const COMPRESSION_PROFILE_OPTIONS: Array<{
+  value: ExportCompressionProfile;
+  label: string;
+}> = [
+  { value: 'none', label: 'No compression' },
+  { value: 'balanced', label: 'Balanced' },
+  { value: 'small', label: 'Small' },
+  { value: 'tiny', label: 'Tiny' },
+  { value: 'extreme', label: 'Extreme' },
+];
+
 function Exports() {
   const dispatch = useAppDispatch();
   const tree = useAppSelector(states => states.fileTree.tree);
@@ -69,6 +95,9 @@ function Exports() {
   const [includeIndex, setIncludeIndex] = useState(true);
   const [includeFrontCover, setIncludeFrontCover] = useState(true);
   const [includeBackCover, setIncludeBackCover] = useState(true);
+  const [compressionProfile, setCompressionProfile] =
+    useState<ExportCompressionProfile>('tiny');
+  const [targetSizeMb, setTargetSizeMb] = useState('10');
   const { bundleId: routeBundleId } = useParams<{ bundleId: string }>();
 
   // Recursively collect all PDF files from the entire tree
@@ -92,19 +121,39 @@ function Exports() {
       return;
     }
 
+    const trimmedTargetSizeMb = targetSizeMb.trim();
+    const parsedTargetSizeMb = Number.parseFloat(trimmedTargetSizeMb);
+    const isCompressionEnabled = compressionProfile !== 'none';
+
+    if (
+      isCompressionEnabled &&
+      (!trimmedTargetSizeMb ||
+        !Number.isFinite(parsedTargetSizeMb) ||
+        parsedTargetSizeMb <= 0)
+    ) {
+      setExportStatus('error');
+      setExportMessage('Please enter a valid target size in MB');
+      return;
+    }
+
     setIsExporting(true);
     setExportStatus('exporting');
     setExportMessage('Starting export...');
 
     try {
+      const exportPayload = {
+        include_index: includeIndex,
+        include_front_cover: includeFrontCover && frontEnabled,
+        include_back_cover: includeBackCover && backEnabled,
+        compression_profile:
+          compressionProfile === 'none' ? undefined : compressionProfile,
+        target_size_mb: isCompressionEnabled ? parsedTargetSizeMb : undefined,
+      };
+
       // Step 1: Kick off the export job
       const { data } = await axiosInstance.post(
         `/api/bundles/${bundleId}/export`,
-        {
-          include_index: includeIndex,
-          include_front_cover: includeFrontCover && frontEnabled,
-          include_back_cover: includeBackCover && backEnabled,
-        }
+        exportPayload
       );
 
       const exportId = data.exportId;
@@ -114,7 +163,6 @@ function Exports() {
       await new Promise<void>((resolve, reject) => {
         const interval = setInterval(async () => {
           try {
-            console.log(exportId);
             const { data: statusData } = await axiosInstance.get(
               `/api/bundles/exports/${exportId}/status`
             );
@@ -323,6 +371,65 @@ function Exports() {
             />
             <span>Add page numbers</span>
           </label>
+
+          <div className="grid gap-3 border-blue-200 border-t pt-3">
+            <div className="grid gap-1.5">
+              <label
+                className="font-medium text-blue-900 text-xs"
+                htmlFor="export-compression-profile"
+              >
+                Compression profile
+              </label>
+              <Select
+                disabled={isExporting}
+                onValueChange={value =>
+                  setCompressionProfile(value as ExportCompressionProfile)
+                }
+                value={compressionProfile}
+              >
+                <SelectTrigger
+                  className="w-full bg-white"
+                  id="export-compression-profile"
+                >
+                  <SelectValue placeholder="Select compression profile" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMPRESSION_PROFILE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-1.5">
+              <label
+                className="font-medium text-blue-900 text-xs"
+                htmlFor="export-target-size"
+              >
+                Target size (MB)
+              </label>
+              <Input
+                className="bg-white"
+                disabled={isExporting || compressionProfile === 'none'}
+                id="export-target-size"
+                inputMode="decimal"
+                min="0.1"
+                onChange={event => setTargetSizeMb(event.target.value)}
+                placeholder="Enter target size"
+                step="0.1"
+                type="number"
+                value={targetSizeMb}
+              />
+            </div>
+
+            <p className="text-blue-700/90 text-xs leading-relaxed">
+              The smaller the target size, the lower the document quality will
+              be. Target size is only used when a compression profile is
+              selected.
+            </p>
+          </div>
         </div>
       </div>
 
