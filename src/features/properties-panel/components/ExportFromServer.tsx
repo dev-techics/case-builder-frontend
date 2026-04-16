@@ -104,7 +104,7 @@ function Exports() {
           include_index: includeIndex,
           include_front_cover: includeFrontCover && frontEnabled,
           include_back_cover: includeBackCover && backEnabled,
-          compression_profile: 'tiny',
+          compression_profile: 'extreme',
           target_size_mb: 10,
         }
       );
