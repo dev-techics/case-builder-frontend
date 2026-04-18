@@ -3,7 +3,7 @@ import editorReducer from '@/features/editor/redux/editorSlice';
 import propertiesPanelReducer from '@/features/properties-panel/redux/propertiesPanelSlice';
 import toolbarReducer from '@/features/toolbar/redux';
 import fileTreeReducer from '../features/file-explorer/redux/fileTreeSlice';
-import bundlesListReducer from '@/features/bundles-list/redux/bundlesListSlice';
+import bundlesListReducer from '@/features/bundles-list/states/bundlesListSlice';
 import authReducer from '@/features/auth/redux/authSlice';
 import CoverPageReducer from '@/features/cover-page/redux/coverPageSlice';
 import authApi from '@/features/auth/api';

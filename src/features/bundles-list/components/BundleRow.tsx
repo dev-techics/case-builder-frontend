@@ -15,11 +15,7 @@ import {
   Trash2,
   FileStack,
 } from 'lucide-react';
-import type {
-  BundleRowProps,
-  StatusColorMap,
-  ColorClassMap,
-} from '../types/types';
+import type { BundleRowProps, StatusColorMap, ColorClassMap } from '../types';
 
 const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
   const statusColors: StatusColorMap = {
@@ -49,7 +45,9 @@ const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className={`w-1 h-12 rounded ${colorClasses[bundle.color]}`} />
+          <div
+            className={`w-1 h-12 rounded ${colorClasses[bundle.color ?? 'blue']}`}
+          />
           <FileStack className="h-8 w-8 text-gray-400" />
           <div>
             <div className="font-medium text-gray-900">{bundle.name}</div>
@@ -60,7 +58,7 @@ const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
         </div>
       </td>
       <td className="px-6 py-4 text-sm text-gray-600">
-        {bundle.documentCount} documents
+        {bundle.totalDocument} documents
       </td>
       <td className="px-6 py-4">
         <span

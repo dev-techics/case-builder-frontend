@@ -53,3 +53,22 @@ export interface BundleRowProps {
 export type StatusColorMap = {
   [K in BundleStatus]: string;
 };
+
+export interface CreateBundleDto {
+  name: string;
+  caseNumber: string;
+  status?: BundleStatus;
+  description?: string;
+  tags?: string[];
+}
+
+/*----------------------------------------------
+  Convert frontend-friendly payload to API shape
+------------------------------------------------*/
+export const toCreateBundlePayload = (bundle: CreateBundleDto) => ({
+  name: bundle.name,
+  case_number: bundle.caseNumber,
+  status: bundle.status,
+  description: bundle.description,
+  tags: bundle.tags,
+});

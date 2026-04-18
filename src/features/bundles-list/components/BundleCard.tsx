@@ -16,7 +16,7 @@ import {
   Trash2,
   FileStack,
 } from 'lucide-react';
-import type { Bundle } from '../types/types';
+import type { Bundle, StatusColorMap } from '../types';
 
 // Component Props Types
 interface BundleCardProps {
@@ -34,6 +34,13 @@ const BundleCard = ({
   onDelete,
   onDuplicate,
 }: BundleCardProps) => {
+  const statusColors: StatusColorMap = {
+    'In Progress': 'bg-blue-100 text-blue-700',
+    Complete: 'bg-green-100 text-green-700',
+    Review: 'bg-orange-100 text-orange-700',
+    Archived: 'bg-gray-100 text-gray-700',
+  };
+
   const handleCardClick = () => {
     onOpen(bundle);
   };
