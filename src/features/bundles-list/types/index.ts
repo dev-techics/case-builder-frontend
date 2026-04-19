@@ -4,17 +4,6 @@
 export type BundleStatus = 'In Progress' | 'Complete' | 'Review' | 'Archived';
 
 /**
- * Bundle Color Types for visual identification
- */
-export type BundleColor =
-  | 'blue'
-  | 'green'
-  | 'purple'
-  | 'orange'
-  | 'red'
-  | 'yellow';
-
-/**
  * View Mode Types
  */
 export type ViewMode = 'grid' | 'list';
@@ -36,12 +25,10 @@ export interface Bundle {
   id: string | number; // Backend uses number, frontend may use string
   name: string;
   caseNumber: string; // Frontend uses camelCase
-  documentCount: number; // Frontend uses camelCase
+  totalDocument: number; // Frontend uses camelCase
   status: BundleStatus;
-  color: BundleColor;
   createdAt?: string;
   updatedAt?: string;
-  updatedBy?: string;
   description?: string;
   tags?: string[];
   userId?: number;
@@ -67,9 +54,21 @@ export type StatusColorMap = {
   [K in BundleStatus]: string;
 };
 
-/**
- * Bundle Color Classes Mapping Type
- */
-export type ColorClassMap = {
-  [K in BundleColor]: string;
-};
+export interface CreateBundleDto {
+  name: string;
+  caseNumber: string;
+  status?: BundleStatus;
+  description?: string;
+  tags?: string[];
+}
+
+/*----------------------------------------------
+  Convert frontend-friendly payload to API shape
+------------------------------------------------*/
+export const toCreateBundlePayload = (bundle: CreateBundleDto) => ({
+  name: bundle.name,
+  case_number: bundle.caseNumber,
+  status: bundle.status,
+  description: bundle.description,
+  tags: bundle.tags,
+});

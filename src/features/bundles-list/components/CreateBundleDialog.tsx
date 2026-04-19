@@ -9,7 +9,6 @@
  * Author: Anik Dey
  */
 
-import { useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,8 +21,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createBundleAsync } from '../redux/bundlesListSlice';
-import type { Bundle } from '../types/types';
+import { useCreateBundleMutation } from '../api';
+import type { Bundle } from '../types';
 import { useState, type FormEvent } from 'react';
 import { toast } from 'react-toastify';
 
@@ -40,8 +39,7 @@ const CreateNewBundleDialog = ({
 }: CreateNewBundleDialogProps) => {
   const [bundleName, setBundleName] = useState('');
   const [caseNumber, setCaseNumber] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const dispatch = useAppDispatch();
+  const [createBundle, { isLoading: isSubmitting }] = useCreateBundleMutation();
 
   // Handle new bundle creation
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -55,12 +53,11 @@ const CreateNewBundleDialog = ({
     }
     const payload = {
       name: bundleName.trim(),
-      case_number: caseNumber.trim(),
+      caseNumber: caseNumber.trim(),
     };
 
     try {
-      setIsSubmitting(true);
-      const createdBundle = await dispatch(createBundleAsync(payload)).unwrap();
+      const createdBundle = await createBundle(payload).unwrap();
       toast.success('New bundle created successfully');
       setBundleName('');
       setCaseNumber('');
@@ -68,8 +65,6 @@ const CreateNewBundleDialog = ({
       onCreated?.(createdBundle);
     } catch {
       toast.error('Failed to create bundle');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

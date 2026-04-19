@@ -1,23 +1,14 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Folder02Icon, Share05Icon } from '@hugeicons/core-free-icons';
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { fetchBundles } from '@/features/bundles-list/redux/bundlesListSlice';
+import { useGetBundlesQuery } from '@/features/bundles-list/api';
 import { formatRelativeTime, getSortTimestamp } from '../utils';
 import { useNavigate } from 'react-router-dom';
 
 export const RecentBundles = () => {
-  const dispatch = useAppDispatch();
-  const { bundles, isLoading, error } = useAppSelector(
-    state => state.bundleList
-  );
+  const { data: bundles = [], isLoading, error } = useGetBundlesQuery();
   const navigate = useNavigate();
-  useEffect(() => {
-    if (!isLoading && !error && bundles.length === 0) {
-      dispatch(fetchBundles());
-    }
-  }, [dispatch, isLoading, error, bundles.length]);
 
   const recentBundles = useMemo(
     () =>
@@ -34,6 +25,14 @@ export const RecentBundles = () => {
   if (isLoading && bundles.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">Loading recent bundles...</p>
+    );
+  }
+
+  if (error && bundles.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Failed to load recent bundles.
+      </p>
     );
   }
 

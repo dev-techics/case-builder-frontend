@@ -3,7 +3,7 @@ import editorReducer from '@/features/editor/redux/editorSlice';
 import propertiesPanelReducer from '@/features/properties-panel/redux/propertiesPanelSlice';
 import toolbarReducer from '@/features/toolbar/redux';
 import fileTreeReducer from '../features/file-explorer/redux/fileTreeSlice';
-import bundlesListReducer from '@/features/bundles-list/redux/bundlesListSlice';
+import bundlesListReducer from '@/features/bundles-list/states/bundlesListSlice';
 import authReducer from '@/features/auth/redux/authSlice';
 import CoverPageReducer from '@/features/cover-page/redux/coverPageSlice';
 import authApi from '@/features/auth/api';
@@ -13,6 +13,7 @@ import { editorApi } from '@/features/editor/api';
 import { dashboardApi } from '@/features/dashboard/api';
 import dashboardReducer from '@/features/dashboard/redux';
 import { propertiesPanelApi } from '@/features/properties-panel/api';
+import bundleListApi from '@/features/bundles-list/api';
 
 const store = configureStore({
   reducer: {
@@ -23,6 +24,7 @@ const store = configureStore({
     [editorApi.reducerPath]: editorApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [propertiesPanelApi.reducerPath]: propertiesPanelApi.reducer,
+    [bundleListApi.reducerPath]: bundleListApi.reducer,
     /*----------- state slices ------------ */
     auth: authReducer,
     fileTree: fileTreeReducer,
@@ -40,7 +42,8 @@ const store = configureStore({
       fileTreeApi.middleware,
       editorApi.middleware,
       dashboardApi.middleware,
-      propertiesPanelApi.middleware
+      propertiesPanelApi.middleware,
+      bundleListApi.middleware
     ),
 });
 

@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Grid3x3, List, Search } from 'lucide-react';
-import type { ViewMode, SortOption } from '../types/types';
+import type { ViewMode, SortOption } from '../types';
 
 interface BundlesFilterBarProps {
   viewMode: ViewMode;
