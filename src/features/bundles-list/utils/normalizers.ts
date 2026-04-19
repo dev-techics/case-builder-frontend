@@ -56,10 +56,10 @@ export const normalizeBundle = (value: unknown): Bundle => {
         : '',
     name: toOptionalString(bundle.name) ?? '',
     caseNumber: toOptionalString(bundle.caseNumber ?? bundle.case_number) ?? '',
-    totalDocument:
+    totalDocuments:
       toOptionalNumber(
-        bundle.totalDocument ??
-          bundle.total_document ??
+        bundle.totalDocuments ??
+          bundle.total_documents ??
           bundle.documentCount ??
           bundle.document_count
       ) ?? 0,
@@ -74,7 +74,6 @@ export const normalizeBundle = (value: unknown): Bundle => {
       ) ?? createdAt,
     description: toOptionalString(bundle.description),
     tags: toStringArray(bundle.tags),
-    userId: toOptionalNumber(bundle.userId ?? bundle.user_id),
   };
 };
 

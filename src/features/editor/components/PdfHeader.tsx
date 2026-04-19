@@ -76,7 +76,9 @@ const PdfHeader = ({
       <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3 gap-2">
         {/* --------- File icon & Name ------------- */}
         <div className="flex w-full items-center gap-2 min-w-0">
-          <FileText className="h-5 w-5 text-red-500" />
+          <div>
+            <FileText className="h-5 w-5 text-red-500" />
+          </div>
 
           {/*----------------------- 
               Rename input field
@@ -113,7 +115,7 @@ const PdfHeader = ({
           ) : (
             /* ----------- Edit button ----------*/
             <button
-              className="group inline-flex items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-200"
+              className="group inline-flex items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-200 overflow-hidden"
               onClick={startRename}
               type="button"
             >

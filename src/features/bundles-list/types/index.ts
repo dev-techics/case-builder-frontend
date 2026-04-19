@@ -22,10 +22,10 @@ export type SortOption =
  * Main Bundle Interface
  */
 export interface Bundle {
-  id: string | number; // Backend uses number, frontend may use string
+  id: string | number;
   name: string;
-  caseNumber: string; // Frontend uses camelCase
-  totalDocument: number; // Frontend uses camelCase
+  caseNumber: string;
+  totalDocuments: number;
   status: BundleStatus;
   createdAt?: string;
   updatedAt?: string;

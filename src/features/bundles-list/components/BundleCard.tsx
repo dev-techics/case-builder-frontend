@@ -115,7 +115,7 @@ const BundleCard = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <HugeiconsIcon className="h-5 w-5" icon={Files01Icon} />
-            <span>{bundle.totalDocument} documents</span>
+            <span>{bundle.totalDocuments} documents</span>
           </div>
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[bundle.status]}`}

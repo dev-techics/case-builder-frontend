@@ -46,7 +46,7 @@ const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
         </div>
       </td>
       <td className="px-6 py-4 text-sm text-gray-600">
-        {bundle.totalDocument} documents
+        {bundle.totalDocuments} documents
       </td>
       <td className="px-6 py-4">
         <span
