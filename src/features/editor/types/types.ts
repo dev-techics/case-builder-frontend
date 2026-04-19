@@ -7,6 +7,18 @@ export type TextHighlightableDocumentProps = {
   onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
 };
 
+export type DocumentPageState = {
+  pageNumber: number;
+  rotation: number;
+  deleted: boolean;
+};
+
+export type DocumentPageMetrics = {
+  pageNumber: number;
+  width: number;
+  height: number;
+};
+
 export type HighlightOverlayProps = {
   fileId: string;
   pageNumber: number;
