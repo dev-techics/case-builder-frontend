@@ -8,15 +8,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   MoreVertical,
-  FileText,
   FolderOpen,
   Edit,
   Copy,
   Download,
   Trash2,
-  FileStack,
 } from 'lucide-react';
 import type { Bundle, StatusColorMap } from '../types';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Files01Icon, Folder02Icon } from '@hugeicons/core-free-icons';
 
 // Component Props Types
 interface BundleCardProps {
@@ -60,7 +60,10 @@ const BundleCard = ({
               onClick={handleCardClick}
               className="flex items-center gap-2 mb-2 cursor-pointer"
             >
-              <FileStack className="h-5 w-5 text-gray-400" />
+              <HugeiconsIcon
+                className="h-5 w-5 text-gray-500"
+                icon={Folder02Icon}
+              />
               <h3 className="font-semibold text-gray-900 line-clamp-1">
                 {bundle.name}
               </h3>
@@ -111,7 +114,7 @@ const BundleCard = ({
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <FileText className="h-4 w-4" />
+            <HugeiconsIcon className="h-5 w-5" icon={Files01Icon} />
             <span>{bundle.totalDocument} documents</span>
           </div>
           <span
