@@ -4,6 +4,12 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const BaseQuery = import.meta.env.VITE_BASE_URL;
 
+type RotateDocumentApiResponse = {
+  document?: {
+    url?: string;
+  };
+};
+
 export const fileTreeApi = createApi({
   reducerPath: 'fileTreeApi',
   baseQuery: fetchBaseQuery({
@@ -63,7 +69,7 @@ export const fileTreeApi = createApi({
         Rotate document
     ----------------------------*/
     rotateDocument: build.mutation<
-      { documentId: string; rotation: number },
+      { documentId: string; rotation: number; documentUrl?: string },
       { documentId: string; rotation: number; bundleId?: string }
     >({
       query: ({ documentId, rotation, bundleId }) => ({
@@ -71,9 +77,14 @@ export const fileTreeApi = createApi({
         method: 'POST',
         body: { rotation, bundle_id: bundleId },
       }),
-      transformResponse: (_response, _meta, arg) => ({
+      transformResponse: (
+        response: RotateDocumentApiResponse | undefined,
+        _meta,
+        arg
+      ) => ({
         documentId: arg.documentId,
         rotation: arg.rotation,
+        documentUrl: response?.document?.url,
       }),
     }),
 

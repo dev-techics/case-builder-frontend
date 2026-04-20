@@ -2,6 +2,7 @@ import type { FileTreeFileNode } from '../../file-explorer/types/fileTree';
 
 export type TextHighlightableDocumentProps = {
   file: FileTreeFileNode;
+  bundleId?: string;
   scale?: number;
   rotation?: number;
   onPageMetrics?: (metrics: { fileId: string; width: number }) => void;

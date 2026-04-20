@@ -17,7 +17,7 @@ const createPage = (
 export const useDocumentPages = () => {
   const [pages, setPages] = useState<DocumentPageState[]>([]);
 
-  // Keep page UI state local so page actions do not mutate the source PDF.
+  // Keep page UI state local so page actions feel immediate in the viewer.
   const syncPages = useCallback((pageCount: number) => {
     setPages(previousPages => {
       const previousPagesByNumber = new Map(
@@ -43,9 +43,26 @@ export const useDocumentPages = () => {
     );
   }, []);
 
+  const settlePageRotation = useCallback(
+    (pageNumber: number, delta: number) => {
+      setPages(previousPages =>
+        previousPages.map(page =>
+          page.pageNumber === pageNumber
+            ? {
+                ...page,
+                rotation: normalizeRotation(page.rotation - delta),
+              }
+            : page
+        )
+      );
+    },
+    []
+  );
+
   return {
     pages,
     rotatePage,
+    settlePageRotation,
     syncPages,
   };
 };

@@ -13,7 +13,7 @@ import IndexPreview from '@/features/index-preview';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
 import LazyPDFRenderer from './components/LazyPDFRenderer';
-import { setMaxScale, setScale } from './redux/editorSlice';
+import { setMaxScale, setScale } from './states/editorSlice';
 import {
   useBundleMetadata,
   useFileRotations,
@@ -52,9 +52,10 @@ const PDFViewer = () => {
   });
 
   // Rotation state and mutation wiring
-  const { fileRotations, handleRotateFile, resetRotations } = useFileRotations({
-    bundleId: resolvedBundleId ?? '',
-  });
+  const { fileRotations, fileUrlOverrides, handleRotateFile, resetRotations } =
+    useFileRotations({
+      bundleId: resolvedBundleId ?? '',
+    });
 
   // Size calculations, max scale, and page metrics tracking
   const { contentStyle, computedMaxScale, handlePageMetrics, resetSizing } =
@@ -95,14 +96,17 @@ const PDFViewer = () => {
     dispatch(setMaxScale(computedMaxScale));
   }, [computedMaxScale, dispatch]);
 
-  // Build streaming URLs for the currently visible files
+  // Prefer backend-provided document URLs and fall back to the legacy stream path.
   const filesWithUrls = useMemo(
     () =>
       visibleFiles.map(file => ({
         ...file,
-        url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKey}`,
+        url:
+          fileUrlOverrides[file.id] ??
+          file.url ??
+          `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKey}`,
       })),
-    [streamSessionKey, visibleFiles]
+    [fileUrlOverrides, streamSessionKey, visibleFiles]
   );
 
   // Derived UI state
@@ -201,6 +205,7 @@ const PDFViewer = () => {
 
               {/* PDF Content Area - LAZY LOADED */}
               <LazyPDFRenderer
+                bundleId={resolvedBundleId ?? undefined}
                 file={fileWithUrl}
                 rotation={fileRotations[fileWithUrl.id] ?? 0}
                 onPageMetrics={handlePageMetrics}

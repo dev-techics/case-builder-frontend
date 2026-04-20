@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Document as ReactPdfDocument, Page } from 'react-pdf';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { useRotateDocumentPageMutation } from '@/features/editor/api';
 import { setDocumentPageCount } from '@/features/properties-panel/redux/propertiesPanelSlice';
 import AnnotationLayer from './AnnotationLayer';
 import PageRotationControls from './PageRotationControls';
@@ -43,11 +44,22 @@ const hasMetricsChanged = (
   currentMetrics?.width !== nextMetrics.width ||
   currentMetrics?.height !== nextMetrics.height;
 
+const logRotatePageError = (error: unknown) => {
+  console.warn(
+    'Rotate page API call failed. Local page rotation remains applied.',
+    error
+  );
+};
+
 const PDFDocument = ({
   file,
+  bundleId,
   rotation: documentRotation = 0,
   onPageMetrics,
 }: TextHighlightableDocumentProps) => {
+  const [documentUrlOverride, setDocumentUrlOverride] = useState<
+    string | undefined
+  >();
   const [pageInfo, setPageInfo] = useState<Map<number, DocumentPageMetrics>>(
     new Map()
   );
@@ -55,9 +67,11 @@ const PDFDocument = ({
   const loadedPagesRef = useRef<Map<number, LoadedPdfPage>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
+  const [rotateDocumentPage] = useRotateDocumentPageMutation();
   const scale = useAppSelector(states => states.editor.scale);
   const activeTool = useAppSelector(states => states.toolbar.activeTool);
-  const { pages, rotatePage, syncPages } = useDocumentPages();
+  const { pages, rotatePage, settlePageRotation, syncPages } =
+    useDocumentPages();
 
   const pagesByNumber = useMemo(
     () => new Map(pages.map(page => [page.pageNumber, page])),
@@ -74,22 +88,24 @@ const PDFDocument = ({
     activeTool,
   });
 
+  const documentUrl = documentUrlOverride ?? file.url;
+
   const fileConfig = useMemo(() => {
-    if (!file.url) {
+    if (!documentUrl) {
       return undefined;
     }
 
     const token = localStorage.getItem('access_token');
 
     return {
-      url: file.url,
+      url: documentUrl,
       httpHeaders: token
         ? {
             Authorization: `Bearer ${token}`,
           }
         : undefined,
     };
-  }, [file.url]);
+  }, [documentUrl]);
 
   useEffect(() => {
     setPageInfo(previousPageInfo => {
@@ -174,18 +190,50 @@ const PDFDocument = ({
     });
   };
 
+  const persistPageRotation = (
+    pageNumber: number,
+    rotation: number,
+    delta: number
+  ) => {
+    if (!bundleId) {
+      return;
+    }
+
+    rotateDocumentPage({
+      bundleId,
+      documentId: file.id,
+      pageNumber,
+      rotation,
+    })
+      .unwrap()
+      .then(response => {
+        if (!response.documentUrl) {
+          return;
+        }
+
+        loadedPagesRef.current = new Map();
+        setPageInfo(new Map());
+        setDocumentUrlOverride(response.documentUrl);
+        settlePageRotation(pageNumber, delta);
+      })
+      .catch(logRotatePageError);
+  };
+
   const handleRotatePage = (pageNumber: number, delta: number) => {
     rotatePage(pageNumber, delta);
 
     const loadedPage = loadedPagesRef.current.get(pageNumber);
+    const currentPageRotation = pagesByNumber.get(pageNumber)?.rotation ?? 0;
+    const nextPageRotation = normalizeRotation(currentPageRotation + delta);
+
     if (!loadedPage) {
+      persistPageRotation(pageNumber, nextPageRotation, delta);
       return;
     }
 
-    const currentPageRotation = pagesByNumber.get(pageNumber)?.rotation ?? 0;
     const nextMetrics = buildPageMetrics(
       loadedPage,
-      normalizeRotation(documentRotation + currentPageRotation + delta)
+      normalizeRotation(documentRotation + nextPageRotation)
     );
 
     setPageInfo(previousPageInfo => {
@@ -197,6 +245,8 @@ const PDFDocument = ({
       nextPageInfo.set(pageNumber, nextMetrics);
       return nextPageInfo;
     });
+
+    persistPageRotation(pageNumber, nextPageRotation, delta);
   };
 
   if (!fileConfig) {
@@ -212,6 +262,7 @@ const PDFDocument = ({
   return (
     <div className="relative" onMouseUp={handleMouseUp} ref={containerRef}>
       <ReactPdfDocument
+        key={`${file.id}-${documentUrl ?? ''}`}
         file={fileConfig}
         loading={
           <div className="flex h-200 items-center justify-center">
@@ -249,7 +300,7 @@ const PDFDocument = ({
                   }
                 }}
               >
-                {/* Page actions stay next to the page so the file stays immutable. */}
+                {/* Page actions stay next to each page for page-specific controls. */}
                 <PageRotationControls
                   pageNumber={pageNumber}
                   rotation={resolvedRotation}

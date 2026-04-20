@@ -6,6 +6,7 @@ import type { FileTreeFileNode } from '@/features/file-explorer/types/fileTree';
 
 type LazyPDFRendererProps = {
   file: FileTreeFileNode;
+  bundleId?: string;
   rotation: number;
   onVisible?: () => void;
   onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
@@ -14,6 +15,7 @@ type LazyPDFRendererProps = {
 // Renders the PDF only when the wrapper enters the viewport
 const LazyPDFRenderer = ({
   file,
+  bundleId,
   rotation,
   onVisible,
   onPageMetrics,
@@ -56,6 +58,7 @@ const LazyPDFRenderer = ({
         <ErrorBoundary FallbackComponent={Fallback} resetKeys={[file.url]}>
           <PDFDocument
             key={`${file.id}-${file.url ?? ''}`}
+            bundleId={bundleId}
             file={file}
             onPageMetrics={onPageMetrics}
             rotation={rotation}
