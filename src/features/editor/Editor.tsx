@@ -1,6 +1,6 @@
 // src/features/editor/Editor.tsx
 import { FileText, ArrowUp } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -13,7 +13,7 @@ import IndexPreview from '@/features/index-preview';
 import PdfHeader from './components/PdfHeader';
 import AnnotationToolbar from '@/features/toolbar/AnnotationToolbar';
 import LazyPDFRenderer from './components/LazyPDFRenderer';
-import { setMaxScale, setScale, zoomIn, zoomOut } from './redux/editorSlice';
+import { setMaxScale, setScale } from './states/editorSlice';
 import {
   useBundleMetadata,
   useFileRotations,
@@ -37,7 +37,6 @@ const PDFViewer = () => {
     treeId: tree.id,
   });
   const scale = useAppSelector(state => state.editor.scale);
-  const maxScale = useAppSelector(state => state.editor.maxScale);
 
   // Refs for the scroll container and content sizing
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,9 +52,10 @@ const PDFViewer = () => {
   });
 
   // Rotation state and mutation wiring
-  const { fileRotations, handleRotateFile, resetRotations } = useFileRotations({
-    bundleId: resolvedBundleId ?? '',
-  });
+  const { fileRotations, fileUrlOverrides, handleRotateFile, resetRotations } =
+    useFileRotations({
+      bundleId: resolvedBundleId ?? '',
+    });
 
   // Size calculations, max scale, and page metrics tracking
   const { contentStyle, computedMaxScale, handlePageMetrics, resetSizing } =
@@ -96,29 +96,17 @@ const PDFViewer = () => {
     dispatch(setMaxScale(computedMaxScale));
   }, [computedMaxScale, dispatch]);
 
-  const canZoomIn = scale < maxScale - 0.01;
-  const canZoomOut = scale > 0.5 + 0.01;
-  const canResetZoom = Math.abs(scale - 1) > 0.01;
-
-  const handleZoomIn = useCallback(() => {
-    dispatch(zoomIn());
-  }, [dispatch]);
-
-  const handleZoomOut = useCallback(() => {
-    dispatch(zoomOut());
-  }, [dispatch]);
-
-  const handleResetZoom = useCallback(() => {
-    dispatch(setScale(1));
-  }, [dispatch]);
-  // Build streaming URLs for the currently visible files
+  // Prefer backend-provided document URLs and fall back to the legacy stream path.
   const filesWithUrls = useMemo(
     () =>
       visibleFiles.map(file => ({
         ...file,
-        url: `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKey}`,
+        url:
+          fileUrlOverrides[file.id] ??
+          file.url ??
+          `${DocumentApiService.getDocumentStreamUrl(file.id)}?original=true&cb=${streamSessionKey}`,
       })),
-    [streamSessionKey, visibleFiles]
+    [fileUrlOverrides, streamSessionKey, visibleFiles]
   );
 
   // Derived UI state
@@ -206,13 +194,6 @@ const PDFViewer = () => {
                 <PdfHeader
                   file={fileWithUrl}
                   rotation={fileRotations[fileWithUrl.id] ?? 0}
-                  scale={scale}
-                  canZoomIn={canZoomIn}
-                  canZoomOut={canZoomOut}
-                  canResetZoom={canResetZoom}
-                  onZoomIn={handleZoomIn}
-                  onZoomOut={handleZoomOut}
-                  onResetZoom={handleResetZoom}
                   onRotateLeft={() =>
                     handleRotateFile(fileWithUrl.id, -ROTATION_STEP_DEGREES)
                   }
@@ -224,6 +205,7 @@ const PDFViewer = () => {
 
               {/* PDF Content Area - LAZY LOADED */}
               <LazyPDFRenderer
+                bundleId={resolvedBundleId ?? undefined}
                 file={fileWithUrl}
                 rotation={fileRotations[fileWithUrl.id] ?? 0}
                 onPageMetrics={handlePageMetrics}

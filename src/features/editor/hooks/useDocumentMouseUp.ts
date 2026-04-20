@@ -8,11 +8,12 @@ import {
   getTextSelectionCoordinates,
   ScreenToPdfCoordinates,
 } from '@/lib/pdfCoordinateUtils';
+import type { DocumentPageMetrics } from '../types/types';
 
 type UseDocumentMouseUpOptions = {
   fileId: string;
   fileName: string;
-  pageInfo: Map<number, any>;
+  pageInfo: Map<number, DocumentPageMetrics>;
   pageRefs: RefObject<Map<number, HTMLDivElement> | null>;
   containerRef: RefObject<HTMLDivElement | null>;
   scale: number;

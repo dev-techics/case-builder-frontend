@@ -1,6 +1,6 @@
 import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setScale, zoomIn, zoomOut } from '../redux/editorSlice';
+import { setScale, zoomIn, zoomOut } from '../states/editorSlice';
 
 function ZoomControls() {
   const dispatch = useDispatch();

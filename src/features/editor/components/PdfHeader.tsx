@@ -12,17 +12,11 @@ import { useState } from 'react';
 // import { useAppSelector } from '@/app/hooks';
 // import { selectIsRotating } from '@/features/file-explorer/redux/fileTreeSlice';
 import { useDeleteDocument, useRename } from '@/features/editor/hooks';
+import type { FileTreeFileNode } from '@/features/file-explorer/types/fileTree';
 
 type PdfHeaderProps = {
-  file: any;
+  file: FileTreeFileNode;
   rotation: number;
-  scale: number;
-  canZoomIn: boolean;
-  canZoomOut: boolean;
-  canResetZoom: boolean;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetZoom: () => void;
   onRotateLeft: () => void;
   onRotateRight: () => void;
 };

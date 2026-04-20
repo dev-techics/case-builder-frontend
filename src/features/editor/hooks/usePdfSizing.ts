@@ -34,7 +34,7 @@ export const usePdfSizing = ({
       }
 
       const existingWidth = pageWidthsRef.current.get(fileId) ?? 0;
-      if (width <= existingWidth) {
+      if (width === existingWidth) {
         return;
       }
 
@@ -99,7 +99,7 @@ export const usePdfSizing = ({
     const targetWidth =
       scaledDocumentWidth && baseWidth
         ? Math.max(scaledDocumentWidth, baseWidth)
-        : scaledDocumentWidth ?? (baseWidth || null);
+        : (scaledDocumentWidth ?? (baseWidth || null));
 
     if (!targetWidth) {
       return undefined;

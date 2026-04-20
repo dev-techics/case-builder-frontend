@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import Fallback from '@/components/Fallback';
 import PDFDocument from './Document';
+import type { FileTreeFileNode } from '@/features/file-explorer/types/fileTree';
 
 type LazyPDFRendererProps = {
-  file: any;
+  file: FileTreeFileNode;
+  bundleId?: string;
   rotation: number;
   onVisible?: () => void;
   onPageMetrics?: (metrics: { fileId: string; width: number }) => void;
@@ -13,6 +15,7 @@ type LazyPDFRendererProps = {
 // Renders the PDF only when the wrapper enters the viewport
 const LazyPDFRenderer = ({
   file,
+  bundleId,
   rotation,
   onVisible,
   onPageMetrics,
@@ -54,6 +57,8 @@ const LazyPDFRenderer = ({
       {isVisible ? (
         <ErrorBoundary FallbackComponent={Fallback} resetKeys={[file.url]}>
           <PDFDocument
+            key={`${file.id}-${file.url ?? ''}`}
+            bundleId={bundleId}
             file={file}
             onPageMetrics={onPageMetrics}
             rotation={rotation}
