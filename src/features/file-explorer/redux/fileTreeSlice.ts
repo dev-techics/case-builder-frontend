@@ -23,6 +23,8 @@ interface FileTreeState {
   expanded: Record<string, boolean>;
   isCreatingNewFolder: boolean;
   selectedFile: string | null;
+  selectedFileIds: string[];
+  selectionAnchorId: string | null;
   fileSelectionVersion: number;
   selectedFolderId: string | null;
   scrollToFileId: string | null;
@@ -32,6 +34,7 @@ interface FileTreeState {
     deleting: string[];
     renaming: string[];
     rotating: string[];
+    merging: boolean;
     uploading: boolean;
   };
 }
@@ -51,6 +54,8 @@ const initialState: FileTreeState = {
   expanded: { [initialTree.id]: true },
   isCreatingNewFolder: false,
   selectedFile: null,
+  selectedFileIds: [],
+  selectionAnchorId: null,
   fileSelectionVersion: 0,
   selectedFolderId: null,
   scrollToFileId: null,
@@ -60,6 +65,7 @@ const initialState: FileTreeState = {
     deleting: [],
     renaming: [],
     rotating: [],
+    merging: false,
     uploading: false,
   },
 };
@@ -96,6 +102,22 @@ const resolveErrorMessage = (
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
+const isSelectableFileNode = (state: FileTreeState, nodeId: string) =>
+  state.tree.nodes[nodeId]?.type === 'file';
+
+const pruneMultiFileSelection = (state: FileTreeState) => {
+  state.selectedFileIds = state.selectedFileIds.filter(nodeId =>
+    isSelectableFileNode(state, nodeId)
+  );
+
+  if (
+    state.selectionAnchorId &&
+    !isSelectableFileNode(state, state.selectionAnchorId)
+  ) {
+    state.selectionAnchorId = null;
+  }
+};
+
 /*=============================================
 =            Redux Slice                      =
 =============================================*/
@@ -111,6 +133,45 @@ const fileTreeSlice = createSlice({
     // New reducer to set folder creation state
     setIsCreatingNewFolder: (state, action: PayloadAction<boolean>) => {
       state.isCreatingNewFolder = action.payload;
+    },
+
+    setFileSelection: (
+      state,
+      action: PayloadAction<{
+        selectedFileIds: string[];
+        selectionAnchorId?: string | null;
+        selectedFileId?: string | null;
+      }>
+    ) => {
+      const nextSelectedFileIds = dedupeOrdered(
+        action.payload.selectedFileIds.map(String)
+      ).filter(nodeId => isSelectableFileNode(state, nodeId));
+
+      state.selectedFileIds = nextSelectedFileIds;
+      state.selectionAnchorId =
+        action.payload.selectionAnchorId !== undefined
+          ? action.payload.selectionAnchorId
+          : state.selectionAnchorId;
+
+      if (
+        state.selectionAnchorId &&
+        !isSelectableFileNode(state, state.selectionAnchorId)
+      ) {
+        state.selectionAnchorId = null;
+      }
+
+      if (action.payload.selectedFileId !== undefined) {
+        state.selectedFile = action.payload.selectedFileId;
+        state.fileSelectionVersion += 1;
+        if (action.payload.selectedFileId) {
+          state.selectedFolderId = null;
+        }
+      }
+    },
+
+    clearMultiFileSelection: state => {
+      state.selectedFileIds = [];
+      state.selectionAnchorId = null;
     },
 
     selectFile: (state, action: PayloadAction<string | null>) => {
@@ -305,6 +366,8 @@ const fileTreeSlice = createSlice({
           if (isNewRoot) {
             state.expanded = { [nextTree.id]: true };
             state.selectedFile = null;
+            state.selectedFileIds = [];
+            state.selectionAnchorId = null;
             state.selectedFolderId = null;
             state.scrollToFileId = null;
           } else {
@@ -327,6 +390,8 @@ const fileTreeSlice = createSlice({
           ) {
             state.scrollToFileId = null;
           }
+
+          pruneMultiFileSelection(state);
         }
       )
       .addMatcher(
@@ -379,6 +444,16 @@ const fileTreeSlice = createSlice({
           }
           if (state.scrollToFileId && removedIds.has(state.scrollToFileId)) {
             state.scrollToFileId = null;
+          }
+
+          state.selectedFileIds = state.selectedFileIds.filter(
+            nodeId => !removedIds.has(nodeId)
+          );
+          if (
+            state.selectionAnchorId &&
+            removedIds.has(state.selectionAnchorId)
+          ) {
+            state.selectionAnchorId = null;
           }
 
           // Remove from operations
@@ -472,6 +547,52 @@ const fileTreeSlice = createSlice({
           );
           state.operationsInProgress.rotating =
             state.operationsInProgress.rotating.filter(id => id !== documentId);
+        }
+      );
+
+    /*-------------------
+      Merge Documents
+    -------------------*/
+    builder
+      .addMatcher(fileTreeApi.endpoints.mergeDocuments.matchPending, state => {
+        state.operationsInProgress.merging = true;
+        state.error = null;
+      })
+      .addMatcher(
+        fileTreeApi.endpoints.mergeDocuments.matchFulfilled,
+        (state, action) => {
+          state.operationsInProgress.merging = false;
+          state.error = null;
+          state.tree = mergeFileTree(state.tree, action.payload.tree);
+
+          if (state.selectedFile && !(state.selectedFile in state.tree.nodes)) {
+            state.selectedFile = null;
+          }
+          if (
+            state.selectedFolderId &&
+            !(state.selectedFolderId in state.tree.nodes)
+          ) {
+            state.selectedFolderId = null;
+          }
+          if (
+            state.scrollToFileId &&
+            !(state.scrollToFileId in state.tree.nodes)
+          ) {
+            state.scrollToFileId = null;
+          }
+
+          pruneMultiFileSelection(state);
+        }
+      )
+      .addMatcher(
+        fileTreeApi.endpoints.mergeDocuments.matchRejected,
+        (state, action) => {
+          state.operationsInProgress.merging = false;
+          state.error = resolveErrorMessage(
+            action.payload,
+            'Failed to merge documents',
+            action.error
+          );
         }
       );
 
@@ -711,6 +832,8 @@ const fileTreeSlice = createSlice({
 export const {
   toggleFolder,
   setIsCreatingNewFolder,
+  setFileSelection,
+  clearMultiFileSelection,
   selectFile,
   selectFolder,
   setScrollToFile,

@@ -22,6 +22,7 @@ import { useParams } from 'react-router-dom';
 
 import { useAppDispatch, useAppSelector } from '../../../app/hooks';
 import { toggleFolder } from '../redux/fileTreeSlice';
+import FileTreeBulkActions from './FileTreeBulkActions';
 import FileTreeHeader from './FileTreeHeader';
 import TreeChildren from './TreeChildren';
 import {
@@ -64,8 +65,6 @@ const FilesTree: React.FC<FilesTreeProps> = ({ level }) => {
     onDragEnd,
   } = useFileTreeInteractions({
     tree,
-    expanded,
-    rootExpanded,
     bundleId: extractedBundleId,
   });
 
@@ -80,6 +79,7 @@ const FilesTree: React.FC<FilesTreeProps> = ({ level }) => {
         isExpanded={rootExpanded}
         onToggle={() => dispatch(toggleFolder(tree.id))}
       />
+      <FileTreeBulkActions bundleId={extractedBundleId} />
 
       <DndContext
         sensors={sensors}

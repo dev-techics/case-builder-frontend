@@ -12,7 +12,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCallback, useMemo, useState } from 'react';
 
-import { useAppDispatch } from '@/app/hooks';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
 
 import {
   useMoveDocumentsBatchMutation,
@@ -20,11 +20,19 @@ import {
 } from '../api';
 import { dedupeOrdered, isDescendant } from '../redux/fileTreeModel';
 import {
+  clearMultiFileSelection,
   moveNodes,
   reorderChildren,
-  selectFile,
+  setFileSelection,
   selectFolder,
 } from '../redux/fileTreeSlice';
+import {
+  selectAllFileIds,
+  selectOrderedSelectedFileIds,
+  selectSelectedFileIds,
+  selectSelectionAnchorId,
+  selectVisibleFileIds,
+} from '../redux/selectors';
 import type {
   FileTree,
   FileTreeDropPreview,
@@ -35,8 +43,6 @@ export const ROOT_DROPPABLE_ID = 'ROOT';
 
 type UseFileTreeInteractionsArgs = {
   tree: FileTree;
-  expanded: Record<string, boolean>;
-  rootExpanded: boolean;
   bundleId: string;
 };
 
@@ -49,8 +55,6 @@ type UseFileTreeInteractionsArgs = {
  */
 export const useFileTreeInteractions = ({
   tree,
-  expanded,
-  rootExpanded,
   bundleId,
 }: UseFileTreeInteractionsArgs) => {
   const dispatch = useAppDispatch();
@@ -59,11 +63,6 @@ export const useFileTreeInteractions = ({
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
-
-  const [rawSelectedFileIds, setRawSelectedFileIds] = useState<string[]>([]);
-  const [rawSelectionAnchorId, setRawSelectionAnchorId] = useState<
-    string | null
-  >(null);
 
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
   const [dropPreview, setDropPreview] = useState<FileTreeDropPreview | null>(
@@ -76,26 +75,16 @@ export const useFileTreeInteractions = ({
       ? draggedFileIds.length
       : 1;
 
-  const allFileIds = useMemo(() => getAllFileIds(tree), [tree]);
+  const allFileIds = useAppSelector(selectAllFileIds);
+  const selectedFileIds = useAppSelector(selectSelectedFileIds);
+  const orderedSelectedFileIds = useAppSelector(selectOrderedSelectedFileIds);
+  const selectionAnchorId = useAppSelector(selectSelectionAnchorId);
+  const visibleFileIds = useAppSelector(selectVisibleFileIds);
   const validFileIds = useMemo(() => new Set(allFileIds), [allFileIds]);
-  const selectedFileIds = useMemo(
-    () => rawSelectedFileIds.filter(id => validFileIds.has(id)),
-    [rawSelectedFileIds, validFileIds]
-  );
-  const selectionAnchorId =
-    rawSelectionAnchorId && validFileIds.has(rawSelectionAnchorId)
-      ? rawSelectionAnchorId
-      : null;
-
-  const visibleFileIds = useMemo(
-    () => getVisibleFileIds(tree, rootExpanded, expanded),
-    [tree, rootExpanded, expanded]
-  );
 
   const onFolderSelect = useCallback(
     (folderId: string) => {
-      setRawSelectedFileIds([]);
-      setRawSelectionAnchorId(null);
+      dispatch(clearMultiFileSelection());
       dispatch(selectFolder(folderId));
     },
     [dispatch]
@@ -109,33 +98,32 @@ export const useFileTreeInteractions = ({
       const isRangeSelect = Boolean(modifiers?.shiftKey);
       const isToggleSelect = Boolean(modifiers?.ctrlKey || modifiers?.metaKey);
 
-      setRawSelectedFileIds(prev => {
-        const nextPrev = prev.filter(id => validFileIds.has(id));
+      const nextPrev = selectedFileIds.filter(id => validFileIds.has(id));
+      let nextSelectedFileIds = [fileId];
 
-        if (isRangeSelect && selectionAnchorId) {
-          const start = visibleFileIds.indexOf(selectionAnchorId);
-          const end = visibleFileIds.indexOf(fileId);
-          if (start !== -1 && end !== -1) {
-            const [from, to] = start <= end ? [start, end] : [end, start];
-            return visibleFileIds.slice(from, to + 1);
-          }
+      if (isRangeSelect && selectionAnchorId) {
+        const start = visibleFileIds.indexOf(selectionAnchorId);
+        const end = visibleFileIds.indexOf(fileId);
+
+        if (start !== -1 && end !== -1) {
+          const [from, to] = start <= end ? [start, end] : [end, start];
+          nextSelectedFileIds = visibleFileIds.slice(from, to + 1);
         }
-
-        if (isToggleSelect) {
-          return nextPrev.includes(fileId)
-            ? nextPrev.filter(id => id !== fileId)
-            : [...nextPrev, fileId];
-        }
-
-        return [fileId];
-      });
-
-      if (!isRangeSelect) {
-        setRawSelectionAnchorId(fileId);
+      } else if (isToggleSelect) {
+        nextSelectedFileIds = nextPrev.includes(fileId)
+          ? nextPrev.filter(id => id !== fileId)
+          : [...nextPrev, fileId];
       }
-      dispatch(selectFile(fileId));
+
+      dispatch(
+        setFileSelection({
+          selectedFileIds: nextSelectedFileIds,
+          selectionAnchorId: isRangeSelect ? selectionAnchorId : fileId,
+          selectedFileId: fileId,
+        })
+      );
     },
-    [dispatch, selectionAnchorId, validFileIds, visibleFileIds]
+    [dispatch, selectedFileIds, selectionAnchorId, validFileIds, visibleFileIds]
   );
 
   const setDropPreviewIfChanged = useCallback(
@@ -167,22 +155,27 @@ export const useFileTreeInteractions = ({
 
       const nextActiveItem = tree.nodes[nextActiveId];
       if (nextActiveItem?.type === 'file') {
-        const selected = selectedFileIds.includes(nextActiveId)
-          ? selectedFileIds
+        const selected = orderedSelectedFileIds.includes(nextActiveId)
+          ? orderedSelectedFileIds
           : [nextActiveId];
         setDraggedFileIds(selected);
 
         // Dragging an unselected file should select it first.
-        if (!selectedFileIds.includes(nextActiveId)) {
-          setRawSelectedFileIds([nextActiveId]);
-          setRawSelectionAnchorId(nextActiveId);
+        if (!orderedSelectedFileIds.includes(nextActiveId)) {
+          dispatch(
+            setFileSelection({
+              selectedFileIds: [nextActiveId],
+              selectionAnchorId: nextActiveId,
+              selectedFileId: nextActiveId,
+            })
+          );
         }
         return;
       }
 
       setDraggedFileIds([]);
     },
-    [selectedFileIds, tree]
+    [dispatch, orderedSelectedFileIds, tree]
   );
 
   const onDragOver = useCallback(
@@ -350,7 +343,7 @@ export const useFileTreeInteractions = ({
     overId,
     activeItem,
     activeDragCount,
-    selectedFileIds,
+    selectedFileIds: orderedSelectedFileIds,
     dropPreview,
     onFolderSelect,
     onFileSelect,
@@ -393,74 +386,6 @@ const reorderIdsByDropPosition = (
     ...draggedUnique,
     ...remaining.slice(insertIndex),
   ];
-};
-
-const getAllFileIds = (tree: FileTree): string[] => {
-  const ids: string[] = [];
-  const visited = new Set<string>();
-
-  const walk = (childIds: ReadonlyArray<string>) => {
-    for (const id of childIds) {
-      if (visited.has(id)) continue;
-      visited.add(id);
-
-      const node = tree.nodes[id];
-      if (!node) continue;
-
-      if (node.type === 'file') {
-        ids.push(node.id);
-        continue;
-      }
-
-      const nestedIds = getChildrenIds(tree, node.id);
-      if (nestedIds.length > 0) {
-        walk(nestedIds);
-      }
-    }
-  };
-
-  walk(getChildrenIds(tree, null));
-  return ids;
-};
-
-const getVisibleFileIds = (
-  tree: FileTree,
-  rootExpanded: boolean,
-  expanded: Record<string, boolean>
-): string[] => {
-  if (!rootExpanded) {
-    return [];
-  }
-
-  const ids: string[] = [];
-  const visited = new Set<string>();
-
-  const walk = (childIds: ReadonlyArray<string>) => {
-    for (const id of childIds) {
-      if (visited.has(id)) continue;
-      visited.add(id);
-
-      const node = tree.nodes[id];
-      if (!node) continue;
-
-      if (node.type === 'file') {
-        ids.push(node.id);
-        continue;
-      }
-
-      if (!expanded[node.id]) {
-        continue;
-      }
-
-      const nestedIds = getChildrenIds(tree, node.id);
-      if (nestedIds.length > 0) {
-        walk(nestedIds);
-      }
-    }
-  };
-
-  walk(getChildrenIds(tree, null));
-  return ids;
 };
 
 function getPointerClientY(event: DragOverEvent): number | null {

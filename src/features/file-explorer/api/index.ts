@@ -10,6 +10,94 @@ type RotateDocumentApiResponse = {
   };
 };
 
+type MergeDocumentsMutationResponse = {
+  tree: FileTree;
+  mergedDocumentId?: string;
+  mergedDocumentName?: string;
+};
+
+type MergeDocumentRecord = {
+  id?: string | number;
+  name?: string;
+};
+
+type MergeDocumentsApiResponse = {
+  document?: MergeDocumentRecord;
+  mergedDocument?: MergeDocumentRecord;
+  tree?: FileTree;
+  data?: {
+    document?: MergeDocumentRecord;
+    mergedDocument?: MergeDocumentRecord;
+    tree?: FileTree;
+  };
+};
+
+const parseTextResponse = (response: unknown) => {
+  if (typeof response !== 'string') {
+    return response;
+  }
+
+  try {
+    return JSON.parse(response);
+  } catch {
+    return response;
+  }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const getMergeDocumentMetadata = (
+  response: unknown
+): Pick<
+  MergeDocumentsMutationResponse,
+  'mergedDocumentId' | 'mergedDocumentName'
+> => {
+  if (!isRecord(response)) {
+    return {};
+  }
+
+  const nestedData = isRecord(response.data) ? response.data : null;
+  const documentCandidate = [
+    response.document,
+    response.mergedDocument,
+    nestedData?.document,
+    nestedData?.mergedDocument,
+  ].find(isRecord);
+
+  if (!documentCandidate) {
+    return {};
+  }
+
+  return {
+    mergedDocumentId:
+      typeof documentCandidate.id === 'string' ||
+      typeof documentCandidate.id === 'number'
+        ? String(documentCandidate.id)
+        : undefined,
+    mergedDocumentName:
+      typeof documentCandidate.name === 'string'
+        ? documentCandidate.name
+        : undefined,
+  };
+};
+
+const getTreeFromMergeResponse = (response: unknown): FileTree | null => {
+  if (!isRecord(response)) {
+    return null;
+  }
+
+  if (isRecord(response.tree)) {
+    return response.tree as unknown as FileTree;
+  }
+
+  if (isRecord(response.data) && isRecord(response.data.tree)) {
+    return response.data.tree as unknown as FileTree;
+  }
+
+  return null;
+};
+
 export const fileTreeApi = createApi({
   reducerPath: 'fileTreeApi',
   baseQuery: fetchBaseQuery({
@@ -249,6 +337,71 @@ export const fileTreeApi = createApi({
         };
       },
     }),
+
+    /*--------------------------
+        Merge documents
+    ----------------------------*/
+    mergeDocuments: build.mutation<
+      MergeDocumentsMutationResponse,
+      {
+        bundleId: string;
+        documentIds: string[];
+        name: string;
+        parentId: string | null;
+      }
+    >({
+      async queryFn(
+        { bundleId, documentIds, name, parentId },
+        _api,
+        _extraOptions,
+        baseQuery
+      ) {
+        const mergeResult = await baseQuery({
+          url: `/api/bundles/${bundleId}/documents/merge`,
+          method: 'POST',
+          body: {
+            document_ids: documentIds,
+            name,
+            parent_id: parentId,
+          },
+          responseHandler: 'text',
+        });
+
+        if ('error' in mergeResult) {
+          return { error: mergeResult.error as FetchBaseQueryError };
+        }
+
+        const mergeResponse = parseTextResponse(mergeResult.data) as
+          | MergeDocumentsApiResponse
+          | string;
+        const mergeMetadata = getMergeDocumentMetadata(mergeResponse);
+        const responseTree = getTreeFromMergeResponse(mergeResponse);
+
+        if (responseTree) {
+          return {
+            data: {
+              tree: responseTree,
+              ...mergeMetadata,
+            },
+          };
+        }
+
+        const treeResult = await baseQuery(
+          `/api/bundles/${bundleId}/documents`
+        );
+
+        if ('error' in treeResult) {
+          return { error: treeResult.error as FetchBaseQueryError };
+        }
+
+        return {
+          data: {
+            tree: treeResult.data as FileTree,
+            ...mergeMetadata,
+          },
+        };
+      },
+    }),
   }),
 });
 
@@ -256,6 +409,7 @@ export const {
   useCreateFolderMutation,
   useDeleteDocumentMutation,
   useGetTreeQuery,
+  useMergeDocumentsMutation,
   useMoveDocumentMutation,
   useMoveDocumentsBatchMutation,
   useRenameDocumentMutation,
