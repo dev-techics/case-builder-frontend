@@ -1,6 +1,6 @@
-// features/properties-panel/components/Exports.tsx
+// features/properties-panel/components/ExportFromServer.tsx
 import { AlertCircle, CheckCircle, Download, FileStack } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/app/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,8 @@ import type {
   FileTree,
   FileTreeNode,
 } from '@/features/file-explorer/types/fileTree';
-import axiosInstance from '@/api/axiosInstance';
+import { useExportBundle } from '../hooks';
+import type { ExportCompressionProfile } from '../api';
 import CoverPage from '../../cover-page';
 import { setBundleId } from '../../cover-page/redux/coverPageSlice';
 import { useParams } from 'react-router-dom';
@@ -52,13 +53,6 @@ const collectAllFiles = (
   return files;
 };
 
-type ExportCompressionProfile =
-  | 'none'
-  | 'balanced'
-  | 'small'
-  | 'tiny'
-  | 'extreme';
-
 const COMPRESSION_PROFILE_OPTIONS: Array<{
   value: ExportCompressionProfile;
   label: string;
@@ -70,7 +64,7 @@ const COMPRESSION_PROFILE_OPTIONS: Array<{
   { value: 'extreme', label: 'Extreme' },
 ];
 
-function Exports() {
+function ExportFromServer() {
   const dispatch = useAppDispatch();
   const tree = useAppSelector(states => states.fileTree.tree);
   const { headerLeft, headerRight, footer } = useAppSelector(
@@ -87,17 +81,6 @@ function Exports() {
   // Get highlights from toolbar slice
   const highlights = useAppSelector(state => state.toolbar.highlights);
 
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportStatus, setExportStatus] = useState<
-    'idle' | 'exporting' | 'success' | 'error'
-  >('idle');
-  const [exportMessage, setExportMessage] = useState('');
-  const [includeIndex, setIncludeIndex] = useState(true);
-  const [includeFrontCover, setIncludeFrontCover] = useState(true);
-  const [includeBackCover, setIncludeBackCover] = useState(true);
-  const [compressionProfile, setCompressionProfile] =
-    useState<ExportCompressionProfile>('tiny');
-  const [targetSizeMb, setTargetSizeMb] = useState('10');
   const { bundleId: routeBundleId } = useParams<{ bundleId: string }>();
 
   // Recursively collect all PDF files from the entire tree
@@ -107,148 +90,34 @@ function Exports() {
   const bundleId =
     routeBundleId || (tree.id === 'bundle-loading' ? '' : tree.id);
 
+  const {
+    compressionProfile,
+    exportMessage,
+    exportStatus,
+    handleExport,
+    includeBackCover,
+    includeFrontCover,
+    includeIndex,
+    isExporting,
+    setCompressionProfile,
+    setIncludeBackCover,
+    setIncludeFrontCover,
+    setIncludeIndex,
+    setTargetSizeMb,
+    targetSizeMb,
+  } = useExportBundle({
+    hasFiles,
+    bundleId,
+    projectName: tree.projectName,
+    pdfFileCount: pdfFiles.length,
+    frontCoverAvailable: frontEnabled,
+    backCoverAvailable: backEnabled,
+  });
+
   // Load cover page data when component mounts
   useEffect(() => {
     dispatch(setBundleId(bundleId || null));
   }, [bundleId, dispatch]);
-
-  const handleExport = async () => {
-    if (!hasFiles || !bundleId) {
-      setExportStatus('error');
-      setExportMessage(
-        !hasFiles ? 'No PDF files to export' : 'Bundle ID not found'
-      );
-      return;
-    }
-
-    const trimmedTargetSizeMb = targetSizeMb.trim();
-    const parsedTargetSizeMb = Number.parseFloat(trimmedTargetSizeMb);
-    const isCompressionEnabled = compressionProfile !== 'none';
-
-    if (
-      isCompressionEnabled &&
-      (!trimmedTargetSizeMb ||
-        !Number.isFinite(parsedTargetSizeMb) ||
-        parsedTargetSizeMb <= 0)
-    ) {
-      setExportStatus('error');
-      setExportMessage('Please enter a valid target size in MB');
-      return;
-    }
-
-    setIsExporting(true);
-    setExportStatus('exporting');
-    setExportMessage('Starting export...');
-
-    try {
-      const exportPayload = {
-        include_index: includeIndex,
-        include_front_cover: includeFrontCover && frontEnabled,
-        include_back_cover: includeBackCover && backEnabled,
-        compression_profile: compressionProfile,
-        target_size_mb: isCompressionEnabled ? parsedTargetSizeMb : undefined,
-      };
-
-      // Step 1: Kick off the export job
-      const { data } = await axiosInstance.post(
-        `/api/bundles/${bundleId}/export`,
-        exportPayload
-      );
-
-      const exportId = data.exportId;
-      setExportMessage('Processing PDF on server...');
-
-      // Step 2: Poll until ready
-      await new Promise<void>((resolve, reject) => {
-        const interval = setInterval(async () => {
-          try {
-            const { data: statusData } = await axiosInstance.get(
-              `/api/bundles/exports/${exportId}/status`
-            );
-
-            if (statusData.status === 'complete') {
-              clearInterval(interval);
-              resolve();
-            } else if (statusData.status === 'failed') {
-              clearInterval(interval);
-              reject(new Error(statusData.error || 'Export failed on server'));
-            } else {
-              setExportMessage(
-                statusData.status === 'processing'
-                  ? 'Generating PDF...'
-                  : 'Waiting in queue...'
-              );
-            }
-          } catch (err) {
-            clearInterval(interval);
-            reject(err);
-          }
-        }, 3000);
-      });
-
-      // Step 3: Download the file
-      setExportMessage('Downloading...');
-      const response = await axiosInstance.get(
-        `/api/bundles/exports/${exportId}/download`,
-        {
-          responseType: 'blob',
-          onDownloadProgress: progressEvent => {
-            if (progressEvent.total) {
-              const pct = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setExportMessage(`Downloading... ${pct}%`);
-            }
-          },
-        }
-      );
-
-      // Trigger browser download
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${tree.projectName || 'Bundle'}_${Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-
-      // Build success message
-      const successParts = [];
-      if (includeFrontCover && frontEnabled) successParts.push('front cover');
-      if (includeBackCover && backEnabled) successParts.push('back cover');
-      if (includeIndex) successParts.push('index');
-      successParts.push(`${pdfFiles.length} files`);
-
-      const successAddons =
-        successParts.length > 1
-          ? ` (including ${successParts.slice(0, -1).join(', ')})`
-          : '';
-
-      setExportStatus('success');
-      setExportMessage(`Successfully exported${successAddons}`);
-
-      setTimeout(() => {
-        setExportStatus('idle');
-        setExportMessage('');
-      }, 3000);
-    } catch (error: any) {
-      console.error('Export error:', error);
-
-      const errorMessage =
-        error.response?.status === 403
-          ? 'You do not have permission to export this bundle'
-          : error.response?.status === 404
-            ? 'Bundle not found'
-            : error.message || 'Failed to export bundle';
-
-      setExportStatus('error');
-      setExportMessage(errorMessage);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -467,7 +336,7 @@ function Exports() {
       {/* Export Button */}
       <Button
         className="w-full"
-        disabled={!hasFiles || isExporting}
+        disabled={!hasFiles || !bundleId || isExporting}
         onClick={handleExport}
       >
         <Download className="mr-2 h-4 w-4" />
@@ -483,4 +352,4 @@ function Exports() {
   );
 }
 
-export default Exports;
+export default ExportFromServer;

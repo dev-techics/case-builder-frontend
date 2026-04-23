@@ -37,4 +37,6 @@ export const usePersistMetadata = () => {
   return { persistMetadata };
 };
 
+export { default as useExportBundle } from './useExportBundle';
+
 export default usePersistMetadata;
