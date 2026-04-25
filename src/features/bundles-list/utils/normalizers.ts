@@ -1,14 +1,7 @@
 import camelcaseKeys from 'camelcase-keys';
-import type { Bundle, BundleStatus } from '../types';
+import { bundleStatuses, type Bundle, type BundleStatus } from '../types';
 
 type BundleRecord = Record<string, unknown>;
-
-const bundleStatuses: BundleStatus[] = [
-  'In Progress',
-  'Complete',
-  'Review',
-  'Archived',
-];
 
 const isRecord = (value: unknown): value is BundleRecord =>
   typeof value === 'object' && value !== null && !Array.isArray(value);

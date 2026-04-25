@@ -13,20 +13,31 @@ import {
   Copy,
   Download,
   Trash2,
-  FileStack,
 } from 'lucide-react';
-import type { BundleRowProps, StatusColorMap } from '../types';
+import BundleStatusMenu from './BundleStatusMenu';
+import { Folder02Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/react';
+import type { BundleCardProps } from './BundleCard';
 
-const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
-  const statusColors: StatusColorMap = {
-    'In Progress': 'bg-blue-100 text-blue-700',
-    Complete: 'bg-green-100 text-green-700',
-    Review: 'bg-orange-100 text-orange-700',
-    Archived: 'bg-gray-100 text-gray-700',
-  };
-
+const BundleRow = ({
+  bundle,
+  lastModifiedLabel,
+  lastModifiedTitle,
+  onOpen,
+  onRename,
+  onDelete,
+  onDuplicate,
+  onExport,
+  onStatusChange,
+  isStatusUpdating = false,
+}: BundleCardProps) => {
   const handleRowClick = () => {
     onOpen(bundle);
+  };
+  const handleDelete = (bundleId: string | number) => {
+    if (confirm('Are you sure you want to delete this bundle?')) {
+      onDelete?.(bundleId);
+    }
   };
 
   return (
@@ -36,7 +47,10 @@ const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <FileStack className="h-8 w-8 text-gray-400" />
+          <HugeiconsIcon
+            className="h-5 w-5 text-gray-500"
+            icon={Folder02Icon}
+          />
           <div>
             <div className="font-medium text-gray-900">{bundle.name}</div>
             <div className="text-sm text-gray-500 font-mono">
@@ -49,14 +63,15 @@ const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
         {bundle.totalDocuments} documents
       </td>
       <td className="px-6 py-4">
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[bundle.status]}`}
-        >
-          {bundle.status}
-        </span>
+        <BundleStatusMenu
+          className="px-3"
+          disabled={isStatusUpdating}
+          onChange={status => onStatusChange?.(status)}
+          status={bundle.status}
+        />
       </td>
-      <td className="px-6 py-4 text-sm text-gray-500">
-        {bundle.updatedAt ?? '—'}
+      <td className="px-6 py-4 text-sm text-gray-500" title={lastModifiedTitle}>
+        {lastModifiedLabel}
       </td>
       <td className="px-6 py-4">
         <DropdownMenu>
@@ -70,24 +85,37 @@ const BundleRow = ({ bundle, onOpen }: BundleRowProps) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleRowClick}>
               <FolderOpen className="h-4 w-4 mr-2" />
               Open Bundle
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!onRename}
+              onClick={() => onRename?.(bundle)}
+            >
               <Edit className="h-4 w-4 mr-2" />
-              Edit Details
+              Rename
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!onDuplicate}
+              onClick={() => onDuplicate?.(bundle)}
+            >
               <Copy className="h-4 w-4 mr-2" />
               Duplicate
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!onExport}
+              onClick={() => onExport?.(bundle)}
+            >
               <Download className="h-4 w-4 mr-2" />
               Export
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem
+              className="text-red-600"
+              disabled={!onDelete}
+              onClick={() => handleDelete(bundle.id)}
+            >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </DropdownMenuItem>

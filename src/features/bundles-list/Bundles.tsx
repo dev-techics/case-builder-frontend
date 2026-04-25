@@ -8,13 +8,13 @@
  * Author: Anik Dey
  */
 import { useState } from 'react';
-import { Button } from 'case-builder-ui';
 import BundlesHeader from './components/BundlesHeader';
 import BundlesFilterBar from './components/BundlesFilterbar';
 import BundleCard from './components/BundleCard';
 import BundleRow from './components/BundleRow';
+import { Button } from '@/components/ui/button';
 import { FileStack, Plus } from 'lucide-react';
-import type { Bundle, SortOption, ViewMode } from './types';
+import type { Bundle, BundleStatus, SortOption, ViewMode } from './types';
 import { useNavigate } from 'react-router-dom';
 import CreateNewBundleDialog from './components/CreateBundleDialog';
 import { useAppDispatch } from '@/app/hooks';
@@ -22,8 +22,12 @@ import {
   bundleListApi,
   useDeleteBundleMutation,
   useGetBundlesQuery,
+  useUpdateBundleStatusMutation,
 } from './api';
 import { toast } from 'react-toastify';
+import BundleRenameDialog from './components/BundleRenameDialog';
+import { useRenameBundle } from './hooks';
+import { formatBundleTimestamp } from './utils/formatBundleTimestamp';
 
 /*--------------------------------------------------
   Duplication is still local-only, so we mirror the
@@ -38,16 +42,33 @@ const createDuplicateBundle = (bundle: Bundle): Bundle => ({
   status: 'In Progress',
 });
 
+type BundleListItem = {
+  bundle: Bundle;
+  lastModifiedLabel: string;
+  lastModifiedTitle?: string;
+};
+
 const BundleList = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [openNewBundleDialog, setOpenNewBundleDialog] = useState(false);
+  const {
+    bundleToRename,
+    closeRenameDialog,
+    isRenameDialogOpen,
+    isRenaming,
+    openRenameDialog,
+    submitRename,
+  } = useRenameBundle();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [updatingStatusBundleId, setUpdatingStatusBundleId] = useState<
+    Bundle['id'] | null
+  >(null);
   const { data: bundles = [], isLoading, error } = useGetBundlesQuery();
   const [deleteBundle] = useDeleteBundleMutation();
-
+  const [updateBundleStatus] = useUpdateBundleStatusMutation();
   // Handle new bundle creation
   const handleCreateNew = () => {
     setOpenNewBundleDialog(true);
@@ -86,14 +107,56 @@ const BundleList = () => {
     toast.success('Bundle Duplicated Successfully');
   };
 
-  const filteredBundles = bundles.filter(bundle => {
-    if (!bundle?.name || !bundle?.caseNumber) return false;
+  const handleRenameDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      closeRenameDialog();
+    }
+  };
 
-    return (
-      bundle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bundle.caseNumber.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  const handleBundleStatusChange = async (
+    bundle: Bundle,
+    status: BundleStatus
+  ) => {
+    if (status === bundle.status) {
+      return;
+    }
+
+    setUpdatingStatusBundleId(bundle.id);
+
+    try {
+      await updateBundleStatus({
+        bundleId: bundle.id,
+        status,
+      }).unwrap();
+      toast.success(`Bundle status updated to ${status}`);
+    } catch {
+      toast.error('Failed to update bundle status');
+    } finally {
+      setUpdatingStatusBundleId(currentId =>
+        currentId === bundle.id ? null : currentId
+      );
+    }
+  };
+
+  const filteredBundles: BundleListItem[] = bundles
+    .filter(bundle => {
+      if (!bundle?.name || !bundle?.caseNumber) return false;
+
+      return (
+        bundle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bundle.caseNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    })
+    .map(bundle => {
+      const lastModifiedLabel = formatBundleTimestamp(bundle.updatedAt);
+
+      return {
+        bundle,
+        lastModifiedLabel,
+        lastModifiedTitle:
+          lastModifiedLabel !== '—' ? lastModifiedLabel : undefined,
+      };
+    });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -118,15 +181,24 @@ const BundleList = () => {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBundles.map(bundle => (
-              <BundleCard
-                key={bundle.id}
-                bundle={bundle}
-                onOpen={() => handleOpenBundle(bundle)}
-                onDelete={handleBundleDelete}
-                onDuplicate={handleBundleDuplicate}
-              />
-            ))}
+            {filteredBundles.map(
+              ({ bundle, lastModifiedLabel, lastModifiedTitle }) => (
+                <BundleCard
+                  key={bundle.id}
+                  bundle={bundle}
+                  lastModifiedLabel={lastModifiedLabel}
+                  lastModifiedTitle={lastModifiedTitle}
+                  onOpen={() => handleOpenBundle(bundle)}
+                  onStatusChange={status =>
+                    void handleBundleStatusChange(bundle, status)
+                  }
+                  onDelete={handleBundleDelete}
+                  onDuplicate={handleBundleDuplicate}
+                  onRename={openRenameDialog}
+                  isStatusUpdating={updatingStatusBundleId === bundle.id}
+                />
+              )
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -149,13 +221,24 @@ const BundleList = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredBundles.map(bundle => (
-                  <BundleRow
-                    key={bundle.id}
-                    bundle={bundle}
-                    onOpen={() => handleOpenBundle(bundle)}
-                  />
-                ))}
+                {filteredBundles.map(
+                  ({ bundle, lastModifiedLabel, lastModifiedTitle }) => (
+                    <BundleRow
+                      key={bundle.id}
+                      bundle={bundle}
+                      lastModifiedLabel={lastModifiedLabel}
+                      lastModifiedTitle={lastModifiedTitle}
+                      onOpen={() => handleOpenBundle(bundle)}
+                      onStatusChange={status =>
+                        void handleBundleStatusChange(bundle, status)
+                      }
+                      onDelete={handleBundleDelete}
+                      onDuplicate={handleBundleDuplicate}
+                      onRename={openRenameDialog}
+                      isStatusUpdating={updatingStatusBundleId === bundle.id}
+                    />
+                  )
+                )}
               </tbody>
             </table>
           </div>
@@ -185,6 +268,15 @@ const BundleList = () => {
       <CreateNewBundleDialog
         open={openNewBundleDialog}
         onOpenChange={setOpenNewBundleDialog}
+      />
+      {/* --------- Rename Dialog ----------- */}
+      <BundleRenameDialog
+        key={bundleToRename?.id ?? 'rename-dialog'}
+        bundle={bundleToRename}
+        isSubmitting={isRenaming}
+        open={isRenameDialogOpen}
+        onOpenChange={handleRenameDialogOpenChange}
+        onSubmit={submitRename}
       />
     </div>
   );

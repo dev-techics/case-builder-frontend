@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { Bundle } from '../types';
+import type { Bundle, BundleStatus } from '../types';
 import type { CreateBundleDto } from '../types';
 import { toCreateBundlePayload } from '../types';
 import {
@@ -8,6 +8,28 @@ import {
 } from '../utils/normalizers';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+type RenameBundleRequest = {
+  bundleId: string | number;
+  name: string;
+};
+
+type UpdateBundleStatusRequest = {
+  bundleId: string | number;
+  status: BundleStatus;
+};
+
+const patchBundle = (
+  draft: Bundle[],
+  bundleId: string | number,
+  updates: Partial<Pick<Bundle, 'name' | 'status'>>
+) => {
+  const bundle = draft.find(item => item.id === bundleId);
+
+  if (bundle) {
+    Object.assign(bundle, updates);
+  }
+};
 
 export const bundleListApi = createApi({
   reducerPath: 'bundleListApi',
@@ -68,6 +90,59 @@ export const bundleListApi = createApi({
     }),
 
     /*--------------------------
+        Rename an existing bundle
+    ----------------------------*/
+    renameBundle: build.mutation<void, RenameBundleRequest>({
+      query: ({ bundleId, name }) => ({
+        url: `/api/bundles/${bundleId}`,
+        method: 'PATCH',
+        body: { name },
+      }),
+      async onQueryStarted({ bundleId, name }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          bundleListApi.util.updateQueryData('getBundles', undefined, draft => {
+            patchBundle(draft, bundleId, { name });
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: [{ type: 'Bundle', id: 'LIST' }],
+    }),
+
+    /*------------------------------
+        Update an existing status
+    --------------------------------*/
+    updateBundleStatus: build.mutation<void, UpdateBundleStatusRequest>({
+      query: ({ bundleId, status }) => ({
+        url: `/api/bundles/${bundleId}`,
+        method: 'PATCH',
+        body: { status },
+      }),
+      async onQueryStarted({ bundleId, status }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          bundleListApi.util.updateQueryData('getBundles', undefined, draft => {
+            patchBundle(draft, bundleId, { status });
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: (_result, _error, { bundleId }) => [
+        { type: 'Bundle', id: bundleId },
+        { type: 'Bundle', id: 'LIST' },
+      ],
+    }),
+
+    /*--------------------------
         Delete an existing bundle
     ----------------------------*/
     deleteBundle: build.mutation<void, string | number>({
@@ -88,6 +163,8 @@ export const {
   useGetBundleByIdQuery,
   useLazyGetBundleByIdQuery,
   useCreateBundleMutation,
+  useRenameBundleMutation,
+  useUpdateBundleStatusMutation,
   useDeleteBundleMutation,
 } = bundleListApi;
 
