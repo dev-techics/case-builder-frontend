@@ -17,7 +17,7 @@ import {
 import BundleStatusMenu from './BundleStatusMenu';
 import { Folder02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import type { BundleCardProps } from './BundleCard';
+import type { BundleCardProps } from '../types';
 
 const BundleRow = ({
   bundle,

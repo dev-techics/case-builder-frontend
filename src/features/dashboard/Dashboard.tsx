@@ -5,7 +5,6 @@ import {
   File02Icon,
   FolderLibraryIcon,
 } from '@hugeicons/core-free-icons';
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,13 +15,32 @@ import { StatsCard } from './components/StatsCard';
 import { RecentBundles } from './components/RecentBundles';
 import { StorageWidget } from './components/StorageWidget';
 import { selectDashboardStats } from './redux';
+import { useCreateBundleMutation } from '@/features/bundles-list/api';
 import CreateNewBundleDialog from '@/features/bundles-list/components/CreateBundleDialog';
+import { useCreateBundleDialog } from '@/features/bundles-list/hooks';
 
 const Dashboard = () => {
   useGetStatsQuery();
   const stats = useAppSelector(selectDashboardStats);
-  const [openNewBundleDialog, setOpenNewBundleDialog] = useState(false);
   const navigate = useNavigate();
+  const [createBundle] = useCreateBundleMutation();
+  const {
+    bundleName,
+    canSubmit,
+    caseNumber,
+    description,
+    handleBundleNameChange,
+    handleCaseNumberChange,
+    handleDescriptionChange,
+    handleOpenChange,
+    handleSubmit,
+    isDialogOpen,
+    isSubmitting,
+    openCreateDialog,
+  } = useCreateBundleDialog({
+    createBundle: payload => createBundle(payload).unwrap(),
+    onCreated: bundle => navigate(`/dashboard/editor/${bundle.id}`),
+  });
 
   return (
     <div className="p-8 max-w-8xl mx-auto space-y-8">
@@ -30,11 +48,11 @@ const Dashboard = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Control Center</h1>
           <p className="text-muted-foreground">
-            Welcome back. Here is what's happening with your bundles.
+            Welcome back. Here is what&apos;s happening with your bundles.
           </p>
         </div>
         <Button
-          onClick={() => setOpenNewBundleDialog(true)}
+          onClick={openCreateDialog}
           className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
         >
           <FilePlus size={18} /> New Bundle
@@ -149,9 +167,17 @@ const Dashboard = () => {
       </div>
 
       <CreateNewBundleDialog
-        open={openNewBundleDialog}
-        onOpenChange={setOpenNewBundleDialog}
-        onCreated={bundle => navigate(`/dashboard/editor/${bundle.id}`)}
+        bundleName={bundleName}
+        canSubmit={canSubmit}
+        caseNumber={caseNumber}
+        description={description}
+        isSubmitting={isSubmitting}
+        open={isDialogOpen}
+        onBundleNameChange={handleBundleNameChange}
+        onCaseNumberChange={handleCaseNumberChange}
+        onDescriptionChange={handleDescriptionChange}
+        onOpenChange={handleOpenChange}
+        onSubmit={handleSubmit}
       />
     </div>
   );

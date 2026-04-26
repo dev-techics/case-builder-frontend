@@ -1,34 +1,16 @@
 import DeleteAlertDialog from '@/features/file-explorer/components/DeleteAlertDialog';
-import {
-  Check,
-  FileText,
-  Pencil,
-  Trash2,
-  RotateCcw,
-  RotateCw,
-  X,
-} from 'lucide-react';
+import { Check, FileText, Pencil, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
-// import { useAppSelector } from '@/app/hooks';
-// import { selectIsRotating } from '@/features/file-explorer/redux/fileTreeSlice';
 import { useDeleteDocument, useRename } from '@/features/editor/hooks';
 import type { FileTreeFileNode } from '@/features/file-explorer/types/fileTree';
 
 type PdfHeaderProps = {
   file: FileTreeFileNode;
   rotation: number;
-  onRotateLeft: () => void;
-  onRotateRight: () => void;
 };
 
-const PdfHeader = ({
-  file,
-  rotation,
-  onRotateLeft,
-  onRotateRight,
-}: PdfHeaderProps) => {
+const PdfHeader = ({ file }: PdfHeaderProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
-  // const isRotating = useAppSelector(state => selectIsRotating(state, file.id));
 
   // delete document hook
   const { deleteStatus, deleteMessage, handleDelete, resetDeleteState } =
@@ -125,29 +107,6 @@ const PdfHeader = ({
         </div>
         {/* ---------- Rotate & delete button ---------*/}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-md border bg-white px-2 py-1">
-            <button
-              aria-label="Rotate left"
-              className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-              // disabled={isRotating}
-              onClick={onRotateLeft}
-              type="button"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            <span className="min-w-[44px] text-center text-gray-600 text-xs font-medium">
-              {rotation}deg
-            </span>
-            <button
-              aria-label="Rotate right"
-              className="rounded p-1 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-              // disabled={isRotating}
-              onClick={onRotateRight}
-              type="button"
-            >
-              <RotateCw className="h-4 w-4" />
-            </button>
-          </div>
           {/*--------------------- 
                 Delete Button
             ----------------------*/}

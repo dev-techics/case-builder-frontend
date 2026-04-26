@@ -22,8 +22,6 @@ import {
 } from '@/features/editor/hooks';
 import { resolveBundleId } from '@/lib/bundleId';
 
-const ROTATION_STEP_DEGREES = 90;
-
 const PDFViewer = () => {
   const dispatch = useAppDispatch();
   const tree = useAppSelector(state => state.fileTree.tree);
@@ -52,10 +50,9 @@ const PDFViewer = () => {
   });
 
   // Rotation state and mutation wiring
-  const { fileRotations, fileUrlOverrides, handleRotateFile, resetRotations } =
-    useFileRotations({
-      bundleId: resolvedBundleId ?? '',
-    });
+  const { fileRotations, fileUrlOverrides, resetRotations } = useFileRotations({
+    bundleId: resolvedBundleId ?? '',
+  });
 
   // Size calculations, max scale, and page metrics tracking
   const { contentStyle, computedMaxScale, handlePageMetrics, resetSizing } =
@@ -194,12 +191,6 @@ const PDFViewer = () => {
                 <PdfHeader
                   file={fileWithUrl}
                   rotation={fileRotations[fileWithUrl.id] ?? 0}
-                  onRotateLeft={() =>
-                    handleRotateFile(fileWithUrl.id, -ROTATION_STEP_DEGREES)
-                  }
-                  onRotateRight={() =>
-                    handleRotateFile(fileWithUrl.id, ROTATION_STEP_DEGREES)
-                  }
                 />
               </ErrorBoundary>
 

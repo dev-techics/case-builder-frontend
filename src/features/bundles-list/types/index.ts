@@ -6,6 +6,22 @@ export const bundleStatuses = [
 ] as const;
 
 /**
+ * Component prop type
+ */
+export interface BundleCardProps {
+  bundle: Bundle;
+  lastModifiedLabel: string;
+  lastModifiedTitle?: string;
+  onOpen: (bundle: Bundle) => void;
+  onStatusChange: (status: BundleStatus) => void;
+  onRename: (bundle: Bundle) => void;
+  onDelete: (bundleId: string | number) => void;
+  onDuplicate: (bundle: Bundle) => void;
+  onExport?: (bundle: Bundle) => void;
+  isStatusUpdating?: boolean;
+}
+
+/**
  * Bundle Status Types
  */
 export type BundleStatus = (typeof bundleStatuses)[number];
@@ -39,6 +55,21 @@ export interface Bundle {
   description?: string;
   tags?: string[];
   userId?: number;
+}
+
+/**
+ * Component Props Types
+ */
+
+export interface BundleRowProps {
+  bundle: Bundle;
+  onOpen: (bundle: Bundle) => void;
+  onEdit?: (bundle: Bundle) => void;
+  onDelete?: (bundleId: string | number) => void;
+  onDuplicate?: (bundle: Bundle) => void;
+  onExport?: (bundle: Bundle) => void;
+  onStatusChange?: (status: BundleStatus) => void;
+  isStatusUpdating?: boolean;
 }
 
 /**

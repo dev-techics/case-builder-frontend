@@ -14,24 +14,10 @@ import {
   Download,
   Trash2,
 } from 'lucide-react';
-import type { Bundle, BundleStatus } from '../types';
+import type { BundleCardProps } from '../types';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Files01Icon, Folder02Icon } from '@hugeicons/core-free-icons';
 import BundleStatusMenu from './BundleStatusMenu';
-
-// Component Props Types
-export interface BundleCardProps {
-  bundle: Bundle;
-  lastModifiedLabel: string;
-  lastModifiedTitle?: string;
-  onOpen: (bundle: Bundle) => void;
-  onStatusChange: (status: BundleStatus) => void;
-  onRename: (bundle: Bundle) => void;
-  onDelete: (bundleId: string | number) => void;
-  onDuplicate: (bundle: Bundle) => void;
-  onExport?: (bundle: Bundle) => void;
-  isStatusUpdating?: boolean;
-}
 
 const BundleCard = ({
   bundle,

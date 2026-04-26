@@ -8,25 +8,28 @@
  * Author: Anik Dey
  */
 import { useState } from 'react';
-import BundlesHeader from './components/BundlesHeader';
-import BundlesFilterBar from './components/BundlesFilterbar';
-import BundleCard from './components/BundleCard';
-import BundleRow from './components/BundleRow';
+import {
+  BundleCard,
+  BundleRow,
+  BundlesFilterBar,
+  BundlesHeader,
+  CreateBundleDialog,
+} from '@case-builder/ui';
 import { Button } from '@/components/ui/button';
 import { FileStack, Plus } from 'lucide-react';
 import type { Bundle, BundleStatus, SortOption, ViewMode } from './types';
 import { useNavigate } from 'react-router-dom';
-import CreateNewBundleDialog from './components/CreateBundleDialog';
 import { useAppDispatch } from '@/app/hooks';
 import {
   bundleListApi,
+  useCreateBundleMutation,
   useDeleteBundleMutation,
   useGetBundlesQuery,
   useUpdateBundleStatusMutation,
 } from './api';
 import { toast } from 'react-toastify';
 import BundleRenameDialog from './components/BundleRenameDialog';
-import { useRenameBundle } from './hooks';
+import { useCreateBundleDialog, useRenameBundle } from './hooks';
 import { formatBundleTimestamp } from './utils/formatBundleTimestamp';
 
 /*--------------------------------------------------
@@ -52,7 +55,25 @@ const BundleList = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
-  const [openNewBundleDialog, setOpenNewBundleDialog] = useState(false);
+  const [createBundle] = useCreateBundleMutation();
+  /*---------- Create new bundle hook call -------------- */
+  const {
+    bundleName,
+    canSubmit: canCreateBundle,
+    caseNumber,
+    description,
+    handleBundleNameChange,
+    handleCaseNumberChange,
+    handleDescriptionChange,
+    handleOpenChange: handleCreateDialogOpenChange,
+    handleSubmit: handleCreateBundleSubmit,
+    isDialogOpen: isCreateDialogOpen,
+    isSubmitting: isCreatingBundle,
+    openCreateDialog,
+  } = useCreateBundleDialog({
+    createBundle: payload => createBundle(payload).unwrap(),
+  });
+  /*------------ Rename bundle hook call ----------------- */
   const {
     bundleToRename,
     closeRenameDialog,
@@ -69,10 +90,6 @@ const BundleList = () => {
   const { data: bundles = [], isLoading, error } = useGetBundlesQuery();
   const [deleteBundle] = useDeleteBundleMutation();
   const [updateBundleStatus] = useUpdateBundleStatusMutation();
-  // Handle new bundle creation
-  const handleCreateNew = () => {
-    setOpenNewBundleDialog(true);
-  };
   // Handle opening a bundle in the editor
   const handleOpenBundle = (bundle: Bundle) => {
     navigate(`/dashboard/editor/${bundle.id}`);
@@ -137,7 +154,6 @@ const BundleList = () => {
       );
     }
   };
-
   const filteredBundles: BundleListItem[] = bundles
     .filter(bundle => {
       if (!bundle?.name || !bundle?.caseNumber) return false;
@@ -160,7 +176,7 @@ const BundleList = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BundlesHeader onCreateNew={handleCreateNew} />
+      <BundlesHeader onCreateNew={openCreateDialog} />
       <BundlesFilterBar
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -256,7 +272,7 @@ const BundleList = () => {
                 Try adjusting your search or create a new bundle
               </p>
               <Button
-                onClick={handleCreateNew}
+                onClick={openCreateDialog}
                 className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
               >
                 <Plus className="h-4 w-4" />
@@ -265,9 +281,19 @@ const BundleList = () => {
             </div>
           )}
       </div>
-      <CreateNewBundleDialog
-        open={openNewBundleDialog}
-        onOpenChange={setOpenNewBundleDialog}
+
+      <CreateBundleDialog
+        bundleName={bundleName}
+        canSubmit={canCreateBundle}
+        caseNumber={caseNumber}
+        description={description}
+        isSubmitting={isCreatingBundle}
+        open={isCreateDialogOpen}
+        onBundleNameChange={handleBundleNameChange}
+        onCaseNumberChange={handleCaseNumberChange}
+        onDescriptionChange={handleDescriptionChange}
+        onOpenChange={handleCreateDialogOpenChange}
+        onSubmit={handleCreateBundleSubmit}
       />
       {/* --------- Rename Dialog ----------- */}
       <BundleRenameDialog

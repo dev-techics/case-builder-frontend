@@ -2,12 +2,14 @@
  * New bundle Creation dialog
  *
  * Responsibility:
- * Display the dialog collect the data and dispatch the action
+ * Display the dialog and collect the input values
  *
  * Notes:
  *
  * Author: Anik Dey
  */
+
+import type { FormEventHandler } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -21,73 +23,55 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useCreateBundleMutation } from '../api';
-import type { Bundle } from '../types';
-import { useState, type FormEvent } from 'react';
-import { toast } from 'react-toastify';
 
 interface CreateNewBundleDialogProps {
+  bundleName: string;
+  canSubmit: boolean;
+  caseNumber: string;
+  description: string;
+  isSubmitting: boolean;
   open: boolean;
+  onBundleNameChange: (value: string) => void;
+  onCaseNumberChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
   onOpenChange: (open: boolean) => void;
-  onCreated?: (bundle: Bundle) => void;
+  onSubmit: FormEventHandler<HTMLFormElement>;
 }
 
 const CreateNewBundleDialog = ({
+  bundleName,
+  canSubmit,
+  caseNumber,
+  description,
+  isSubmitting,
   open,
+  onBundleNameChange,
+  onCaseNumberChange,
+  onDescriptionChange,
   onOpenChange,
-  onCreated,
+  onSubmit,
 }: CreateNewBundleDialogProps) => {
-  const [bundleName, setBundleName] = useState('');
-  const [caseNumber, setCaseNumber] = useState('');
-  const [createBundle, { isLoading: isSubmitting }] = useCreateBundleMutation();
-
-  // Handle new bundle creation
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (isSubmitting) {
-      return;
-    }
-    if (!bundleName.trim() || !caseNumber.trim()) {
-      return;
-    }
-    const payload = {
-      name: bundleName.trim(),
-      caseNumber: caseNumber.trim(),
-    };
-
-    try {
-      const createdBundle = await createBundle(payload).unwrap();
-      toast.success('New bundle created successfully');
-      setBundleName('');
-      setCaseNumber('');
-      onOpenChange(false);
-      onCreated?.(createdBundle);
-    } catch {
-      toast.error('Failed to create bundle');
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Create New Bundle</DialogTitle>
           <DialogDescription>
-            Enter the details for your new bundle. Click create when you're
+            Enter the details for your new bundle. Click create when you&apos;re
             done.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={e => handleSubmit(e)}>
+        <form onSubmit={onSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-3">
               <Label htmlFor="bundle-name">Bundle Name</Label>
               <Input
+                autoFocus
                 id="bundle-name"
                 name="bundleName"
                 value={bundleName}
                 disabled={isSubmitting}
-                onChange={e => setBundleName(e.target.value)}
+                onChange={event => onBundleNameChange(event.target.value)}
                 placeholder="e.g., Smith v. Johnson - Discovery"
               />
             </div>
@@ -98,8 +82,20 @@ const CreateNewBundleDialog = ({
                 name="caseNumber"
                 value={caseNumber}
                 disabled={isSubmitting}
-                onChange={e => setCaseNumber(e.target.value)}
+                onChange={event => onCaseNumberChange(event.target.value)}
                 placeholder="e.g., CV-2024-001234"
+              />
+            </div>
+            <div className="grid gap-3">
+              <Label htmlFor="bundle-description">Description</Label>
+              <textarea
+                className="min-h-[96px] w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isSubmitting}
+                id="bundle-description"
+                name="description"
+                onChange={event => onDescriptionChange(event.target.value)}
+                placeholder="Optional notes about this bundle"
+                value={description}
               />
             </div>
           </div>
@@ -109,7 +105,7 @@ const CreateNewBundleDialog = ({
                 Cancel
               </Button>
             </DialogClose>
-            <Button variant="default" type="submit" disabled={isSubmitting}>
+            <Button variant="default" type="submit" disabled={!canSubmit}>
               Create Bundle
             </Button>
           </DialogFooter>
