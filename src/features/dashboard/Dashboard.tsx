@@ -16,7 +16,7 @@ import { RecentBundles } from './components/RecentBundles';
 import { StorageWidget } from './components/StorageWidget';
 import { selectDashboardStats } from './redux';
 import { useCreateBundleMutation } from '@/features/bundles-list/api';
-import CreateNewBundleDialog from '@/features/bundles-list/components/CreateBundleDialog';
+import { CreateBundleDialog } from '@case-builder/ui';
 import { useCreateBundleDialog } from '@/features/bundles-list/hooks';
 
 const Dashboard = () => {
@@ -166,7 +166,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <CreateNewBundleDialog
+      <CreateBundleDialog
         bundleName={bundleName}
         canSubmit={canSubmit}
         caseNumber={caseNumber}

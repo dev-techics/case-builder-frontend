@@ -14,6 +14,7 @@ import {
   BundlesFilterBar,
   BundlesHeader,
   CreateBundleDialog,
+  BundleRenameDialog,
 } from '@case-builder/ui';
 import { Button } from '@/components/ui/button';
 import { FileStack, Plus } from 'lucide-react';
@@ -28,7 +29,6 @@ import {
   useUpdateBundleStatusMutation,
 } from './api';
 import { toast } from 'react-toastify';
-import BundleRenameDialog from './components/BundleRenameDialog';
 import { useCreateBundleDialog, useRenameBundle } from './hooks';
 import { formatBundleTimestamp } from './utils/formatBundleTimestamp';
 
