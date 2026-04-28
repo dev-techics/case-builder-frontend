@@ -1,7 +1,7 @@
 import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 
 const appNodeModules = path.resolve(__dirname, './node_modules');
 const linkedUiRoot = path.resolve(__dirname, '../case-builder-ui');
@@ -17,8 +17,7 @@ export default defineConfig({
     port: 3000,
     host: true,
     fs: {
-      allow: [linkedUiRoot,  __dirname],
-     
+      allow: [linkedUiRoot, __dirname],
     },
   },
   resolve: {
@@ -55,11 +54,5 @@ export default defineConfig({
     rollupOptions: {
       external: [],
     },
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './vitest.setup.ts',
-    css: true,
   },
 });
