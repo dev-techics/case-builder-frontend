@@ -1,4 +1,4 @@
-import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setScale, zoomIn, zoomOut } from '../states/editorSlice';
 
@@ -23,11 +23,8 @@ function ZoomControls() {
         type="button"
         disabled={!canReset}
       >
-        <RotateCcw className="h-4 w-4" />
-      </button>
-      {/* <span className="min-w-[60px] text-center font-medium text-sm">
         {Math.round(scale * 100)}%
-      </span> */}
+      </button>
       <button
         aria-label="Zoom in"
         className="rounded p-2 hover:bg-gray-100"

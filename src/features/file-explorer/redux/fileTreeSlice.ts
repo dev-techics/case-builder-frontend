@@ -195,6 +195,11 @@ const fileTreeSlice = createSlice({
       state.expanded[state.tree.id] ??= true;
     },
 
+    renameTreeRoot: (state, action: PayloadAction<string>) => {
+      state.tree.name = action.payload;
+      state.tree.projectName = action.payload;
+    },
+
     reorderChildren: (
       state,
       action: PayloadAction<{
@@ -838,6 +843,7 @@ export const {
   selectFolder,
   setScrollToFile,
   setTree,
+  renameTreeRoot,
   reorderChildren,
   moveNodes,
   clearError,

@@ -12,7 +12,7 @@ const RightSidebarToggle = ({ onToggle }: { onToggle: () => void }) => {
 
   return (
     <SidebarTrigger
-      className="fixed top-3 z-50 text-2xl transition-[right] duration-200 ease-linear"
+      className="fixed top-20 z-50 text-2xl transition-[right] duration-200 ease-linear"
       onClick={onToggle}
       size="lg"
       style={{
@@ -28,7 +28,7 @@ const RightSidebar = ({ children }: { children: React.ReactNode }) => {
     <SidebarProvider className="relative" open={isOpen}>
       <RightSidebarToggle onToggle={() => setIsOpen(!isOpen)} />
       <Sidebar
-        className="transition-all z-0 duration-300 ease-in-out [--sidebar-width:300px]"
+        className="top-[72px] z-0 h-[calc(100vh-72px)] transition-all z-0 duration-300 ease-in-out [--sidebar-width:300px]"
         collapsible="offcanvas"
         side="right"
         variant="sidebar"

@@ -11,7 +11,7 @@ type LeftSidebarProps = {
 const LeftSidebar = ({ children }: LeftSidebarProps) => {
   return (
     <Sidebar
-      className="transition-all duration-300 ease-in-out"
+      className="top-[72px] h-[calc(100vh-72px)] transition-all duration-300 ease-in-out"
       collapsible="offcanvas"
       side="left"
       variant="sidebar"

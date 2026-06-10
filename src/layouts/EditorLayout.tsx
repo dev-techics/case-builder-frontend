@@ -1,11 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import {
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from '@/components/ui/sidebar';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import PropertiesSidebar from '@/features/properties-panel';
 import EditorSidebar from '@/features/sidebar';
 import { SidebarStateProvider } from '@/context/SidebarContext';
@@ -17,22 +13,6 @@ const LEFT_SIDEBAR_MAX_WIDTH = 520;
 
 const clampSidebarWidth = (width: number) =>
   Math.min(Math.max(width, LEFT_SIDEBAR_MIN_WIDTH), LEFT_SIDEBAR_MAX_WIDTH);
-
-function EditorSidebarToggle() {
-  const { state } = useSidebar();
-
-  return (
-    <SidebarTrigger
-      className="fixed top-3 z-[99] hidden transition-[left] duration-200 ease-linear md:inline-flex bg-gray-200"
-      style={{
-        left:
-          state === 'collapsed'
-            ? '0.75rem'
-            : 'calc(var(--sidebar-width) - 2rem)',
-      }}
-    />
-  );
-}
 
 function EditorSidebarResizeHandle({
   onPointerDown,
@@ -108,27 +88,31 @@ export default function EditorLayout() {
   } as React.CSSProperties;
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen flex-col">
       <SidebarStateProvider>
-        {/* Left Sidebar with its own provider */}
-        <SidebarProvider className="relative" style={sidebarStyle}>
-          <EditorSidebar />
-          <EditorSidebarToggle />
-          <EditorSidebarResizeHandle onPointerDown={handleDragStart} />
-        </SidebarProvider>
+        <Header />
 
-        {/* Main Area */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          {/* Topbar */}
-          <Header />
-          {/* Canvas / Workspace */}
-          <main className="relative flex-1 min-h-0 overflow-hidden bg-gray-50 p-4">
-            <Outlet />
-          </main>
+        <div className="flex min-h-0 flex-1">
+          {/* Left Sidebar with its own provider */}
+          <SidebarProvider
+            className="relative h-full min-h-0"
+            style={sidebarStyle}
+          >
+            <EditorSidebar />
+            <EditorSidebarResizeHandle onPointerDown={handleDragStart} />
+          </SidebarProvider>
+
+          {/* Main Area */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* Canvas / Workspace */}
+            <main className="relative flex-1 min-h-0 overflow-hidden bg-gray-50 p-4">
+              <Outlet />
+            </main>
+          </div>
+
+          {/* Right Sidebar with its own provider */}
+          <PropertiesSidebar />
         </div>
-
-        {/* Right Sidebar with its own provider */}
-        <PropertiesSidebar />
       </SidebarStateProvider>
     </div>
   );
