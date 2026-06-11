@@ -4,8 +4,6 @@
  * Responsibilites:
  * Display file action menu and handle file rename and delete logic
  *
- * Notes: Need Testing
- *
  * Author: Anik Dey
  *
  */
@@ -32,7 +30,6 @@ interface FileActionMenuProps {
 const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
   const [deleteDocument] = useDeleteDocumentMutation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  // const bundleId = useParams<{ bundleId: string }>().bundleId || '';
 
   const handleRename = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.stopPropagation();
@@ -82,7 +79,9 @@ const FileActionMenu = ({ file, onRenameClick }: FileActionMenuProps) => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {/* -------- Confirmation Dialog for deleting file --------- */}
+      {/* ----------------------------------- 
+        Confirmation Dialog for deleting file 
+      --------------------------------------- */}
       <DeleteAlertDialog
         open={showDeleteDialog}
         onOpen={setShowDeleteDialog}

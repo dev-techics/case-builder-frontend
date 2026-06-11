@@ -105,7 +105,7 @@ export default function EditorLayout() {
           {/* Main Area */}
           <div className="flex min-w-0 flex-1 flex-col">
             {/* Canvas / Workspace */}
-            <main className="relative flex-1 min-h-0 overflow-hidden bg-gray-50 p-4">
+            <main className="relative flex-1 min-h-0 overflow-hidden bg-gray-50">
               <Outlet />
             </main>
           </div>

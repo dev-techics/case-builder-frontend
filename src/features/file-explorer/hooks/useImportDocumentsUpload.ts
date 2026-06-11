@@ -3,11 +3,16 @@ import type { ChangeEvent } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useUploadFilesMutation } from '../api';
+import { getErrorMessage } from '../utils';
 
-type ConversionStatus = {
+type ConversionStatusPayload = {
   fileName: string;
   status: 'converting' | 'success' | 'failed';
   message?: string;
+};
+
+export type ConversionStatus = ConversionStatusPayload & {
+  id: string;
 };
 
 type UploadResponse = {
@@ -24,6 +29,23 @@ type UploadResponse = {
 type UseImportDocumentsUploadArgs = {
   bundleId: string;
   parentId?: string | null;
+};
+
+/**
+ * This function adds a id to the conversion status payload
+ * to use that a key when rendering to the ui.
+ * @param statuses - Conversion status returned after uploading files
+ * @returns An array of objects with id, filename & status
+ */
+const buildConversionStatuses = (
+  statuses: ConversionStatusPayload[]
+): ConversionStatus[] => {
+  return statuses.map(status => {
+    return {
+      ...status,
+      id: crypto.randomUUID(),
+    };
+  });
 };
 
 export const useImportDocumentsUpload = ({
@@ -107,8 +129,11 @@ export const useImportDocumentsUpload = ({
 
       // Extract conversion statuses if any
       if (response?.conversionStatuses) {
-        setConversionStatuses(response.conversionStatuses);
+        setConversionStatuses(
+          buildConversionStatuses(response.conversionStatuses)
+        );
       }
+
 
       const uploadedCountValue = response.documents?.length ?? 0;
       console.log(response.documents);
@@ -117,14 +142,7 @@ export const useImportDocumentsUpload = ({
       setUploadComplete(true);
     } catch (error: unknown) {
       console.error('❌ Upload failed:', error);
-      const errorMessage =
-        typeof error === 'object' && error !== null && 'data' in error
-          ? typeof (error as { data?: unknown }).data === 'string'
-            ? (error as { data: string }).data
-            : (error as { data?: { message?: string } }).data?.message
-          : error instanceof Error
-            ? error.message
-            : 'Failed to upload files';
+      const errorMessage = getErrorMessage(error);
       alert(`Upload failed: ${errorMessage}`);
       handleClose();
     } finally {

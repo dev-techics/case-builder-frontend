@@ -8,7 +8,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-// import type { FileNode } from '@/features/file-explorer/types/types';
 
 interface DeleteAlertDialogProps {
   open: boolean;
@@ -35,17 +34,16 @@ const DeleteAlertDialog = ({
     onDelete();
   };
 
-  const title = isSuccess
-    ? 'Document Deleted'
-    : isError
-      ? 'Delete Failed'
-      : 'Delete File';
+let title = 'Delete File';
+let description = `Are you sure you want to delete "${file?.name}"? This action cannot be undone.`;
 
-  const description = isSuccess
-    ? message || 'Document deleted successfully.'
-    : isError
-      ? message || 'Failed to delete document.'
-      : `Are you sure you want to delete "${file?.name}"? This action cannot be undone.`;
+if (isSuccess) {
+  title = 'Document Deleted';
+  description = message || 'Document deleted successfully.';
+} else if (isError) {
+  title = 'Delete Failed';
+  description = message || 'Failed to delete document.';
+}
 
   return (
     <AlertDialog open={open} onOpenChange={onOpen}>

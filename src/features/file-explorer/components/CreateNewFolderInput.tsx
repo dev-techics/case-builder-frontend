@@ -9,15 +9,16 @@ interface CreateNewFolderProps {
 }
 
 const CreateNewFolderInput = ({ parentId = null }: CreateNewFolderProps) => {
-  const [folderName, setFolderName] = useState('New Folder');
-  const dispatch = useAppDispatch();
-  const [createFolder] = useCreateFolderMutation();
+  const [folderName, setFolderName] = useState<string>('New Folder');
   const inputRef = useRef<HTMLInputElement>(null);
   const { bundleId } = useParams<{ bundleId: string }>();
+  const dispatch = useAppDispatch();
+  const [createFolder] = useCreateFolderMutation();
   const tree = useAppSelector(state => state.fileTree.tree);
   const isCreating = useAppSelector(
     state => state.fileTree.isCreatingNewFolder
   );
+
   const parentNode = parentId ? tree.nodes[parentId] ?? null : null;
   const resolvedParentId = parentNode?.type === 'folder' ? parentNode.id : null;
   useEffect(() => {
@@ -26,6 +27,9 @@ const CreateNewFolderInput = ({ parentId = null }: CreateNewFolderProps) => {
     }
   }, [isCreating]);
 
+  /*------------------------------
+    Handle folder creation 
+  --------------------------------*/
   const handleSubmit = async () => {
     const trimmedName = folderName.trim();
     if (trimmedName && bundleId) {

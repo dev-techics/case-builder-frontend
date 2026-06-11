@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/sidebar';
 import { useSidebarState } from '@/context/SidebarContext';
 
+const RIGHT_SIDEBAR_WIDTH = '300px';
+
 const RightSidebarToggle = ({ onToggle }: { onToggle: () => void }) => {
   const { state } = useSidebar();
 
@@ -24,11 +26,15 @@ const RightSidebarToggle = ({ onToggle }: { onToggle: () => void }) => {
 
 const RightSidebar = ({ children }: { children: React.ReactNode }) => {
   const { isOpen, setIsOpen } = useSidebarState();
+  const sidebarStyle = {
+    '--sidebar-width': RIGHT_SIDEBAR_WIDTH,
+  } as React.CSSProperties;
+
   return (
-    <SidebarProvider className="relative" open={isOpen}>
+    <SidebarProvider className="relative" open={isOpen} style={sidebarStyle}>
       <RightSidebarToggle onToggle={() => setIsOpen(!isOpen)} />
       <Sidebar
-        className="top-[72px] z-0 h-[calc(100vh-72px)] transition-all z-0 duration-300 ease-in-out [--sidebar-width:300px]"
+        className="top-[72px] h-[calc(100vh-72px)] transition-all z-0 duration-300 ease-in-out"
         collapsible="offcanvas"
         side="right"
         variant="sidebar"

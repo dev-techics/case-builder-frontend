@@ -3,18 +3,24 @@ import { FileImportIcon, PlusSignIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, X, AlertCircle } from 'lucide-react';
+import { CheckCircle2, X, AlertCircle, CirclePlus } from 'lucide-react';
 import { useImportDocumentsUpload } from '../hooks';
+import { useRef } from 'react';
+import { getConversionStatusClasses } from '../utils';
 
 interface ImportDocumentsProps {
   bundleId: string;
   parentId?: string | null;
+  variant?: 'header' | 'icon';
 }
 
 const ImportDocuments: React.FC<ImportDocumentsProps> = ({
   bundleId,
   parentId = null,
+  variant = 'icon',
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const {
     conversionStatuses,
     handleClose,
@@ -25,6 +31,30 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
     uploadProgress,
     uploadedCount,
   } = useImportDocumentsUpload({ bundleId, parentId });
+
+  const buttonCursorClass = isUploading
+    ? 'cursor-not-allowed opacity-50'
+    : 'cursor-pointer';
+
+  let buttonContent: React.ReactNode;
+
+  if (variant === 'header') {
+    buttonContent = (
+      <>
+        <CirclePlus className="h-5 w-5" />
+        File
+      </>
+    );
+  } else if (parentId) {
+    buttonContent = (
+      <HugeiconsIcon
+        icon={PlusSignIcon}
+        className="mr-2 h-4 w-4 flex-shrink-0 text-slate-900"
+      />
+    );
+  } else {
+    buttonContent = <HugeiconsIcon icon={FileImportIcon} size={18} />;
+  }
 
   // Supported file types
   const SUPPORTED_FORMATS = {
@@ -39,32 +69,35 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
 
   return (
     <>
-      <label
-        className={`block rounded-lg p-2 text-sm hover:bg-gray-200 ${
-          isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-        }`}
-        onClick={e => e.stopPropagation()}
+      <button
+        type="button"
+        className={
+          variant === 'header'
+            ? `flex h-11 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50/20 px-3 font-medium text-indigo-700 text-sm shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50 ${buttonCursorClass}`
+            : `block rounded-lg p-2 text-sm hover:bg-gray-200 ${buttonCursorClass}`
+        }
+        onClick={e => {
+          e.stopPropagation();
+          if (!isUploading) {
+            fileInputRef.current?.click();
+          }
+        }}
         title="Import Document"
+        aria-label="Import Document"
+        disabled={isUploading}
       >
-        {parentId ? (
-          <HugeiconsIcon
-            icon={PlusSignIcon}
-            className="mr-2 h-4 w-4 flex-shrink-0 text-slate-900"
-          />
-        ) : (
-          <HugeiconsIcon icon={FileImportIcon} size={18} />
-        )}
+        {buttonContent}
+      </button>
 
-        <input
-          accept={ALL_SUPPORTED_FORMATS}
-          // accept="*"
-          className="hidden"
-          multiple
-          onChange={handleFileUpload}
-          type="file"
-          disabled={isUploading}
-        />
-      </label>
+      <input
+        ref={fileInputRef}
+        accept={ALL_SUPPORTED_FORMATS}
+        className="hidden"
+        multiple
+        onChange={handleFileUpload}
+        type="file"
+        disabled={isUploading}
+      />
 
       {isUploading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -83,7 +116,7 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
                       </h3>
                       <p className="text-sm text-gray-600">
                         Successfully processed {uploadedCount} file
-                        {uploadedCount !== 1 ? 's' : ''}
+                        {uploadedCount === 1 ? '' : 's'}
                       </p>
                     </div>
                   </div>
@@ -103,22 +136,19 @@ const ImportDocuments: React.FC<ImportDocumentsProps> = ({
                     <p className="text-xs font-semibold text-gray-700 mb-2">
                       Conversion Results:
                     </p>
-                    {conversionStatuses.map((status, index) => (
+                    {conversionStatuses.map(status => (
                       <div
-                        key={index}
-                        className={`flex items-start gap-2 p-2 rounded text-xs ${
-                          status.status === 'success'
-                            ? 'bg-green-50 text-green-800'
-                            : status.status === 'failed'
-                              ? 'bg-red-50 text-red-800'
-                              : 'bg-blue-50 text-blue-800'
-                        }`}
+                        key={status.id}
+                        className={`flex items-start gap-2 p-2 rounded text-xs ${getConversionStatusClasses(
+                          status.status
+                        )}`}
                       >
-                        {status.status === 'success' ? (
+                        {status.status === 'success' && (
                           <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                        ) : status.status === 'failed' ? (
+                        )}
+                        {status.status === 'failed' && (
                           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                        ) : null}
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">
                             {status.fileName}
