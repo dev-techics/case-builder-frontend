@@ -14,6 +14,7 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ProtectedRoute, { PublicRoute } from './ProtectedRoutes';
 import useAuthInit from '@/features/auth/hooks/useAuthInit';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
+import CrmSsoLoginPage from '@/pages/auth/CrmSsoLoginPage';
 
 const CoverPageEditor = lazy(() =>
   import('@/features/cover-page/components/editor/CoverPageEditor').then(
@@ -39,6 +40,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<SignUpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/crm/sso-login" element={<CrmSsoLoginPage />} />
 
       <Route element={<ProtectedRoute />}>
         {/* Protected routes - Editor layout */}
