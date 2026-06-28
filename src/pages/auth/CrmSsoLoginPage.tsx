@@ -84,7 +84,7 @@ const CrmSsoLoginPage = () => {
       try {
         const response = await axios.post(
           `${API_BASE_URL}/api/crm/sso/exchange`,
-          { token },
+          { token, redirect },
           {
             headers: {
               Accept: 'application/json',
@@ -92,6 +92,7 @@ const CrmSsoLoginPage = () => {
             },
           }
         );
+        console.log('response', response);
         const data = camelcaseKeys(response.data, {
           deep: true,
         }) as CrmSsoExchangeResponse;
