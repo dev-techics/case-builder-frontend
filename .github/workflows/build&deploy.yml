@@ -1,4 +1,4 @@
-name: React CI
+name: Build & Deploy
 
 on:
   push:
